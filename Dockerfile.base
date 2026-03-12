@@ -1,0 +1,106 @@
+FROM ubuntu:24.04
+
+LABEL org.opencontainers.image.title="webcode-base" \
+      org.opencontainers.image.description="Base image with code-server IDE and Supervisor (no desktop components)" \
+      org.opencontainers.image.url="https://github.com/land007/webcode" \
+      org.opencontainers.image.source="https://github.com/land007/webcode" \
+      org.opencontainers.image.vendor="land007" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.logo="https://raw.githubusercontent.com/land007/webcode/main/launcher/assets/icon-source.png"
+
+# Build-time version argument
+ARG WEBCODE_VERSION=dev
+# Runtime version environment variable
+ENV WEBCODE_VERSION=${WEBCODE_VERSION}
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=zh_CN.UTF-8
+ENV LANGUAGE=zh_CN:zh
+ENV LC_ALL=zh_CN.UTF-8
+
+# ─── 1. Base system: locale, sudo, ubuntu user, common CLI tools ─────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        locales sudo ca-certificates curl wget git gnupg \
+        openssl software-properties-common \
+        vim nano less file tree htop lsof procps \
+        zip unzip tar xz-utils jq \
+        net-tools iputils-ping iproute2 dnsutils openssh-client \
+        xdg-utils bash-completion \
+    && locale-gen en_US.UTF-8 zh_CN.UTF-8 \
+    && update-locale LANG=zh_CN.UTF-8 \
+    && (id ubuntu &>/dev/null && usermod -s /bin/bash -aG sudo ubuntu || useradd -m -s /bin/bash -G sudo ubuntu) \
+    && echo "ubuntu ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# ─── 2. Node.js 22.x ────────────────────────────────────────────────
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y nodejs \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# ─── 2a. Native module build dependencies for node-pty ──────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        python3-dev \
+        build-essential \
+        libsecret-1-dev \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install setuptools for Python distutils compatibility (needed for node-gyp)
+RUN apt-get update && apt-get install -y --no-install-recommends python3-setuptools \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# ─── 2b. webcode-dashboard-server (includes http-proxy as dependency) ─
+RUN npm install -g webcode-dashboard-server@1.2.0
+
+# ─── 4. code-server (pre-compiled binary — replaces Theia build) ────
+ARG CODE_SERVER_VERSION=4.100.2
+RUN ARCH=$(dpkg --print-architecture) \
+    && curl -fsSL -A "Mozilla/5.0" -L "https://github.com/coder/code-server/releases/download/v${CODE_SERVER_VERSION}/code-server-${CODE_SERVER_VERSION}-linux-${ARCH}.tar.gz" \
+       | tar -C /opt -xz \
+    && mv /opt/code-server-${CODE_SERVER_VERSION}-linux-${ARCH} /opt/code-server \
+    && ln -s /opt/code-server/bin/code-server /usr/local/bin/code-server \
+    && chown -R ubuntu:ubuntu /opt/code-server
+
+# ─── 4b. code-server Chinese language pack extension ────────────────
+RUN mkdir -p /opt/code-server-extensions \
+    && for i in 1 2 3 4 5; do \
+         code-server --extensions-dir /opt/code-server-extensions \
+             --install-extension MS-CEINTL.vscode-language-pack-zh-hans \
+         && break || (echo "Retry $i/5..." && sleep 10); \
+       done \
+    && chown -R ubuntu:ubuntu /opt/code-server-extensions
+
+# ─── 4c. languagepacks.json generator script (runs at container startup) ─
+COPY scripts/create-languagepacks.sh /opt/create-languagepacks.sh
+RUN chmod +x /opt/create-languagepacks.sh
+
+# ─── 5. Supervisor ─────────────────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends supervisor \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# ─── 5b. Pre-install OpenClaw globally (易变，放最后避免破坏缓存) ─────
+RUN npm install -g openclaw@2026.2.22
+
+# ─── 5c. Pre-install Vibe Kanban globally ────────────────────────────────
+RUN npm install -g vibe-kanban@0.1.8
+
+# ─── 5d. Pre-install claudecodeui globally (CLI UI for lite mode support) ─
+# This package requires native compilation (node-pty), takes time to build
+RUN npm install -g @siteboon/claude-code-ui
+
+# ─── 5e. Enable ClaudeCodeUI Platform mode (no authentication required) ─
+COPY scripts/enable-claudecodeui-platform-mode.sh /opt/enable-claudecodeui-platform-mode.sh
+RUN chmod +x /opt/enable-claudecodeui-platform-mode.sh && \
+    bash /opt/enable-claudecodeui-platform-mode.sh
+
+# ─── Metadata ───────────────────────────────────────────────────────
+ARG CODE_SERVER_VER=4.100.2
+LABEL org.opencontainers.image.version="${WEBCODE_VERSION:-dev}" \
+      org.opencontainers.image.revision="${CODE_SERVER_VER}" \
+      webcode.code-server.version="${CODE_SERVER_VER}" \
+      webcode.component="base"
+
+# Set default working directory
+WORKDIR /home/ubuntu
+
+#docker build -f Dockerfile.base -t land007/webcode_base:latest .
+# Trigger rebuild 2025-03-05

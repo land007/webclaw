@@ -1,0 +1,55 @@
+# ─────────────────────────────────────────────────────────────
+#  Full CLI layer: adds Gemini, Codex, Cursor CLI
+#  on top of land007/webcode image
+# ─────────────────────────────────────────────────────────────
+FROM land007/webcode:latest
+
+LABEL org.opencontainers.image.title="webcode_full" \
+      org.opencontainers.image.description="webcode with additional AI CLIs (Gemini + Codex + Cursor + OpenCode AI)" \
+      org.opencontainers.image.source="https://github.com/land007/webcode"
+
+# ─── AI CLI Tools: Gemini CLI, Codex CLI, Cursor CLI, OpenCode AI ───────────────
+# Install additional AI CLI tools for CloudUI compatibility
+RUN su -l ubuntu -c \
+    'source ~/.nvm/nvm.sh && \
+     npm install -g @google/gemini-cli && \
+     npm install -g @openai/codex && \
+     npm install -g opencode-ai@latest && \
+     npm install -g oh-my-opencode'
+
+# Install Cursor CLI (cursor-agent) - direct binary download
+RUN su -l ubuntu -c \
+    'mkdir -p ~/.local/bin && \
+     cd /tmp && \
+     ARCH=$(dpkg --print-architecture) && \
+     if [ "$ARCH" = "amd64" ]; then \
+         curl -fsSL "https://api2.cursor.sh/updates/download-latest?os=cli-alpine-x64" -o cursor-cli.tar.gz; \
+     else \
+         curl -fsSL "https://api2.cursor.sh/updates/download-latest?os=cli-alpine-arm64" -o cursor-cli.tar.gz; \
+     fi && \
+     tar -xvf cursor-cli.tar.gz && \
+     chmod +x cursor && \
+     mv cursor ~/.local/bin/ && \
+     rm cursor-cli.tar.gz'
+
+# Install Obsidian (note-taking app) - with architecture detection and desktop menu
+RUN su -l ubuntu -c \
+    'mkdir -p ~/.local/bin ~/.local/share/applications && \
+     cd /tmp && \
+     ARCH=$(dpkg --print-architecture) && \
+     if [ "$ARCH" = "amd64" ]; then \
+         curl -fsSL "https://github.com/obsidianmd/obsidian-releases/releases/download/v1.8.4/Obsidian-1.8.4.AppImage" -o Obsidian.AppImage && \
+         chmod +x Obsidian.AppImage && \
+         mv Obsidian.AppImage ~/.local/bin/obsidian && \
+         echo "[Desktop Entry]" > ~/.local/share/applications/obsidian.desktop && \
+         echo "Name=Obsidian" >> ~/.local/share/applications/obsidian.desktop && \
+         echo "Comment=Knowledge base" >> ~/.local/share/applications/obsidian.desktop && \
+         echo "Exec=/home/ubuntu/.local/bin/obsidian" >> ~/.local/share/applications/obsidian.desktop && \
+         echo "Icon=obsidian" >> ~/.local/share/applications/obsidian.desktop && \
+         echo "Type=Application" >> ~/.local/share/applications/obsidian.desktop && \
+         echo "Categories=Utility;TextEditor;" >> ~/.local/share/applications/obsidian.desktop && \
+         chmod +x ~/.local/share/applications/obsidian.desktop; \
+     elif [ "$ARCH" = "arm64" ]; then \
+         echo "Obsidian arm64 not officially supported, skipping installation"; \
+     fi && \
+     rm -f /tmp/Obsidian.AppImage'

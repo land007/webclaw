@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=切换到英文
+Name[en]=Switch to English
+Comment=将桌面语言切换为英文
+Comment[en]=Switch desktop language to English
+Exec=/usr/local/bin/lang-switch en
+Icon=preferences-desktop-locale
+Terminal=true
+Categories=Settings;DesktopSettings;

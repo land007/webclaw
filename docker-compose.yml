@@ -1,0 +1,64 @@
+services:
+  webcode:
+    image: land007/webcode:latest
+    build: .
+    container_name: webcode
+    ports:
+      - "20000:20000"  # Dashboard (四合一入口，via Caddy)
+      - "20001:20001"  # Theia IDE (via Caddy)
+      - "20002:20002"  # Vibe Kanban (via Caddy)
+      - "20003:20003"  # OpenClaw (via Caddy)
+      - "20004:20004"  # noVNC (via Caddy) + Audio WebSocket (/audio path)
+      - "20005:10005"  # TigerVNC (direct connection)
+      - "20007:10007"  # claudecodeui (via Caddy)
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - dna-data:/home/ubuntu/dna          # DNA 目录：项目源码，空时自动 clone
+      - projects:/home/ubuntu/projects
+      - vibe-kanban-data:/home/ubuntu/.local/share/vibe-kanban
+      - code-server-data:/home/ubuntu/.code-server
+      - user-data:/home/ubuntu/.local/share
+      - gitconfig:/home/ubuntu/.gitconfig-vol
+      - openclaw-data:/home/ubuntu/.openclaw
+      - chrome-data:/home/ubuntu/.config
+      - v2rayn-data:/home/ubuntu/.local/share/v2rayN
+      - recordings:/home/ubuntu/recordings
+      - webcode-config:/home/ubuntu/.webcode  # 持久化运行时配置
+      - ./backups:/home/ubuntu/backups       # 备份目录（映射到宿主机）
+    tmpfs:
+      - /run:size=10M
+    environment:
+      - MODE=${MODE:-desktop}
+      - AUTH_USER=${AUTH_USER:-admin}
+      - AUTH_PASSWORD=${AUTH_PASSWORD:-changeme}
+      - OPENCLAW_TOKEN=${OPENCLAW_TOKEN:-changeme}
+      - PASSWORD=${VNC_PASSWORD:-changeme}
+      - VNC_PASSWORD=${VNC_PASSWORD:-changeme}
+      - VNC_RESOLUTION=${VNC_RESOLUTION:-1920x1080}
+      - CF_TUNNEL_TOKEN=${CF_TUNNEL_TOKEN:-}
+      - GIT_USER_NAME=${GIT_USER_NAME:-}
+      - GIT_USER_EMAIL=${GIT_USER_EMAIL:-}
+      - DNA_REPO_URL=${DNA_REPO_URL:-https://github.com/land007/webcode}
+      - ENABLE_KANBAN=${ENABLE_KANBAN:-true}
+      - ENABLE_OPENCLAW=${ENABLE_OPENCLAW:-true}
+      - ENABLE_CLAUDECODEUI=${ENABLE_CLAUDECODEUI:-true}
+      - HOST_API_TOKEN=${HOST_API_TOKEN:-webcode-host-token-change-me}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    shm_size: "512m"
+    security_opt:
+      - seccomp=unconfined
+    restart: unless-stopped
+
+volumes:
+  dna-data:
+  projects:
+  vibe-kanban-data:
+  code-server-data:
+  user-data:
+  openclaw-data:
+  chrome-data:
+  v2rayn-data:
+  gitconfig:
+  recordings:
+  webcode-config:

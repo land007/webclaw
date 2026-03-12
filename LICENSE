@@ -1,0 +1,49 @@
+# SERVER SIDE PUBLIC LICENSE
+
+Version 1, October 16, 2018
+
+Copyright (c) 2026 land007
+
+This program is free software: you can use it, redistribute it and/or modify
+it under the terms of the Server Side Public License, v 1.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.
+
+See the Server Side Public License for more details.
+
+You should have received a copy of the Server Side Public License along with
+this program. If not, see <https://www.mongodb.com/licensing/server-side-public-license>.
+
+---
+
+## COMMERCIAL LICENSE
+
+For commercial use without SSPL obligations, contact:
+**Email**: [Your email here]
+**Website**: [Your website here]
+
+### When is a commercial license required?
+
+A commercial license is NOT required for:
+- Personal projects, learning, and research
+- Internal company tools (not distributed externally)
+- Open source projects (non-commercial)
+
+A commercial license IS required for:
+- Offering this software as a service to third parties (SaaS, PaaS)
+- Distributing this software as part of a commercial product
+- Charging for services based on this software
+
+---
+
+## SSPL Key Provision (Section 13)
+
+If you make the functionality of the Program available to third parties as
+a service, you must make all Source Code for the program available to them
+under this license, including all modifications and any infrastructure code
+you use to make the functionality available.
+
+This provision ensures that companies benefiting from this software contribute
+back to the community or obtain a commercial license.

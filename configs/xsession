@@ -1,0 +1,118 @@
+#!/bin/bash
+export XDG_SESSION_TYPE=x11
+export XDG_CURRENT_DESKTOP=GNOME-Flashback:GNOME
+export DESKTOP_SESSION=gnome-flashback-metacity
+
+# ─── Locale（从保存的语言偏好读取）────────────────────────────
+LANG_FILE="$HOME/.config/gnome-language"
+if [ -f "$LANG_FILE" ]; then
+    SAVED_LANG=$(cat "$LANG_FILE")
+    export LANG="$SAVED_LANG"
+    export LC_ALL="$SAVED_LANG"
+    # 从 LANG 推导 LANGUAGE（如：zh_CN.UTF-8 -> zh_CN:zh）
+    LANG_BASE="${SAVED_LANG%%.*}"  # 移除 .UTF-8 后缀
+    export LANGUAGE="${LANG_BASE}:${LANG_BASE%%_*}"
+else
+    # 默认使用中文
+    export LANG=zh_CN.UTF-8
+    export LC_ALL=zh_CN.UTF-8
+    export LANGUAGE=zh_CN:zh
+fi
+
+# ─── XDG runtime dir (required by fcitx, dbus, etc.) ───────────────
+export XDG_RUNTIME_DIR=/run/user/$(id -u)
+mkdir -p "$XDG_RUNTIME_DIR"
+chmod 700 "$XDG_RUNTIME_DIR"
+
+# ─── Cursor theme ───────────────────────────────────────────────────
+export XCURSOR_THEME=Adwaita
+export XCURSOR_SIZE=24
+
+# ─── Input method (fcitx) ───────────────────────────────────────────
+export GTK_IM_MODULE=fcitx
+export QT_IM_MODULE=fcitx
+export XMODIFIERS=@im=fcitx
+
+# ─── D-Bus session bus ──────────────────────────────────────────────
+eval $(dbus-launch --sh-syntax)
+export DBUS_SESSION_BUS_ADDRESS
+
+# ─── AT-SPI accessibility bus (required by many GNOME apps) ────────
+/usr/lib/at-spi2-core/at-spi-bus-launcher --launch-immediately 2>/dev/null &
+
+# ─── Wait for X server ──────────────────────────────────────────────
+for i in $(seq 1 20); do
+    xdpyinfo -display "$DISPLAY" >/dev/null 2>&1 && break
+    sleep 0.5
+done
+
+# ─── Theme initialization (read from saved theme preference) ───────────
+THEME_FILE="$HOME/.config/gnome-initial-theme"
+if [ -f "$THEME_FILE" ]; then
+    INITIAL_THEME=$(cat "$THEME_FILE")
+else
+    INITIAL_THEME="dark"  # Default to dark mode
+    echo "$INITIAL_THEME" > "$THEME_FILE"
+fi
+
+# Apply initial theme settings with a random wallpaper
+LIGHT_WALLPAPERS=(
+    "/usr/share/backgrounds/Fuji_san_by_amaral.png"
+    "/usr/share/backgrounds/Fuwafuwa_nanbatto_san_by_amaral-light.png"
+    "/usr/share/backgrounds/Numbat_wallpaper_light_3480x2160.png"
+    "/usr/share/backgrounds/Clouds_by_Tibor_Mokanszki.jpg"
+)
+DARK_WALLPAPERS=(
+    "/usr/share/backgrounds/Numbat_wallpaper_dimmed_3480x2160.png"
+    "/usr/share/backgrounds/Fuwafuwa_nanbatto_san_by_amaral-dark.png"
+    "/usr/share/backgrounds/Province_of_the_south_of_france_by_orbitelambda.jpg"
+    "/usr/share/backgrounds/Monument_valley_by_orbitelambda.jpg"
+    "/usr/share/backgrounds/Northan_lights_by_mizuno.webp"
+)
+
+if [ "$INITIAL_THEME" = "light" ]; then
+    WP="${LIGHT_WALLPAPERS[$((RANDOM % ${#LIGHT_WALLPAPERS[@]}))]}"
+    hsetroot -cover "$WP" 2>/dev/null || xsetroot -solid '#f0f0f0'
+    xsetroot -cursor_name left_ptr
+    export GTK_THEME=Adwaita
+else
+    WP="${DARK_WALLPAPERS[$((RANDOM % ${#DARK_WALLPAPERS[@]}))]}"
+    hsetroot -cover "$WP" 2>/dev/null || xsetroot -solid '#0d1117'
+    xsetroot -cursor_name left_ptr
+    export GTK_THEME=Adwaita-dark
+fi
+
+# ─── Window manager ─────────────────────────────────────────────────
+metacity --replace &
+sleep 0.5
+
+# ─── Settings daemon plugins (Ubuntu 24.04: no monolithic binary) ────
+# gsd-xsettings: GTK themes, fonts, icons; gsd-keyboard: keyboard layout
+/usr/libexec/gsd-xsettings 2>/dev/null &
+/usr/libexec/gsd-keyboard 2>/dev/null &
+sleep 0.5
+
+# ─── Desktop panel (taskbar, system tray, clock) ────────────────────
+export XDG_MENU_PREFIX=gnome-flashback-
+# GTK_THEME must be passed inline: gsd-xsettings broadcasts dconf theme via
+# XSETTINGS after connecting, which can override the exported env var.
+if [ "$INITIAL_THEME" = "light" ]; then
+    env GTK_THEME=Adwaita gnome-panel --replace &
+else
+    env GTK_THEME=Adwaita-dark gnome-panel --replace &
+fi
+sleep 1
+
+# ─── Apply theme via theme-switch to sync dconf and restart panel ───────
+# gsd-xsettings reads dconf; calling theme-switch updates dconf and
+# restarts gnome-panel with the correct GTK_THEME, ensuring the panel
+# colour matches the saved preference after every container start.
+if [ -f "$THEME_FILE" ]; then
+    /usr/local/bin/theme-switch "$INITIAL_THEME" >/dev/null 2>&1 &
+fi
+
+# ─── fcitx input method (start after panel so tray icon appears) ────
+fcitx -r 2>/dev/null &
+
+# Keep session alive
+wait

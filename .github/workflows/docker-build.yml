@@ -1,0 +1,321 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - "v*"
+
+jobs:
+  # ─────────────────────────────────────────────────────────────
+  # Job 1: Build base Theia image (slow, but cached)
+  # ─────────────────────────────────────────────────────────────
+  build-base:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-qemu-action@v3
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Wait for GitHub registry to be ready
+        run: |
+          echo "Waiting for ghcr.io to be accessible..."
+          for i in {1..5}; do
+            if curl -sS --max-time 10 https://ghcr.io/v2/ > /dev/null 2>&1; then
+              echo "ghcr.io is accessible"
+              break
+            fi
+            echo "Attempt $i/5 failed, retrying in 5s..."
+            sleep 5
+          done
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push base Theia image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.base
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            WEBCODE_VERSION=${{ github.sha }}
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/webcode_base:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/webcode_base:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/webcode_base:latest
+            ghcr.io/${{ github.repository_owner }}/webcode_base:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.title=webcode-base-theia
+            org.opencontainers.image.description=Base image with Theia IDE and Supervisor
+            org.opencontainers.image.source=https://github.com/land007/webcode
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          outputs: |
+            type=image,push=true,annotation-index.org.opencontainers.image.description=Base Theia IDE image with Supervisor (no desktop)
+
+  # ─────────────────────────────────────────────────────────────
+  # Job 2: Build FULL version (depends on base)
+  # ─────────────────────────────────────────────────────────────
+  build-full:
+    needs: build-base
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-qemu-action@v3
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Metadata for FULL version
+      - uses: docker/metadata-action@v5
+        id: meta-full
+        with:
+          images: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/webcode
+            ghcr.io/${{ github.repository }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/openclaw
+            ghcr.io/${{ github.repository_owner }}/openclaw
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+          labels: |
+            org.opencontainers.image.description=Full image with GNOME desktop, VNC, Theia IDE
+
+      - name: Build and push full image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            THEIA_BASE_VERSION=${{ github.sha }}
+            INSTALL_DESKTOP=true
+            WEBCODE_VERSION=${{ github.sha }}
+          tags: ${{ steps.meta-full.outputs.tags }}
+          labels: ${{ steps.meta-full.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          outputs: |
+            type=image,push=true,annotation-index.org.opencontainers.image.description=Full image with GNOME desktop and VNC
+
+  # ─────────────────────────────────────────────────────────────
+  # Job: Build FULL version with additional AI CLIs
+  # ─────────────────────────────────────────────────────────────
+  build-full-clis:
+    needs: build-full
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-qemu-action@v3
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push webcode_full image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.full
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            BASE_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/webcode:${{ github.sha }}
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/webcode_full:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/webcode_full:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/webcode_full:latest
+            ghcr.io/${{ github.repository_owner }}/webcode_full:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.description=Full image with 4 AI CLIs (Claude + Gemini + Codex + Cursor)
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ─────────────────────────────────────────────────────────────
+  # Job 4: Update Docker Hub description for full version
+  # ─────────────────────────────────────────────────────────────
+  update-description-full:
+    needs: build-full
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ secrets.DOCKERHUB_USERNAME }}/webcode
+          readme-filepath: ./README.md
+
+  # ─────────────────────────────────────────────────────────────
+  # Job: Update Docker Hub description for openclaw (full version)
+  # ─────────────────────────────────────────────────────────────
+  update-description-openclaw:
+    needs: build-full
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate openclaw README
+        run: |
+          sed 's|land007/webcode_lite|land007/openclaw_lite|g; s|land007/webcode|land007/openclaw|g' README.md > README-openclaw.md
+      - uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ secrets.DOCKERHUB_USERNAME }}/openclaw
+          readme-filepath: ./README-openclaw.md
+
+  # ─────────────────────────────────────────────────────────────
+  # Job 3: Build LITE version (parallel with full, depends on base)
+  # ─────────────────────────────────────────────────────────────
+  build-lite:
+    needs: build-base
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-qemu-action@v3
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Metadata for LITE version
+      - uses: docker/metadata-action@v5
+        id: meta-lite
+        with:
+          images: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/webcode_lite
+            ghcr.io/${{ github.repository_owner }}/webcode_lite
+            ${{ secrets.DOCKERHUB_USERNAME }}/openclaw_lite
+            ghcr.io/${{ github.repository_owner }}/openclaw_lite
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+          labels: |
+            org.opencontainers.image.description=Lite image without desktop (Theia + Vibe Kanban + OpenClaw)
+
+      - name: Build and push lite image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            THEIA_BASE_VERSION=${{ github.sha }}
+            INSTALL_DESKTOP=false
+            WEBCODE_VERSION=${{ github.sha }}
+          tags: ${{ steps.meta-lite.outputs.tags }}
+          labels: ${{ steps.meta-lite.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          outputs: |
+            type=image,push=true,annotation-index.org.opencontainers.image.description=Lite image without desktop (fast startup)
+
+  # ─────────────────────────────────────────────────────────────
+  # Job 5: Update Docker Hub description for lite version
+  # ─────────────────────────────────────────────────────────────
+  update-description-lite:
+    needs: build-lite
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ secrets.DOCKERHUB_USERNAME }}/webcode_lite
+          readme-filepath: ./README.md
+
+  # ─────────────────────────────────────────────────────────────
+  # Job: Update Docker Hub description for openclaw_lite
+  # ─────────────────────────────────────────────────────────────
+  update-description-openclaw-lite:
+    needs: build-lite
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate openclaw_lite README
+        run: |
+          sed 's|land007/webcode_lite|land007/openclaw_lite|g; s|land007/webcode|land007/openclaw|g' README.md > README-openclaw-lite.md
+      - uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ secrets.DOCKERHUB_USERNAME }}/openclaw_lite
+          readme-filepath: ./README-openclaw-lite.md

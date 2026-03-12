@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=Vibe Kanban
+Exec=browser --no-sandbox --app=http://localhost:5173
+Icon=applications-system

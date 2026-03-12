@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=Theia IDE
+Exec=browser --no-sandbox --app=http://localhost:3000
+Icon=accessories-text-editor

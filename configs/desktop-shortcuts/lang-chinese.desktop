@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=切换到中文
+Name[en]=Switch to Chinese
+Comment=将桌面语言切换为中文
+Comment[en]=Switch desktop language to Chinese
+Exec=/usr/local/bin/lang-switch zh
+Icon=preferences-desktop-locale
+Terminal=true
+Categories=Settings;DesktopSettings;

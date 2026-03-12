@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=v2rayN
+Comment=A GUI client for Windows and Linux, support Xray core and sing-box-core and others
+Exec=/opt/v2rayN/v2rayN
+Icon=/opt/v2rayN/v2rayN.png
+Terminal=false
+Type=Application
+Categories=Network;Application;
