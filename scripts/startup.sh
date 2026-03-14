@@ -169,9 +169,11 @@ if [ -f /opt/enable-claudecodeui-platform-mode.sh ]; then
 fi
 
 # ─── Export service enable flags for supervisor ───────────────────────
-export ENABLE_KANBAN="${ENABLE_KANBAN:-true}"
+export WEBCODE_HAS_VIBE_KANBAN="${WEBCODE_HAS_VIBE_KANBAN:-false}"
+export WEBCODE_HAS_CLAUDECODEUI="${WEBCODE_HAS_CLAUDECODEUI:-false}"
+export ENABLE_KANBAN="${ENABLE_KANBAN:-$WEBCODE_HAS_VIBE_KANBAN}"
 export ENABLE_OPENCLAW="${ENABLE_OPENCLAW:-true}"
-export ENABLE_CLAUDECODEUI="${ENABLE_CLAUDECODEUI:-true}"
+export ENABLE_CLAUDECODEUI="${ENABLE_CLAUDECODEUI:-$WEBCODE_HAS_CLAUDECODEUI}"
 export ENABLE_FUSE="${ENABLE_FUSE:-false}"
 
 # ─── Mode selection ─────────────────────────────────────────────────

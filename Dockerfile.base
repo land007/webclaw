@@ -17,6 +17,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=zh_CN.UTF-8
 ENV LANGUAGE=zh_CN:zh
 ENV LC_ALL=zh_CN.UTF-8
+ENV WEBCODE_HAS_VIBE_KANBAN=false
+ENV WEBCODE_HAS_CLAUDECODEUI=false
 
 # ─── 1. Base system: locale, sudo, ubuntu user, common CLI tools ─────
 RUN apt-get update && apt-get install -y --no-install-recommends \

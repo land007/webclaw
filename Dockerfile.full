@@ -8,6 +8,9 @@ LABEL org.opencontainers.image.title="webclaw_full" \
       org.opencontainers.image.description="WebClaw with additional advanced CLIs (Gemini + Codex + Cursor + OpenCode AI)" \
       org.opencontainers.image.source="https://github.com/land007/webclaw"
 
+ENV WEBCODE_HAS_VIBE_KANBAN=true
+ENV WEBCODE_HAS_CLAUDECODEUI=true
+
 # ─── AI CLI Tools: Gemini CLI, Codex CLI, Cursor CLI, OpenCode AI ───────────────
 # Install additional AI CLI tools for CloudUI compatibility
 RUN su -l ubuntu -c \
