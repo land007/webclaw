@@ -122,7 +122,7 @@ fi
 chown ubuntu:ubuntu "$OPENCLAW_JSON"
 
 # ─── Load persisted runtime config (overrides docker run env vars) ───
-WEBCODE_CFG=/home/ubuntu/.webcode/config.json
+WEBCODE_CFG=/home/ubuntu/.webclaw/config.json
 if [ -f "$WEBCODE_CFG" ]; then
   echo "[startup] Loading persisted config from $WEBCODE_CFG"
   for KEY in AUTH_USER AUTH_PASSWORD VNC_PASSWORD OPENCLAW_TOKEN \
@@ -157,8 +157,6 @@ else
 fi
 
 # ─── Background tool upgrades (non-blocking) ─────────────────────────
-# Upgrade openclaw in system Node global (takes effect after supervisord restart)
-nohup npm install -g openclaw@2026.3.8 >> /tmp/npm-upgrade.log 2>&1 &
 # Upgrade claude-code for ubuntu user via nvm
 su -l ubuntu -c \
     'source ~/.nvm/nvm.sh 2>/dev/null && npm install -g @anthropic-ai/claude-code@latest >> /tmp/claude-upgrade.log 2>&1' &

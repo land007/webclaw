@@ -2,8 +2,8 @@
 #  Overlay layer: adds desktop components and config files
 #  on top of the base image
 # ─────────────────────────────────────────────────────────────
-ARG THEIA_BASE_VERSION=latest
-FROM land007/webclaw_base:${THEIA_BASE_VERSION}
+ARG WEBCLAW_BASE_VERSION=latest
+FROM land007/webclaw_base:${WEBCLAW_BASE_VERSION}
 
 LABEL org.opencontainers.image.title="webclaw" \
       org.opencontainers.image.description="OpenClaw by WebClaw with editor, optional desktop, and isolated runtime" \
@@ -87,8 +87,8 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
             tigervnc-standalone-server tigervnc-common tigervnc-tools \
             x11-xserver-utils \
             python3 python3-numpy \
-        && git clone --depth 1 https://github.com/novnc/noVNC.git /opt/noVNC \
-        && git clone --depth 1 https://github.com/novnc/websockify.git /opt/noVNC/utils/websockify \
+        && git clone --depth 1 --branch v1.5.0 https://github.com/novnc/noVNC.git /opt/noVNC \
+        && git clone --depth 1 --branch v0.12.0 https://github.com/novnc/websockify.git /opt/noVNC/utils/websockify \
         && ln -s /opt/noVNC/vnc.html /opt/noVNC/index.html \
         && apt-get clean && rm -rf /var/lib/apt/lists/*; \
     fi

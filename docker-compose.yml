@@ -24,7 +24,7 @@ services:
       - chrome-data:/home/ubuntu/.config
       - v2rayn-data:/home/ubuntu/.local/share/v2rayN
       - recordings:/home/ubuntu/recordings
-      - webcode-config:/home/ubuntu/.webcode  # 持久化运行时配置
+      - webclaw-config:/home/ubuntu/.webclaw  # 持久化运行时配置
       - ./backups:/home/ubuntu/backups       # 备份目录（映射到宿主机）
     tmpfs:
       - /run:size=10M
@@ -43,7 +43,7 @@ services:
       - ENABLE_KANBAN=${ENABLE_KANBAN:-false}
       - ENABLE_OPENCLAW=${ENABLE_OPENCLAW:-true}
       - ENABLE_CLAUDECODEUI=${ENABLE_CLAUDECODEUI:-false}
-      - HOST_API_TOKEN=${HOST_API_TOKEN:-webcode-host-token-change-me}
+      - HOST_API_TOKEN=${HOST_API_TOKEN:-webclaw-host-token-change-me}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     shm_size: "512m"
@@ -62,4 +62,4 @@ volumes:
   v2rayn-data:
   gitconfig:
   recordings:
-  webcode-config:
+  webclaw-config:
