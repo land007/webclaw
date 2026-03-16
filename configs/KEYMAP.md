@@ -102,7 +102,7 @@ location.reload()
 ## 📦 文件结构
 
 ```
-webcode-docker/
+webclaw-docker/
 ├── configs/
 │   └── key-remap.js          # 按键映射配置文件 ⭐
 ├── scripts/
@@ -127,7 +127,7 @@ docker exec webcode sed -i 's|<script src="touch-handler.js"></script>|<script s
 ### 重新构建镜像
 
 ```bash
-cd webcode-docker
+cd webclaw-docker
 docker compose down
 docker build -t webcode .
 docker compose up -d

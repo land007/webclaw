@@ -41,7 +41,7 @@ if [ $# -lt 1 ]; then
     error "Usage: $0 <backup_name> [--force]"
     echo ""
     info "Available backups:"
-    ls -1 "$BACKUP_DIR"/webcode-*.tar.gz 2>/dev/null | while read -r backup; do
+    ls -1 "$BACKUP_DIR"/webclaw-*.tar.gz 2>/dev/null | while read -r backup; do
         basename "$backup" .tar.gz
     done
     exit 1
@@ -61,7 +61,7 @@ if [ ! -f "$BACKUP_FILE" ]; then
     error "Backup file not found: $BACKUP_FILE"
     echo ""
     info "Available backups:"
-    ls -1 "$BACKUP_DIR"/webcode-*.tar.gz 2>/dev/null | while read -r backup; do
+    ls -1 "$BACKUP_DIR"/webclaw-*.tar.gz 2>/dev/null | while read -r backup; do
         basename "$backup" .tar.gz
     done
     exit 1
@@ -99,17 +99,17 @@ supervisorctl stop claudecodeui >/dev/null 2>&1 || true
 
 # List of volumes to restore
 VOLUMES=(
-    "webcode-docker_dna-data"
-    "webcode-docker_projects"
-    "webcode-docker_vibe-kanban-data"
-    "webcode-docker_code-server-data"
-    "webcode-docker_user-data"
-    "webcode-docker_openclaw-data"
-    "webcode-docker_chrome-data"
-    "webcode-docker_v2rayn-data"
-    "webcode-docker_gitconfig"
-    "webcode-docker_recordings"
-    "webcode-docker_webcode-config"
+    "webclaw-docker_dna-data"
+    "webclaw-docker_projects"
+    "webclaw-docker_vibe-kanban-data"
+    "webclaw-docker_code-server-data"
+    "webclaw-docker_user-data"
+    "webclaw-docker_openclaw-data"
+    "webclaw-docker_chrome-data"
+    "webclaw-docker_v2rayn-data"
+    "webclaw-docker_gitconfig"
+    "webclaw-docker_recordings"
+    "webclaw-docker_webclaw-config"
 )
 
 # Check if volumes exist
@@ -131,17 +131,17 @@ fi
 # Create temporary container for restore
 log "Creating temporary restore container..."
 TEMP_CONTAINER=$(docker create \
-    -v webcode-docker_dna-data:/restore/dna-data \
-    -v webcode-docker_projects:/restore/projects \
-    -v webcode-docker_vibe-kanban-data:/restore/vibe-kanban-data \
-    -v webcode-docker_code-server-data:/restore/code-server-data \
-    -v webcode-docker_user-data:/restore/user-data \
-    -v webcode-docker_openclaw-data:/restore/openclaw-data \
-    -v webcode-docker_chrome-data:/restore/chrome-data \
-    -v webcode-docker_v2rayn-data:/restore/v2rayn-data \
-    -v webcode-docker_gitconfig:/restore/gitconfig \
-    -v webcode-docker_recordings:/restore/recordings \
-    -v webcode-docker_webcode-config:/restore/webcode-config \
+    -v webclaw-docker_dna-data:/restore/dna-data \
+    -v webclaw-docker_projects:/restore/projects \
+    -v webclaw-docker_vibe-kanban-data:/restore/vibe-kanban-data \
+    -v webclaw-docker_code-server-data:/restore/code-server-data \
+    -v webclaw-docker_user-data:/restore/user-data \
+    -v webclaw-docker_openclaw-data:/restore/openclaw-data \
+    -v webclaw-docker_chrome-data:/restore/chrome-data \
+    -v webclaw-docker_v2rayn-data:/restore/v2rayn-data \
+    -v webclaw-docker_gitconfig:/restore/gitconfig \
+    -v webclaw-docker_recordings:/restore/recordings \
+    -v webclaw-docker_webclaw-config:/restore/webclaw-config \
     -v "$BACKUP_DIR:/backup" \
     ubuntu:22.04 \
     tar xzf "/backup/$(basename "$BACKUP_FILE")" -C /restore)

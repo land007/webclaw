@@ -39,7 +39,7 @@ const result = await hostModule.exec('ls -la /Users/jiayiqiu/projects');
 **环境变量：**
 
 - `HOST_API_URL`: API 地址，默认 `http://host.docker.internal:30000`
-- `HOST_API_TOKEN`: 认证 token，默认 `webcode-host-token-change-me`
+- `HOST_API_TOKEN`: 认证 token，默认 `webclaw-host-token-change-me`
 
 **配置：**
 
@@ -59,7 +59,7 @@ extra_hosts:
 
 ```bash
 # 复制 skill
-cp /path/to/new-skill.skill /Users/jiayiqiu/智能体/webcode/webcode-docker/skills/
+cp /path/to/new-skill.skill /Users/jiayiqiu/智能体/webcode/webclaw-docker/skills/
 
 # 重新构建
 docker build -t webcode .

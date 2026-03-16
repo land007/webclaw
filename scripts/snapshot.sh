@@ -85,7 +85,7 @@ fi
 
 # Step 3: Commit container as snapshot image
 log "Committing container state..."
-COMMIT_IMAGE_NAME="webcode-snapshot:${TIMESTAMP}"
+COMMIT_IMAGE_NAME="webclaw-snapshot:${TIMESTAMP}"
 docker commit "${CONTAINER_NAME}" "${COMMIT_IMAGE_NAME}"
 
 if ! docker inspect "${COMMIT_IMAGE_NAME}" >/dev/null 2>&1; then

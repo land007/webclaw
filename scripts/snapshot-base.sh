@@ -62,13 +62,13 @@ list_base_images() {
         return
     fi
 
-    for base_file in "${BACKUP_DIR}/base-images"/webcode-base-*.tar.gz; do
+    for base_file in "${BACKUP_DIR}/base-images"/webclaw-base-*.tar.gz; do
         if [ ! -f "$base_file" ]; then
             continue
         fi
 
         basename_file=$(basename "$base_file")
-        short_id=${basename_file#webcode-base-}
+        short_id=${basename_file#webclaw-base-}
         short_id=${short_id%.tar.gz}
 
         size=$(du -h "$base_file" | cut -f1)
@@ -127,7 +127,7 @@ export_base_image() {
     # Get image ID
     IMAGE_ID=$(docker inspect "$IMAGE" -f '{{.Id}}')
     SHORT_ID=$(echo "$IMAGE_ID" | cut -d: -f2 | cut -c1-12)
-    BASE_IMAGE_FILE="webcode-base-${SHORT_ID}.tar.gz"
+    BASE_IMAGE_FILE="webclaw-base-${SHORT_ID}.tar.gz"
     BASE_IMAGE_PATH="${BACKUP_DIR}/base-images/${BASE_IMAGE_FILE}"
 
     # Check if already exists
@@ -160,7 +160,7 @@ delete_base_image() {
     fi
 
     SHORT_ID="$1"
-    BASE_IMAGE_FILE="webcode-base-${SHORT_ID}.tar.gz"
+    BASE_IMAGE_FILE="webclaw-base-${SHORT_ID}.tar.gz"
     BASE_IMAGE_PATH="${BACKUP_DIR}/base-images/${BASE_IMAGE_FILE}"
 
     if [ ! -f "${BASE_IMAGE_PATH}" ]; then
@@ -209,13 +209,13 @@ cleanup_base_images() {
     echo ""
 
     deleted_count=0
-    for base_file in "${BACKUP_DIR}/base-images"/webcode-base-*.tar.gz; do
+    for base_file in "${BACKUP_DIR}/base-images"/webclaw-base-*.tar.gz; do
         if [ ! -f "$base_file" ]; then
             continue
         fi
 
         basename_file=$(basename "$base_file")
-        short_id=${basename_file#webcode-base-}
+        short_id=${basename_file#webclaw-base-}
         short_id=${short_id%.tar.gz}
 
         # Check if any snapshots use this base image
@@ -256,7 +256,7 @@ case "${1:-list}" in
     delete)
         if [ "$2" = "--force" ]; then
             SHORT_ID="$3"
-            BASE_IMAGE_FILE="webcode-base-${SHORT_ID}.tar.gz"
+            BASE_IMAGE_FILE="webclaw-base-${SHORT_ID}.tar.gz"
             BASE_IMAGE_PATH="${BACKUP_DIR}/base-images/${BASE_IMAGE_FILE}"
             if [ -f "${BASE_IMAGE_PATH}" ]; then
                 rm -f "${BASE_IMAGE_PATH}"

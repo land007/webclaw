@@ -151,7 +151,7 @@ echo ""
 
 # Test 9: Check base image backup
 log "Test 9: Checking base image backup..."
-BASE_IMAGE_FILE="webcode-base-${BASE_IMAGE_SHORT_ID}.tar.gz"
+BASE_IMAGE_FILE="webclaw-base-${BASE_IMAGE_SHORT_ID}.tar.gz"
 if [ -f "${BACKUP_DIR}/base-images/${BASE_IMAGE_FILE}" ]; then
     BASE_SIZE=$(du -h "${BACKUP_DIR}/base-images/${BASE_IMAGE_FILE}" | cut -f1)
     log "✓ Base image exists (${BASE_SIZE})"
@@ -173,7 +173,7 @@ else
 fi
 
 # Count base images
-BASE_IMAGE_COUNT=$(ls -1 "${BACKUP_DIR}/base-images"/webcode-base-*.tar.gz 2>/dev/null | wc -l)
+BASE_IMAGE_COUNT=$(ls -1 "${BACKUP_DIR}/base-images"/webclaw-base-*.tar.gz 2>/dev/null | wc -l)
 if [ "$BASE_IMAGE_COUNT" -eq 1 ]; then
     log "✓ Base image reused (only 1 base image file)"
 else
@@ -202,7 +202,7 @@ for snapshot_dir in "${BACKUP_DIR}/snapshots"/test-*; do
 
         if [ -f "$metadata_file" ] && [ -f "$layer_file" ]; then
             BASE_ID=$(grep -oP '"short_id":\s*"\K[^"]*"' "$metadata_file")
-            BASE_FILE="${BACKUP_DIR}/base-images/webcode-base-${BASE_ID}.tar.gz"
+            BASE_FILE="${BACKUP_DIR}/base-images/webclaw-base-${BASE_ID}.tar.gz"
 
             if [ -f "$BASE_FILE" ]; then
                 COMPLETE_COUNT=$((COMPLETE_COUNT + 1))

@@ -72,7 +72,7 @@
 ```
 ./backups/
 ├── base-images/                           # 基础镜像存储
-│   ├── webcode-base-sha256abc123.tar.gz  # 基于镜像 ID 命名
+│   ├── webclaw-base-sha256abc123.tar.gz  # 基于镜像 ID 命名
 │   └── manifest.json                      # 基础镜像清单
 └── snapshots/                             # 快照存储
     ├── snapshot-20260308-143022/
@@ -97,13 +97,13 @@
     "id": "sha256:abc123def456...",
     "short_id": "sha256abc123",
     "name": "land007/webcode:latest",
-    "file": "webcode-base-sha256abc123.tar.gz",
+    "file": "webclaw-base-sha256abc123.tar.gz",
     "size": "3.02GB"
   },
   "layer": {
     "file": "layer.tar.gz",
     "size": "856MB",
-    "image_name": "webcode-snapshot:20260308-143022"
+    "image_name": "webclaw-snapshot:20260308-143022"
   },
   "volumes_backup": "volumes-20260308-143022",
   "volumes_size": "1.2GB",
@@ -142,8 +142,8 @@ docker exec webcode bash /opt/snapshot-base.sh cleanup
 
 ```bash
 # 1. 构建新镜像（包含快照脚本）
-cd /Users/jiayiqiu/智能体/webcode/webcode-docker
-docker build -t webcode-test .
+cd /Users/jiayiqiu/智能体/webcode/webclaw-docker
+docker build -t webclaw-test .
 
 # 2. 启动测试容器
 docker-compose down
@@ -257,7 +257,7 @@ docker exec webcode bash /opt/snapshot.sh before-upgrade
 # docker pull land007/webcode:latest
 
 # 4. 重建容器
-cd /Users/jiayiqiu/智能体/webcode/webcode-docker
+cd /Users/jiayiqiu/智能体/webcode/webclaw-docker
 docker-compose down
 docker-compose up -d
 
@@ -294,7 +294,7 @@ docker exec webcode bash /opt/snapshot-restore.sh test-001
    - 唯一、精确、通用，适用于所有 Docker 镜像
 
 2. **分层存储优化**
-   - `docker save webcode-snapshot:${TIMESTAMP}` 只导出新层
+   - `docker save webclaw-snapshot:${TIMESTAMP}` 只导出新层
    - Docker 自动处理层合并
    - 节省 ~60% 存储空间
 
@@ -330,7 +330,7 @@ docker exec webcode bash /opt/snapshot-restore.sh test-001
 
 ## 下一步工作
 
-1. **webcode-launcher 集成**
+1. **webclaw-launcher 集成**
    - 创建 `backup-manager.js` 模块
    - 更新 launcher UI 添加快照管理
    - 测试端到端流程

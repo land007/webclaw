@@ -27,7 +27,7 @@ WebCode 现在支持完整的容器状态备份和还原功能，类似 Ghost CM
 - `v2rayn-data` - V2rayN 配置
 - `gitconfig` - Git 配置
 - `recordings` - 录制文件
-- `webcode-config` - WebCode 运行时配置
+- `webclaw-config` - WebCode 运行时配置
 
 ## 使用方法
 
@@ -64,11 +64,11 @@ ls -lh ./backups/
 
 ```bash
 # 在宿主机执行（使用 --force 跳过确认）
-docker exec -it webcode bash /opt/restore.sh webcode-20250308-123456 --force
+docker exec -it webcode bash /opt/restore.sh webclaw-20250308-123456 --force
 
 # 或在容器内执行
 docker exec -it webcode bash
-bash /opt/restore.sh webcode-20250308-123456
+bash /opt/restore.sh webclaw-20250308-123456
 ```
 
 ## 备份文件结构
@@ -76,12 +76,12 @@ bash /opt/restore.sh webcode-20250308-123456
 备份文件存储在宿主机的 `./backups` 目录：
 
 ```
-webcode-docker/
+webclaw-docker/
 ├── backups/
-│   ├── webcode-20250308-120000.tar.gz    # 备份压缩包
-│   ├── webcode-20250308-120000.json       # 备份元数据
-│   ├── webcode-20250308-130000.tar.gz
-│   ├── webcode-20250308-130000.json
+│   ├── webclaw-20250308-120000.tar.gz    # 备份压缩包
+│   ├── webclaw-20250308-120000.json       # 备份元数据
+│   ├── webclaw-20250308-130000.tar.gz
+│   ├── webclaw-20250308-130000.json
 │   └── ...
 ```
 
@@ -89,7 +89,7 @@ webcode-docker/
 
 ```json
 {
-  "name": "webcode-20250308-120000",
+  "name": "webclaw-20250308-120000",
   "created_at": "2025-03-08T12:00:00+00:00",
   "size": "1.2G",
   "volumes": [
@@ -103,7 +103,7 @@ webcode-docker/
     "v2rayn-data",
     "gitconfig",
     "recordings",
-    "webcode-config"
+    "webclaw-config"
   ]
 }
 ```
@@ -159,13 +159,13 @@ curl -X POST http://localhost:20000/api/backup/create
 ### 恢复备份
 
 ```bash
-curl -X POST http://localhost:20000/api/backup/restore/webcode-20250308-120000
+curl -X POST http://localhost:20000/api/backup/restore/webclaw-20250308-120000
 ```
 
 ### 删除备份
 
 ```bash
-curl -X DELETE http://localhost:20000/api/backup/delete/webcode-20250308-120000
+curl -X DELETE http://localhost:20000/api/backup/delete/webclaw-20250308-120000
 ```
 
 ## 定时备份（可选）
@@ -177,7 +177,7 @@ curl -X DELETE http://localhost:20000/api/backup/delete/webcode-20250308-120000
 crontab -e
 
 # 每天凌晨 2 点自动备份
-0 2 * * * cd /path/to/webcode-docker && docker exec webcode bash /opt/backup.sh
+0 2 * * * cd /path/to/webclaw-docker && docker exec webcode bash /opt/backup.sh
 ```
 
 ## 故障排除
