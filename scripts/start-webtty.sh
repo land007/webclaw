@@ -15,7 +15,8 @@ AUTH_USER_VALUE="${AUTH_USER:-admin}"
 AUTH_PASSWORD_VALUE="${AUTH_PASSWORD:-changeme}"
 
 exec /usr/bin/ttyd \
-  -i 127.0.0.1 \
+  -i 0.0.0.0 \
   -p 10008 \
   -c "${AUTH_USER_VALUE}:${AUTH_PASSWORD_VALUE}" \
+  -W \
   /bin/bash -lc 'cd /home/ubuntu/projects 2>/dev/null || cd /home/ubuntu; exec /bin/bash -il'
