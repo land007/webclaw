@@ -12,7 +12,7 @@
 **🌐 [Official Website](https://webcode.qhkly.com)** — Documentation, guides, and downloads
 
 [📦 Repository](https://github.com/land007/webclaw) |
-[🚀 Launcher](https://github.com/land007/webcode-launcher) |
+[🚀 Launcher](https://github.com/land007/webclaw-launcher) |
 [🌐 Website](https://webcode.qhkly.com) |
 [🐳 Default Image](https://hub.docker.com/r/land007/webclaw) |
 [🧰 Full Image](https://hub.docker.com/r/land007/webclaw_full) |
@@ -123,12 +123,12 @@ No GUI needed. Requires [Docker](https://docs.docker.com/engine/install/).
 ```bash
 docker run -d --name webclaw -p 20000-20004:20000-20004 -p 20005:10005 \
   --shm-size=512m --security-opt seccomp=unconfined \
-  -v webcode-config:/home/ubuntu/.webcode \
+  -v webclaw-config:/home/ubuntu/.webclaw \
   -v projects:/home/ubuntu/projects \
   land007/webclaw:latest
 ```
 
-Then open **http://localhost:20000** — log in with `admin` / `changeme`, click ⚙ to configure passwords, tokens, and Git settings. **All configuration persists across restarts** via the `webcode-config` volume.
+Then open **http://localhost:20000** — log in with `admin` / `changeme`, click ⚙ to configure passwords, tokens, and Git settings. **All configuration persists across restarts** via the `webclaw-config` volume.
 
 **Option B — Using docker compose (recommended for easier management):**
 
@@ -152,7 +152,7 @@ docker run -d \
   -p 20004:20004 \
   -p 20005:10005 \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  -v webcode-config:/home/ubuntu/.webcode \
+  -v webclaw-config:/home/ubuntu/.webclaw \
   -v dna-data:/home/ubuntu/dna \
   -v projects:/home/ubuntu/projects \
   -v vibe-kanban-data:/home/ubuntu/.local/share/vibe-kanban \
@@ -232,7 +232,7 @@ Open **http://localhost:20000**, log in, and click the **⚙ gear icon** in the 
 - Cloudflare Tunnel token
 - Enable / disable Kanban and OpenClaw services
 
-Changes apply **immediately** (no restart needed) and persist in the `webcode-config` volume across container restarts.
+Changes apply **immediately** (no restart needed) and persist in the `webclaw-config` volume across container restarts.
 
 ### Environment Variables (docker-compose / docker run)
 
@@ -250,7 +250,7 @@ Create a `.env` file next to `docker-compose.yml`, or pass `-e` flags to `docker
 | `GIT_USER_EMAIL` | — | Git commit email |
 | `CF_TUNNEL_TOKEN` | empty | Cloudflare Tunnel token — enables remote access when set |
 
-> **Note:** If a value is set via both `webcode-config` volume and environment variable, the volume value takes priority (so runtime changes aren't overwritten on restart).
+> **Note:** If a value is set via both `webclaw-config` volume and environment variable, the volume value takes priority (so runtime changes aren't overwritten on restart).
 
 ```bash
 cp .env.example .env
@@ -515,7 +515,7 @@ irm https://raw.githubusercontent.com/land007/webclaw/main/install.ps1 | iex
 ```bash
 docker run -d --name webclaw -p 20000-20004:20000-20004 -p 20005:10005 \
   --shm-size=512m --security-opt seccomp=unconfined \
-  -v webcode-config:/home/ubuntu/.webcode \
+  -v webclaw-config:/home/ubuntu/.webclaw \
   -v projects:/home/ubuntu/projects \
   land007/webclaw:latest
 ```
@@ -544,7 +544,7 @@ docker run -d \
   -p 20004:20004 \
   -p 20005:10005 \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  -v webcode-config:/home/ubuntu/.webcode \
+  -v webclaw-config:/home/ubuntu/.webclaw \
   -v dna-data:/home/ubuntu/dna \
   -v projects:/home/ubuntu/projects \
   -v vibe-kanban-data:/home/ubuntu/.local/share/vibe-kanban \
@@ -624,7 +624,7 @@ docker compose up -d
 - Cloudflare Tunnel Token
 - 启用 / 禁用看板和 OpenClaw 服务
 
-修改**立即生效**（无需重启服务），并持久保存到 `webcode-config` 数据卷，容器重启后自动恢复。
+修改**立即生效**（无需重启服务），并持久保存到 `webclaw-config` 数据卷，容器重启后自动恢复。
 
 ### 环境变量（docker-compose / docker run）
 
@@ -642,7 +642,7 @@ docker compose up -d
 | `GIT_USER_EMAIL` | — | Git 提交邮箱 |
 | `CF_TUNNEL_TOKEN` | 空（不启用）| Cloudflare Tunnel token，设置后自动启用远程访问 |
 
-> **说明：** 如果同时通过 `webcode-config` 数据卷和环境变量设置了同一项，数据卷中的值优先（运行时修改不会被容器重启覆盖）。
+> **说明：** 如果同时通过 `webclaw-config` 数据卷和环境变量设置了同一项，数据卷中的值优先（运行时修改不会被容器重启覆盖）。
 
 ```bash
 cp .env.example .env
