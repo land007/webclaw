@@ -128,13 +128,32 @@ RUN install -m 0755 -d /etc/apt/keyrings \
         docker-ce-cli docker-ce containerd.io docker-compose-plugin \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# ─── 9b. Cloudflare Tunnel client (via official apt repo — avoids GitHub rate limits) ───
-RUN curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg \
-        | tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null \
-    && echo "deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared noble main" \
-        > /etc/apt/sources.list.d/cloudflared.list \
-    && apt-get update && apt-get install -y --no-install-recommends cloudflared \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+# ─── 9b. Cloudflare Tunnel client (best-effort; network can be flaky in CI) ───
+RUN set -eux; \
+    curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg \
+        | tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null; \
+    echo "deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared noble main" \
+        > /etc/apt/sources.list.d/cloudflared.list; \
+    install_ok=""; \
+    for attempt in 1 2 3; do \
+        if apt-get update \
+            && apt-get install -y --no-install-recommends \
+                -o Acquire::Retries=3 \
+                -o Acquire::http::Timeout=30 \
+                -o Acquire::https::Timeout=30 \
+                cloudflared; then \
+            install_ok=1; \
+            break; \
+        fi; \
+        echo "[build] cloudflared install attempt ${attempt} failed; retrying..." >&2; \
+        rm -rf /var/lib/apt/lists/*; \
+        sleep $((attempt * 5)); \
+    done; \
+    if [ -z "$install_ok" ]; then \
+        echo "[build] cloudflared could not be installed after retries; continuing without it. Cloudflare Tunnel will stay unavailable unless the package is added later." >&2; \
+    fi; \
+    apt-get clean; \
+    rm -rf /var/lib/apt/lists/*
 
 # ─── 10. Browser: amd64=Google Chrome, arm64=Chromium ────────────────
 # Use container-specific user-data-dir to avoid SingletonLock conflicts
@@ -240,6 +259,7 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
            /tmp/patch-novnc.sh
 
 COPY scripts/startup.sh /opt/startup.sh
+COPY scripts/run-cloudflared.sh /usr/local/bin/run-cloudflared.sh
 COPY scripts/vnc-setpass.py /opt/vnc-setpass.py
 COPY scripts/analytics.sh /scripts/analytics.sh
 COPY scripts/dockerd-condition.sh /usr/local/bin/dockerd-condition.sh
@@ -248,7 +268,7 @@ COPY scripts/restore.sh /opt/restore.sh
 COPY scripts/snapshot.sh /opt/snapshot.sh
 COPY scripts/snapshot-restore.sh /opt/snapshot-restore.sh
 COPY scripts/snapshot-base.sh /opt/snapshot-base.sh
-RUN chmod +x /opt/startup.sh /scripts/analytics.sh /usr/local/bin/dockerd-condition.sh /opt/backup.sh /opt/restore.sh /opt/snapshot.sh /opt/snapshot-restore.sh /opt/snapshot-base.sh
+RUN chmod +x /opt/startup.sh /usr/local/bin/run-cloudflared.sh /scripts/analytics.sh /usr/local/bin/dockerd-condition.sh /opt/backup.sh /opt/restore.sh /opt/snapshot.sh /opt/snapshot-restore.sh /opt/snapshot-base.sh
 
 # ─── 13. Skills for Claude Code (host-ops, etc.) ───────────────────────
 COPY skills/ /opt/skills/
