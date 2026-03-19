@@ -261,6 +261,15 @@ jobs:
       contents: read
 
     steps:
+      - name: Compute version label
+        id: version
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            echo "label=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "label=$(echo '${{ github.sha }}' | cut -c1-7)" >> $GITHUB_OUTPUT
+          fi
+
       - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -269,11 +278,15 @@ jobs:
       - name: Install AWS CLI
         run: pip install --quiet awscli
 
-      - name: Export webclaw (desktop, amd64) to tar.gz
+      - name: Export webclaw (desktop) to tar.gz
         run: |
           docker pull --platform linux/amd64 ${{ secrets.DOCKERHUB_USERNAME }}/webclaw:latest
           docker save ${{ secrets.DOCKERHUB_USERNAME }}/webclaw:latest \
-            | gzip > webclaw-amd64-${{ github.sha }}.tar.gz
+            | gzip > webclaw-amd64-${{ steps.version.outputs.label }}.tar.gz
+
+          docker pull --platform linux/arm64 ${{ secrets.DOCKERHUB_USERNAME }}/webclaw:latest
+          docker save ${{ secrets.DOCKERHUB_USERNAME }}/webclaw:latest \
+            | gzip > webclaw-arm64-${{ steps.version.outputs.label }}.tar.gz
 
       - name: Upload to Cloudflare R2
         env:
@@ -283,12 +296,18 @@ jobs:
           R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
         run: |
-          aws s3 cp webclaw-amd64-${{ github.sha }}.tar.gz \
-            s3://${R2_BUCKET}/webclaw-amd64-${{ github.sha }}.tar.gz \
+          aws s3 cp webclaw-amd64-${{ steps.version.outputs.label }}.tar.gz \
+            s3://${R2_BUCKET}/registry/webclaw-amd64-${{ steps.version.outputs.label }}.tar.gz \
+            --endpoint-url ${R2_ENDPOINT}
+          aws s3 cp webclaw-amd64-${{ steps.version.outputs.label }}.tar.gz \
+            s3://${R2_BUCKET}/registry/webclaw-amd64-latest.tar.gz \
             --endpoint-url ${R2_ENDPOINT}
 
-          aws s3 cp webclaw-amd64-${{ github.sha }}.tar.gz \
-            s3://${R2_BUCKET}/webclaw-amd64-latest.tar.gz \
+          aws s3 cp webclaw-arm64-${{ steps.version.outputs.label }}.tar.gz \
+            s3://${R2_BUCKET}/registry/webclaw-arm64-${{ steps.version.outputs.label }}.tar.gz \
+            --endpoint-url ${R2_ENDPOINT}
+          aws s3 cp webclaw-arm64-${{ steps.version.outputs.label }}.tar.gz \
+            s3://${R2_BUCKET}/registry/webclaw-arm64-latest.tar.gz \
             --endpoint-url ${R2_ENDPOINT}
 
   # ─────────────────────────────────────────────────────────────
@@ -316,6 +335,15 @@ jobs:
       contents: read
 
     steps:
+      - name: Compute version label
+        id: version
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            echo "label=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "label=$(echo '${{ github.sha }}' | cut -c1-7)" >> $GITHUB_OUTPUT
+          fi
+
       - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -324,11 +352,15 @@ jobs:
       - name: Install AWS CLI
         run: pip install --quiet awscli
 
-      - name: Export webclaw_full (desktop + CLIs, amd64) to tar.gz
+      - name: Export webclaw_full (desktop + CLIs) to tar.gz
         run: |
           docker pull --platform linux/amd64 ${{ secrets.DOCKERHUB_USERNAME }}/webclaw_full:latest
           docker save ${{ secrets.DOCKERHUB_USERNAME }}/webclaw_full:latest \
-            | gzip > webclaw_full-amd64-${{ github.sha }}.tar.gz
+            | gzip > webclaw_full-amd64-${{ steps.version.outputs.label }}.tar.gz
+
+          docker pull --platform linux/arm64 ${{ secrets.DOCKERHUB_USERNAME }}/webclaw_full:latest
+          docker save ${{ secrets.DOCKERHUB_USERNAME }}/webclaw_full:latest \
+            | gzip > webclaw_full-arm64-${{ steps.version.outputs.label }}.tar.gz
 
       - name: Upload to Cloudflare R2
         env:
@@ -338,12 +370,18 @@ jobs:
           R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
         run: |
-          aws s3 cp webclaw_full-amd64-${{ github.sha }}.tar.gz \
-            s3://${R2_BUCKET}/webclaw_full-amd64-${{ github.sha }}.tar.gz \
+          aws s3 cp webclaw_full-amd64-${{ steps.version.outputs.label }}.tar.gz \
+            s3://${R2_BUCKET}/registry/webclaw_full-amd64-${{ steps.version.outputs.label }}.tar.gz \
+            --endpoint-url ${R2_ENDPOINT}
+          aws s3 cp webclaw_full-amd64-${{ steps.version.outputs.label }}.tar.gz \
+            s3://${R2_BUCKET}/registry/webclaw_full-amd64-latest.tar.gz \
             --endpoint-url ${R2_ENDPOINT}
 
-          aws s3 cp webclaw_full-amd64-${{ github.sha }}.tar.gz \
-            s3://${R2_BUCKET}/webclaw_full-amd64-latest.tar.gz \
+          aws s3 cp webclaw_full-arm64-${{ steps.version.outputs.label }}.tar.gz \
+            s3://${R2_BUCKET}/registry/webclaw_full-arm64-${{ steps.version.outputs.label }}.tar.gz \
+            --endpoint-url ${R2_ENDPOINT}
+          aws s3 cp webclaw_full-arm64-${{ steps.version.outputs.label }}.tar.gz \
+            s3://${R2_BUCKET}/registry/webclaw_full-arm64-latest.tar.gz \
             --endpoint-url ${R2_ENDPOINT}
 
   # ─────────────────────────────────────────────────────────────
@@ -371,6 +409,15 @@ jobs:
       contents: read
 
     steps:
+      - name: Compute version label
+        id: version
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            echo "label=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "label=$(echo '${{ github.sha }}' | cut -c1-7)" >> $GITHUB_OUTPUT
+          fi
+
       - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -379,11 +426,15 @@ jobs:
       - name: Install AWS CLI
         run: pip install --quiet awscli
 
-      - name: Export webclaw_lite (amd64) to tar.gz
+      - name: Export webclaw_lite to tar.gz
         run: |
           docker pull --platform linux/amd64 ${{ secrets.DOCKERHUB_USERNAME }}/webclaw_lite:latest
           docker save ${{ secrets.DOCKERHUB_USERNAME }}/webclaw_lite:latest \
-            | gzip > webclaw_lite-amd64-${{ github.sha }}.tar.gz
+            | gzip > webclaw_lite-amd64-${{ steps.version.outputs.label }}.tar.gz
+
+          docker pull --platform linux/arm64 ${{ secrets.DOCKERHUB_USERNAME }}/webclaw_lite:latest
+          docker save ${{ secrets.DOCKERHUB_USERNAME }}/webclaw_lite:latest \
+            | gzip > webclaw_lite-arm64-${{ steps.version.outputs.label }}.tar.gz
 
       - name: Upload to Cloudflare R2
         env:
@@ -393,10 +444,16 @@ jobs:
           R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
         run: |
-          aws s3 cp webclaw_lite-amd64-${{ github.sha }}.tar.gz \
-            s3://${R2_BUCKET}/webclaw_lite-amd64-${{ github.sha }}.tar.gz \
+          aws s3 cp webclaw_lite-amd64-${{ steps.version.outputs.label }}.tar.gz \
+            s3://${R2_BUCKET}/registry/webclaw_lite-amd64-${{ steps.version.outputs.label }}.tar.gz \
+            --endpoint-url ${R2_ENDPOINT}
+          aws s3 cp webclaw_lite-amd64-${{ steps.version.outputs.label }}.tar.gz \
+            s3://${R2_BUCKET}/registry/webclaw_lite-amd64-latest.tar.gz \
             --endpoint-url ${R2_ENDPOINT}
 
-          aws s3 cp webclaw_lite-amd64-${{ github.sha }}.tar.gz \
-            s3://${R2_BUCKET}/webclaw_lite-amd64-latest.tar.gz \
+          aws s3 cp webclaw_lite-arm64-${{ steps.version.outputs.label }}.tar.gz \
+            s3://${R2_BUCKET}/registry/webclaw_lite-arm64-${{ steps.version.outputs.label }}.tar.gz \
+            --endpoint-url ${R2_ENDPOINT}
+          aws s3 cp webclaw_lite-arm64-${{ steps.version.outputs.label }}.tar.gz \
+            s3://${R2_BUCKET}/registry/webclaw_lite-arm64-latest.tar.gz \
             --endpoint-url ${R2_ENDPOINT}
