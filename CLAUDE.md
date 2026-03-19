@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **WebClaw** is an OpenClaw-first Docker runtime that provides:
 - A full GNOME Flashback desktop accessible via VNC/noVNC (browser)
-- Theia IDE (browser-based VS Code-like editor) on port 10001
+- code-server (browser-based VS Code) on port 10001
 - Vibe Kanban (task board) on port 10002
 - OpenClaw (self-hosted AI assistant gateway) on port 10003
 - noVNC web client on port 10004, TigerVNC on port 10005
@@ -24,7 +24,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Start with desktop mode (default)
 docker compose up -d
 
-# Start with lite mode (no VNC desktop, just Theia + OpenClaw)
+# Start with lite mode (no VNC desktop, just code-server + OpenClaw)
 MODE=lite docker compose up -d
 
 # Custom VNC password and resolution
@@ -35,7 +35,7 @@ AUTH_USER=myuser AUTH_PASSWORD=mypassword docker compose up -d
 ```
 
 **Access points (as configured in docker-compose.yml):**
-- Theia IDE: http://localhost:20001 (Basic Auth)
+- code-server: http://localhost:20001 (Basic Auth)
 - Vibe Kanban: http://localhost:20002 (Basic Auth)
 - OpenClaw gateway: http://localhost:20003 (Basic Auth)
 - noVNC browser client: http://localhost:20004 (VNC password)
@@ -58,7 +58,7 @@ docker buildx build --platform linux/amd64,linux/arm64 -t land007/webclaw:latest
 docker buildx build --platform linux/amd64,linux/arm64 -t land007/webclaw:latest --push .
 ```
 
-**Full version includes:** GNOME desktop, VNC/noVNC, fcitx Chinese input, Chrome/Chromium browser, Theia IDE, Vibe Kanban, OpenClaw.
+**Full version includes:** GNOME desktop, VNC/noVNC, fcitx Chinese input, Chrome/Chromium browser, code-server, Vibe Kanban, OpenClaw.
 
 **Image size:** ~2.5-3 GB
 
@@ -75,7 +75,7 @@ docker buildx build --build-arg INSTALL_DESKTOP=false --platform linux/amd64,lin
 docker buildx build --build-arg INSTALL_DESKTOP=false --platform linux/amd64,linux/arm64 -t land007/webclaw:latest --push .
 ```
 
-**Lite version includes:** Theia IDE, Vibe Kanban, OpenClaw, Dashboard proxy. **No** VNC, GNOME desktop, fcitx, or browser.
+**Lite version includes:** code-server, Vibe Kanban, OpenClaw, Dashboard proxy. **No** VNC, GNOME desktop, fcitx, or browser.
 
 **Image size:** ~1-1.5 GB (50% smaller than full version)
 
@@ -84,8 +84,8 @@ docker buildx build --build-arg INSTALL_DESKTOP=false --platform linux/amd64,lin
 ### Dockerfile Layer Order (optimized for cache hits)
 1. Base system (locale, sudo, CLI tools)
 2. Node.js 22.x
-3. Theia native build dependencies
-4. **Theia IDE build** — slowest step, pinned to `@theia/*: 1.60.2`; cached unless `configs/theia-package.json` changes
+3. (Legacy: Theia native build dependencies — no longer used)
+4. **code-server binary download** — fast; cached unless `CODE_SERVER_VERSION` ARG changes
 5. Supervisor
 6. GNOME Flashback desktop
 7. VNC (TigerVNC) + noVNC
@@ -93,16 +93,16 @@ docker buildx build --build-arg INSTALL_DESKTOP=false --platform linux/amd64,lin
 9. Docker CLI
 10. Browser (Google Chrome on amd64, Chromium on arm64)
 11. User/group setup
-12. **Config files** — copied last so most changes don't bust Theia cache
+12. **Config files** — copied last so most changes don't bust code-server cache
 
 ### Startup Modes (`scripts/startup.sh`)
 - **desktop mode**: Runs full GNOME session via `supervisord.conf` (includes xvnc, desktop, novnc, theia/code-server, openclaw, dashboard)
-- **lite mode**: Runs only Theia/code-server + OpenClaw + Dashboard via `supervisord-lite.conf` (no VNC/desktop overhead)
+- **lite mode**: Runs only code-server + OpenClaw + Dashboard via `supervisord-lite.conf` (no VNC/desktop overhead)
 
 ### Authentication Architecture
 The `webclaw-dashboard-server` Node.js process acts as a unified authentication and proxy gateway:
 - **Port 20000**: Dashboard UI with Basic Auth
-- **Port 20001**: Theia IDE proxy (Basic Auth → 127.0.0.1:10001)
+- **Port 20001**: code-server proxy (Basic Auth → 127.0.0.1:10001)
 - **Port 20002**: Vibe Kanban proxy (Basic Auth → 127.0.0.1:10002)
 - **Port 20003**: OpenClaw proxy (Bearer token → 127.0.0.1:10003)
 - **Port 20004**: noVNC proxy (Basic Auth + path-based routing for /audio, /websockify)
@@ -112,17 +112,17 @@ Internal services bind to `127.0.0.1` only. The dashboard proxy listens on `0.0.
 ### Key Config Files
 | File | Purpose |
 |------|---------|
-| `configs/theia-package.json` | Theia plugin set; changing this triggers a full Theia rebuild |
+| `configs/theia-package.json` | Legacy: Theia plugin set (deprecated — code-server replaced Theia) |
 | `configs/supervisord.conf` | Main supervisor config (desktop mode) |
 | `configs/supervisord-lite.conf` | Lite mode supervisor config |
-| `configs/supervisor-theia.conf` | Theia process (port 10001, serves `/home/ubuntu/projects`) |
+| `configs/supervisor-theia.conf` | code-server process (port 10001, serves `/home/ubuntu/projects`) |
 | `configs/supervisor-vibe-kanban.conf` | Vibe Kanban process (port 10002) |
 | `configs/supervisor-openclaw.conf` | OpenClaw gateway process (port 10003, launched via npx) |
 | `webclaw-dashboard-server@1.4.3` | Dashboard + proxy server package (ports 20000-20004, handles Basic Auth) |
 | `configs/supervisor-dashboard.conf` | Dashboard process configuration |
 | `configs/supervisord.conf` | Main supervisor config, includes noVNC (port 10004) and TigerVNC (port 10005) |
 | `configs/xsession` | GNOME Flashback session startup script |
-| `configs/desktop-shortcuts/` | `.desktop` files for Chrome, Theia, Vibe Kanban on desktop |
+| `configs/desktop-shortcuts/` | `.desktop` files for Chrome, code-server, Vibe Kanban on desktop |
 
 ### Persistent Volumes (docker-compose.yml)
 - `dna-data` → `/home/ubuntu/dna` — project source (DNA); auto-cloned from `DNA_REPO_URL` on first start
@@ -173,8 +173,8 @@ GitHub Actions (`.github/workflows/`) builds and pushes multi-arch images (`linu
 
 - The `abc/` directory exists but is currently empty.
 - The `docker_ubuntu-unity-novnc/` directory contains a reference upstream project (Ubuntu 20.04 Unity desktop) that this project is derived from.
-- Theia is pinned to `1.60.2` across all `@theia/*` packages to ensure compatibility with native build dependencies.
-- When modifying the Dockerfile, keep config file `COPY` instructions near the end to maximize layer cache reuse for the expensive Theia build step.
+- code-server replaced Theia IDE; the pre-compiled binary is installed at `/opt/code-server`. The legacy `theia-package.json` is no longer used.
+- When modifying the Dockerfile, keep config file `COPY` instructions near the end to maximize layer cache reuse for the code-server download step.
 - OpenClaw and Vibe Kanban are both launched via `npx` at runtime (not pre-installed in the image), so first startup may take longer while packages are fetched. Run `docker exec -it -u ubuntu webcode openclaw onboard` to complete OpenClaw initial configuration.
 
 ## Git Commit Message Convention

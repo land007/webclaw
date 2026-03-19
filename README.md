@@ -2,29 +2,31 @@
   <img src="https://raw.githubusercontent.com/land007/webclaw/main/images/icon-source.png" width="120" alt="WebClaw">
 </p>
 
-# OpenClaw by WebClaw
+# WebClaw — AI Coding Agent Sandbox for OpenClaw
 
 ![GitHub Stars](https://img.shields.io/github/stars/land007/webclaw?style=social)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Docker Pulls](https://img.shields.io/docker/pulls/land007/webclaw)
 ![Platforms](https://img.shields.io/badge/platform-amd64%20%7C%20arm64-blue)
 
-**🌐 [Official Website](https://webcode.qhkly.com)** — Documentation, guides, and downloads
+> *WebClaw is an independent third-party product. Not affiliated with OpenClaw.*
+
+**🌐 [Official Website](https://webclaw.qhkly.com)** — Documentation, guides, and downloads
 
 [📦 Repository](https://github.com/land007/webclaw) |
-[🚀 Launcher](https://github.com/land007/webclaw-launcher) |
-[🌐 Website](https://webcode.qhkly.com) |
+[🚀 Launcher](https://github.com/land007/webclaw-launcher-tauri) |
+[🌐 Website](https://webclaw.qhkly.com) |
 [🐳 Default Image](https://hub.docker.com/r/land007/webclaw) |
+[🪶 Lite Image](https://hub.docker.com/r/land007/webclaw_lite) |
 [🧰 Full Image](https://hub.docker.com/r/land007/webclaw_full) |
 [🐛 Issues](https://github.com/land007/webclaw/issues)
 
-> **Two editions available:**
-> - **[webclaw](https://hub.docker.com/r/land007/webclaw)** — Default image for OpenClaw-first usage
-> - **[webclaw_full](https://hub.docker.com/r/land007/webclaw_full)** — Full image with extra advanced tools
+> **Three editions available:**
+> - **[webclaw](https://hub.docker.com/r/land007/webclaw)** — Desktop image: GNOME desktop + code-server + OpenClaw
+> - **[webclaw_lite](https://hub.docker.com/r/land007/webclaw_lite)** — Lite image: code-server + OpenClaw, no desktop (faster startup)
+> - **[webclaw_full](https://hub.docker.com/r/land007/webclaw_full)** — Desktop image + 4 AI CLIs (Claude / Gemini / Codex / Cursor)
 
-An OpenClaw-first runtime and launcher stack for users who want a simpler way to install and run OpenClaw.
-
-**Migration note:** naming is currently in transition. See [WEBCLAW_MIGRATION_PLAN.md](../WEBCLAW_MIGRATION_PLAN.md) for the official mapping between `webcode`, `WebClaw`, and the new image names.
+OpenClaw is a powerful open-source AI coding agent, but it needs direct access to your machine. WebClaw runs it inside an isolated Docker container — full Linux environment, zero risk to your real files.
 
 ---
 
@@ -32,7 +34,7 @@ An OpenClaw-first runtime and launcher stack for users who want a simpler way to
 
 | Component | Description |
 |-----------|-------------|
-| 💻 **Theia IDE** | Browser-based VS Code alternative with full coding experience |
+| 💻 **code-server** | Browser-based VS Code to view and edit code anytime. |
 | 📊 **Vibe Kanban** | Visual task board for project management |
 | 🤖 **OpenClaw AI** | Self-hosted AI assistant gateway (supports multiple AI providers) |
 | 🖥️ **noVNC Desktop** | Full GNOME Flashback Linux desktop accessible via browser |
@@ -65,7 +67,7 @@ An OpenClaw-first runtime and launcher stack for users who want a simpler way to
 
 ## 🚀 Installation
 
-**📖 For detailed installation guides and documentation, visit [webcode.qhkly.com](https://webcode.qhkly.com)**
+**📖 For detailed installation guides and documentation, visit [webclaw.qhkly.com](https://webclaw.qhkly.com)**
 
 ### Method 1: Desktop App — Download & Run (Easiest) ⭐
 
@@ -81,7 +83,7 @@ No Git or Node.js needed. Just Docker Desktop + a download.
 
 **Step 2 — Download the WebClaw launcher app:**
 
-Visit **[webcode.qhkly.com](https://webcode.qhkly.com)** to download the launcher app for your platform, or download from the [**Releases page**](https://github.com/land007/webclaw/releases/latest):
+Visit **[webclaw.qhkly.com](https://webclaw.qhkly.com)** to download the launcher app for your platform, or download from the [**Releases page**](https://github.com/land007/webclaw/releases/latest):
 
 | Platform | File to download |
 |----------|-----------------|
@@ -264,7 +266,7 @@ docker compose up -d
 
 ### Build Full Version (with Desktop)
 
-**Full version** includes GNOME desktop, VNC/noVNC, Chinese input (fcitx), browser, Theia IDE, Vibe Kanban, and OpenClaw.
+**Full version** includes GNOME desktop, VNC/noVNC, Chinese input (fcitx), browser, code-server, Vibe Kanban, and OpenClaw.
 
 ### 🚀 Quick Start (Recommended - Use Pre-built Base Image)
 
@@ -336,7 +338,7 @@ docker buildx build --platform linux/amd64,linux/arm64 \
 
 | Feature | Full Version | Lite Version |
 |---------|--------------|--------------|
-| Theia IDE | ✅ | ✅ |
+| code-server | ✅ | ✅ |
 | Vibe Kanban | ✅ | ❌ |
 | OpenClaw AI | ✅ | ✅ |
 | Dashboard Proxy | ✅ | ✅ |
@@ -356,7 +358,7 @@ docker buildx build --platform linux/amd64,linux/arm64 \
 docker compose up -d
 ```
 
-**Lite mode** — Only Theia + OpenClaw, no desktop (lower resource usage):
+**Lite mode** — Only code-server + OpenClaw, no desktop (lower resource usage):
 ```bash
 MODE=lite docker compose up -d
 ```
@@ -412,11 +414,12 @@ Follow the prompts, then refresh http://localhost:20003.
 
 # webcode（中文文档）
 
-**提供两个版本：**
-- **[webclaw](https://hub.docker.com/r/land007/webclaw)** — 默认版，适合 OpenClaw-first 使用
-- **[webclaw_full](https://hub.docker.com/r/land007/webclaw_full)** — 完整版，包含额外高级工具
+**提供三个版本：**
+- **[webclaw](https://hub.docker.com/r/land007/webclaw)** — 桌面版：GNOME 桌面 + code-server + OpenClaw
+- **[webclaw_lite](https://hub.docker.com/r/land007/webclaw_lite)** — 精简版：code-server + OpenClaw，无桌面（启动更快）
+- **[webclaw_full](https://hub.docker.com/r/land007/webclaw_full)** — 桌面版 + 4 款 AI CLI（Claude / Gemini / Codex / Cursor）
 
-基于 Docker 的浏览器可访问开发环境，内置 **Theia IDE**、**Vibe Kanban**、**noVNC 桌面**和 **OpenClaw AI**。
+基于 Docker 的浏览器可访问开发环境，内置 **code-server**、**Vibe Kanban**、**noVNC 桌面**和 **OpenClaw AI**。
 
 ---
 
@@ -424,7 +427,7 @@ Follow the prompts, then refresh http://localhost:20003.
 
 | 组件 | 说明 |
 |------|------|
-| 💻 **Theia IDE** | 浏览器版 VS Code 替代品，完整编码体验 |
+| 💻 **code-server** | 浏览器版 VS Code，随时查看和编辑代码。 |
 | 📊 **Vibe Kanban** | 可视化看板任务管理工具 |
 | 🤖 **OpenClaw AI** | 自托管 AI 助手网关（支持多种 AI 服务商） |
 | 🖥️ **noVNC 桌面** | 通过浏览器访问的完整 GNOME Linux 桌面 |
@@ -457,7 +460,7 @@ Follow the prompts, then refresh http://localhost:20003.
 
 ## 🚀 安装方式
 
-**📖 详细安装指南和文档，请访问 [webcode.qhkly.com](https://webcode.qhkly.com)**
+**📖 详细安装指南和文档，请访问 [webclaw.qhkly.com](https://webclaw.qhkly.com)**
 
 ### 方式一：下载桌面应用（最简单）⭐
 
@@ -473,7 +476,7 @@ Follow the prompts, then refresh http://localhost:20003.
 
 **第二步 — 下载 WebClaw 启动器应用**：
 
-访问 **[webcode.qhkly.com](https://webcode.qhkly.com)** 下载启动器应用，或前往 [**Releases 页面**](https://github.com/land007/webclaw/releases/latest)：
+访问 **[webclaw.qhkly.com](https://webclaw.qhkly.com)** 下载启动器应用，或前往 [**Releases 页面**](https://github.com/land007/webclaw/releases/latest)：
 
 | 平台 | 下载文件 |
 |------|---------|
@@ -722,7 +725,7 @@ docker buildx build --platform linux/amd64,linux/arm64 \
 
 ### 构建精简版（无桌面）
 
-**精简版**仅包含 Theia IDE、OpenClaw 和 Dashboard 代理，不包含 VNC、桌面环境、Kanban 和浏览器。
+**精简版**仅包含 code-server、OpenClaw 和 Dashboard 代理，不包含 VNC、桌面环境、Kanban 和浏览器。
 
 ```bash
 # 克隆仓库
@@ -741,7 +744,7 @@ docker buildx build --build-arg INSTALL_DESKTOP=false --platform linux/amd64,lin
 
 | 功能 | 完整版 | 精简版 |
 |------|--------|--------|
-| Theia IDE | ✅ | ✅ |
+| code-server | ✅ | ✅ |
 | Vibe Kanban | ✅ | ❌ |
 | OpenClaw AI | ✅ | ✅ |
 | Dashboard 代理 | ✅ | ✅ |
@@ -761,7 +764,7 @@ docker buildx build --build-arg INSTALL_DESKTOP=false --platform linux/amd64,lin
 docker compose up -d
 ```
 
-**Lite 模式** — 仅运行 Theia + OpenClaw，无桌面，资源占用更小：
+**Lite 模式** — 仅运行 code-server + OpenClaw，无桌面，资源占用更小：
 ```bash
 MODE=lite docker compose up -d
 ```
