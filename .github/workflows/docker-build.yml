@@ -239,6 +239,21 @@ jobs:
   # ─────────────────────────────────────────────────────────────
   # After build-desktop: update openclaw README + export desktop image to R2
   # ─────────────────────────────────────────────────────────────
+  update-readme-desktop:
+    needs: build-desktop
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ secrets.DOCKERHUB_USERNAME }}/webclaw
+          readme-filepath: ./README.md
+
   export-desktop-to-r2:
     needs: build-desktop
     runs-on: ubuntu-latest
