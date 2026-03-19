@@ -13,5 +13,5 @@ This repository (webcode) now focuses on the Docker service stack and core confi
 ## Migration Links
 
 - [Download Launcher](https://github.com/land007/webclaw-launcher/releases)
-- [Visit Website](https://webcode.qhkly.com)
+- [Visit Website](https://webclaw.qhkly.com)
 - [Docker Images](https://hub.docker.com/r/land007/webcode)
