@@ -138,7 +138,7 @@ chown ubuntu:ubuntu "$OPENCLAW_JSON"
 WEBCODE_CFG=/home/ubuntu/.webclaw/config.json
 if [ -f "$WEBCODE_CFG" ]; then
   echo "[startup] Loading persisted config from $WEBCODE_CFG"
-  for KEY in AUTH_USER AUTH_PASSWORD VNC_PASSWORD OPENCLAW_TOKEN \
+  for KEY in AUTH_USER AUTH_PASSWORD VNC_PASSWORD OPENCLAW_GATEWAY_TOKEN \
              GIT_USER_NAME GIT_USER_EMAIL CF_TUNNEL_TOKEN \
              ENABLE_KANBAN ENABLE_OPENCLAW ENABLE_CLAUDECODEUI; do
     VAL=$(python3 -c "
@@ -155,7 +155,7 @@ fi
 # ─── Dashboard auth setup (Basic Auth for all web services) ──────────
 export AUTH_USER="${AUTH_USER:-admin}"
 export AUTH_PASSWORD="${AUTH_PASSWORD:-changeme}"
-export OPENCLAW_TOKEN="${OPENCLAW_TOKEN:-sk-webcode}"
+export OPENCLAW_GATEWAY_TOKEN="${OPENCLAW_GATEWAY_TOKEN:-sk-webcode}"
 export VNC_PASSWORD="${VNC_PASSWORD:-changeme}"
 echo "[startup] Basic Auth enabled — user: $AUTH_USER"
 

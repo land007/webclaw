@@ -32,7 +32,7 @@ services:
       - MODE=${MODE:-desktop}
       - AUTH_USER=${AUTH_USER:-admin}
       - AUTH_PASSWORD=${AUTH_PASSWORD:-changeme}
-      - OPENCLAW_TOKEN=${OPENCLAW_TOKEN:-changeme}
+      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN:-changeme}
       - PASSWORD=${VNC_PASSWORD:-changeme}
       - VNC_PASSWORD=${VNC_PASSWORD:-changeme}
       - VNC_RESOLUTION=${VNC_RESOLUTION:-1920x1080}

@@ -247,7 +247,7 @@ Create a `.env` file next to `docker-compose.yml`, or pass `-e` flags to `docker
 | `AUTH_PASSWORD` | `changeme` | Login password |
 | `VNC_PASSWORD` | `changeme` | VNC desktop password (desktop mode only) |
 | `VNC_RESOLUTION` | `1920x1080` | Desktop resolution (desktop mode only) |
-| `OPENCLAW_TOKEN` | `changeme` | OpenClaw token |
+| `OPENCLAW_GATEWAY_TOKEN` | `changeme` | Gateway token |
 | `GIT_USER_NAME` | — | Git commit username |
 | `GIT_USER_EMAIL` | — | Git commit email |
 | `CF_TUNNEL_TOKEN` | empty | Cloudflare Tunnel token — enables remote access when set |
@@ -640,7 +640,7 @@ docker compose up -d
 | `AUTH_PASSWORD` | `changeme` | 登录密码 |
 | `VNC_PASSWORD` | `changeme` | VNC 桌面密码（仅 desktop 模式有效） |
 | `VNC_RESOLUTION` | `1920x1080` | 桌面分辨率（仅 desktop 模式有效） |
-| `OPENCLAW_TOKEN` | `changeme` | OpenClaw token |
+| `OPENCLAW_GATEWAY_TOKEN` | `changeme` | Gateway token |
 | `GIT_USER_NAME` | — | Git 提交用户名 |
 | `GIT_USER_EMAIL` | — | Git 提交邮箱 |
 | `CF_TUNNEL_TOKEN` | 空（不启用）| Cloudflare Tunnel token，设置后自动启用远程访问 |

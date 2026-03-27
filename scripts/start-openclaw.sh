@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-TOKEN="${OPENCLAW_TOKEN:-changeme}"
+TOKEN="${OPENCLAW_GATEWAY_TOKEN:-changeme}"
 export DISPLAY="${DISPLAY:-:1}"
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1000}"
 mkdir -p "$XDG_RUNTIME_DIR"
