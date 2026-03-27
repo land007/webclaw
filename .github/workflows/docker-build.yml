@@ -294,20 +294,14 @@ jobs:
           AWS_DEFAULT_REGION: auto
           R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          PUBLIC_BASE_URL: https://launcher.qhkly.com
         run: |
-          aws s3 cp webclaw-amd64-${{ steps.version.outputs.label }}.tar.gz \
-            s3://${R2_BUCKET}/registry/webclaw-amd64-${{ steps.version.outputs.label }}.tar.gz \
-            --endpoint-url ${R2_ENDPOINT}
-          aws s3 cp webclaw-amd64-${{ steps.version.outputs.label }}.tar.gz \
-            s3://${R2_BUCKET}/registry/webclaw-amd64-latest.tar.gz \
-            --endpoint-url ${R2_ENDPOINT}
-
-          aws s3 cp webclaw-arm64-${{ steps.version.outputs.label }}.tar.gz \
-            s3://${R2_BUCKET}/registry/webclaw-arm64-${{ steps.version.outputs.label }}.tar.gz \
-            --endpoint-url ${R2_ENDPOINT}
-          aws s3 cp webclaw-arm64-${{ steps.version.outputs.label }}.tar.gz \
-            s3://${R2_BUCKET}/registry/webclaw-arm64-latest.tar.gz \
-            --endpoint-url ${R2_ENDPOINT}
+          chmod +x ./scripts/publish-r2-registry.sh
+          ./scripts/publish-r2-registry.sh \
+            webclaw \
+            "${{ steps.version.outputs.label }}" \
+            "webclaw-amd64-${{ steps.version.outputs.label }}.tar.gz" \
+            "webclaw-arm64-${{ steps.version.outputs.label }}.tar.gz"
 
   # ─────────────────────────────────────────────────────────────
   # After build-full: update webclaw README + export full image to R2
@@ -368,20 +362,14 @@ jobs:
           AWS_DEFAULT_REGION: auto
           R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          PUBLIC_BASE_URL: https://launcher.qhkly.com
         run: |
-          aws s3 cp webclaw_full-amd64-${{ steps.version.outputs.label }}.tar.gz \
-            s3://${R2_BUCKET}/registry/webclaw_full-amd64-${{ steps.version.outputs.label }}.tar.gz \
-            --endpoint-url ${R2_ENDPOINT}
-          aws s3 cp webclaw_full-amd64-${{ steps.version.outputs.label }}.tar.gz \
-            s3://${R2_BUCKET}/registry/webclaw_full-amd64-latest.tar.gz \
-            --endpoint-url ${R2_ENDPOINT}
-
-          aws s3 cp webclaw_full-arm64-${{ steps.version.outputs.label }}.tar.gz \
-            s3://${R2_BUCKET}/registry/webclaw_full-arm64-${{ steps.version.outputs.label }}.tar.gz \
-            --endpoint-url ${R2_ENDPOINT}
-          aws s3 cp webclaw_full-arm64-${{ steps.version.outputs.label }}.tar.gz \
-            s3://${R2_BUCKET}/registry/webclaw_full-arm64-latest.tar.gz \
-            --endpoint-url ${R2_ENDPOINT}
+          chmod +x ./scripts/publish-r2-registry.sh
+          ./scripts/publish-r2-registry.sh \
+            webclaw_full \
+            "${{ steps.version.outputs.label }}" \
+            "webclaw_full-amd64-${{ steps.version.outputs.label }}.tar.gz" \
+            "webclaw_full-arm64-${{ steps.version.outputs.label }}.tar.gz"
 
   # ─────────────────────────────────────────────────────────────
   # After build-lite: update Docker Hub READMEs + export lite to R2
@@ -442,17 +430,11 @@ jobs:
           AWS_DEFAULT_REGION: auto
           R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          PUBLIC_BASE_URL: https://launcher.qhkly.com
         run: |
-          aws s3 cp webclaw_lite-amd64-${{ steps.version.outputs.label }}.tar.gz \
-            s3://${R2_BUCKET}/registry/webclaw_lite-amd64-${{ steps.version.outputs.label }}.tar.gz \
-            --endpoint-url ${R2_ENDPOINT}
-          aws s3 cp webclaw_lite-amd64-${{ steps.version.outputs.label }}.tar.gz \
-            s3://${R2_BUCKET}/registry/webclaw_lite-amd64-latest.tar.gz \
-            --endpoint-url ${R2_ENDPOINT}
-
-          aws s3 cp webclaw_lite-arm64-${{ steps.version.outputs.label }}.tar.gz \
-            s3://${R2_BUCKET}/registry/webclaw_lite-arm64-${{ steps.version.outputs.label }}.tar.gz \
-            --endpoint-url ${R2_ENDPOINT}
-          aws s3 cp webclaw_lite-arm64-${{ steps.version.outputs.label }}.tar.gz \
-            s3://${R2_BUCKET}/registry/webclaw_lite-arm64-latest.tar.gz \
-            --endpoint-url ${R2_ENDPOINT}
+          chmod +x ./scripts/publish-r2-registry.sh
+          ./scripts/publish-r2-registry.sh \
+            webclaw_lite \
+            "${{ steps.version.outputs.label }}" \
+            "webclaw_lite-amd64-${{ steps.version.outputs.label }}.tar.gz" \
+            "webclaw_lite-arm64-${{ steps.version.outputs.label }}.tar.gz"
