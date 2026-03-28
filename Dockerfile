@@ -3,7 +3,8 @@
 #  on top of the base image
 # ─────────────────────────────────────────────────────────────
 ARG WEBCLAW_BASE_VERSION=latest
-FROM land007/webclaw_base:${WEBCLAW_BASE_VERSION}
+ARG WEBCLAW_BASE_IMAGE=ghcr.io/land007/webclaw_base
+FROM ${WEBCLAW_BASE_IMAGE}:${WEBCLAW_BASE_VERSION}
 
 LABEL org.opencontainers.image.title="webclaw" \
       org.opencontainers.image.description="OpenClaw by WebClaw with editor, optional desktop, and isolated runtime" \

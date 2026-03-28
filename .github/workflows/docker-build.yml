@@ -224,7 +224,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           build-args: |
-            BASE_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/webclaw:${{ github.sha }}
+            WEBCLAW_IMAGE=ghcr.io/${{ github.repository_owner }}/webclaw
+            WEBCLAW_IMAGE_TAG=${{ github.sha }}
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/webclaw_full:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/webclaw_full:${{ github.sha }}
@@ -271,20 +272,21 @@ jobs:
 
       - uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install AWS CLI
         run: pip install --quiet awscli
 
       - name: Export webclaw (desktop) to tar.gz
         run: |
-          docker pull --platform linux/amd64 ${{ secrets.DOCKERHUB_USERNAME }}/webclaw:latest
-          docker save ${{ secrets.DOCKERHUB_USERNAME }}/webclaw:latest \
+          docker pull --platform linux/amd64 ghcr.io/${{ github.repository_owner }}/webclaw:latest
+          docker save ghcr.io/${{ github.repository_owner }}/webclaw:latest \
             | gzip > webclaw-amd64-${{ steps.version.outputs.label }}.tar.gz
 
-          docker pull --platform linux/arm64 ${{ secrets.DOCKERHUB_USERNAME }}/webclaw:latest
-          docker save ${{ secrets.DOCKERHUB_USERNAME }}/webclaw:latest \
+          docker pull --platform linux/arm64 ghcr.io/${{ github.repository_owner }}/webclaw:latest
+          docker save ghcr.io/${{ github.repository_owner }}/webclaw:latest \
             | gzip > webclaw-arm64-${{ steps.version.outputs.label }}.tar.gz
 
       - name: Upload to Cloudflare R2
@@ -339,20 +341,21 @@ jobs:
 
       - uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install AWS CLI
         run: pip install --quiet awscli
 
       - name: Export webclaw_full (desktop + CLIs) to tar.gz
         run: |
-          docker pull --platform linux/amd64 ${{ secrets.DOCKERHUB_USERNAME }}/webclaw_full:latest
-          docker save ${{ secrets.DOCKERHUB_USERNAME }}/webclaw_full:latest \
+          docker pull --platform linux/amd64 ghcr.io/${{ github.repository_owner }}/webclaw_full:latest
+          docker save ghcr.io/${{ github.repository_owner }}/webclaw_full:latest \
             | gzip > webclaw_full-amd64-${{ steps.version.outputs.label }}.tar.gz
 
-          docker pull --platform linux/arm64 ${{ secrets.DOCKERHUB_USERNAME }}/webclaw_full:latest
-          docker save ${{ secrets.DOCKERHUB_USERNAME }}/webclaw_full:latest \
+          docker pull --platform linux/arm64 ghcr.io/${{ github.repository_owner }}/webclaw_full:latest
+          docker save ghcr.io/${{ github.repository_owner }}/webclaw_full:latest \
             | gzip > webclaw_full-arm64-${{ steps.version.outputs.label }}.tar.gz
 
       - name: Upload to Cloudflare R2
@@ -407,20 +410,21 @@ jobs:
 
       - uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install AWS CLI
         run: pip install --quiet awscli
 
       - name: Export webclaw_lite to tar.gz
         run: |
-          docker pull --platform linux/amd64 ${{ secrets.DOCKERHUB_USERNAME }}/webclaw_lite:latest
-          docker save ${{ secrets.DOCKERHUB_USERNAME }}/webclaw_lite:latest \
+          docker pull --platform linux/amd64 ghcr.io/${{ github.repository_owner }}/webclaw_lite:latest
+          docker save ghcr.io/${{ github.repository_owner }}/webclaw_lite:latest \
             | gzip > webclaw_lite-amd64-${{ steps.version.outputs.label }}.tar.gz
 
-          docker pull --platform linux/arm64 ${{ secrets.DOCKERHUB_USERNAME }}/webclaw_lite:latest
-          docker save ${{ secrets.DOCKERHUB_USERNAME }}/webclaw_lite:latest \
+          docker pull --platform linux/arm64 ghcr.io/${{ github.repository_owner }}/webclaw_lite:latest
+          docker save ghcr.io/${{ github.repository_owner }}/webclaw_lite:latest \
             | gzip > webclaw_lite-arm64-${{ steps.version.outputs.label }}.tar.gz
 
       - name: Upload to Cloudflare R2

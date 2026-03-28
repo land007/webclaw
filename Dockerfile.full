@@ -2,7 +2,9 @@
 #  Full CLI layer: adds Gemini, Codex, Cursor CLI
 #  on top of land007/webclaw image
 # ─────────────────────────────────────────────────────────────
-FROM land007/webclaw:latest
+ARG WEBCLAW_IMAGE=ghcr.io/land007/webclaw
+ARG WEBCLAW_IMAGE_TAG=latest
+FROM ${WEBCLAW_IMAGE}:${WEBCLAW_IMAGE_TAG}
 
 LABEL org.opencontainers.image.title="webclaw_full" \
       org.opencontainers.image.description="WebClaw with additional advanced CLIs (Gemini + Codex + Cursor + OpenCode AI)" \
