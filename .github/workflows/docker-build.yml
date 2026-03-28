@@ -216,6 +216,29 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Compute image tag
+        id: image_tag
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            echo "value=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+          else
+            echo "value=${GITHUB_SHA}" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: docker/metadata-action@v5
+        id: meta-full-clis
+        with:
+          images: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/webclaw_full
+            ghcr.io/${{ github.repository_owner }}/webclaw_full
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.description=Desktop image with code-server OpenClaw and 4 AI CLIs
+
       - name: Build and push full+clis image
         uses: docker/build-push-action@v6
         with:
@@ -225,14 +248,9 @@ jobs:
           push: true
           build-args: |
             WEBCLAW_IMAGE=ghcr.io/${{ github.repository_owner }}/webclaw
-            WEBCLAW_IMAGE_TAG=${{ github.sha }}
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/webclaw_full:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/webclaw_full:${{ github.sha }}
-            ghcr.io/${{ github.repository_owner }}/webclaw_full:latest
-            ghcr.io/${{ github.repository_owner }}/webclaw_full:${{ github.sha }}
-          labels: |
-            org.opencontainers.image.description=Desktop image with code-server OpenClaw and 4 AI CLIs
+            WEBCLAW_IMAGE_TAG=${{ steps.image_tag.outputs.value }}
+          tags: ${{ steps.meta-full-clis.outputs.tags }}
+          labels: ${{ steps.meta-full-clis.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -268,8 +286,10 @@ jobs:
         run: |
           if [[ "${{ github.ref_type }}" == "tag" ]]; then
             echo "label=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+            echo "image_tag=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
           else
             echo "label=$(echo '${{ github.sha }}' | cut -c1-7)" >> $GITHUB_OUTPUT
+            echo "image_tag=${{ github.sha }}" >> $GITHUB_OUTPUT
           fi
 
       - uses: docker/login-action@v3
@@ -283,12 +303,12 @@ jobs:
 
       - name: Export webclaw (desktop) to tar.gz
         run: |
-          docker pull --platform linux/amd64 ghcr.io/${{ github.repository_owner }}/webclaw:latest
-          docker save ghcr.io/${{ github.repository_owner }}/webclaw:latest \
+          docker pull --platform linux/amd64 ghcr.io/${{ github.repository_owner }}/webclaw:${{ steps.version.outputs.image_tag }}
+          docker save ghcr.io/${{ github.repository_owner }}/webclaw:${{ steps.version.outputs.image_tag }} \
             | gzip > webclaw-amd64-${{ steps.version.outputs.label }}.tar.gz
 
-          docker pull --platform linux/arm64 ghcr.io/${{ github.repository_owner }}/webclaw:latest
-          docker save ghcr.io/${{ github.repository_owner }}/webclaw:latest \
+          docker pull --platform linux/arm64 ghcr.io/${{ github.repository_owner }}/webclaw:${{ steps.version.outputs.image_tag }}
+          docker save ghcr.io/${{ github.repository_owner }}/webclaw:${{ steps.version.outputs.image_tag }} \
             | gzip > webclaw-arm64-${{ steps.version.outputs.label }}.tar.gz
 
       - name: Upload to Cloudflare R2
@@ -339,8 +359,10 @@ jobs:
         run: |
           if [[ "${{ github.ref_type }}" == "tag" ]]; then
             echo "label=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+            echo "image_tag=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
           else
             echo "label=$(echo '${{ github.sha }}' | cut -c1-7)" >> $GITHUB_OUTPUT
+            echo "image_tag=${{ github.sha }}" >> $GITHUB_OUTPUT
           fi
 
       - uses: docker/login-action@v3
@@ -354,12 +376,12 @@ jobs:
 
       - name: Export webclaw_full (desktop + CLIs) to tar.gz
         run: |
-          docker pull --platform linux/amd64 ghcr.io/${{ github.repository_owner }}/webclaw_full:latest
-          docker save ghcr.io/${{ github.repository_owner }}/webclaw_full:latest \
+          docker pull --platform linux/amd64 ghcr.io/${{ github.repository_owner }}/webclaw_full:${{ steps.version.outputs.image_tag }}
+          docker save ghcr.io/${{ github.repository_owner }}/webclaw_full:${{ steps.version.outputs.image_tag }} \
             | gzip > webclaw_full-amd64-${{ steps.version.outputs.label }}.tar.gz
 
-          docker pull --platform linux/arm64 ghcr.io/${{ github.repository_owner }}/webclaw_full:latest
-          docker save ghcr.io/${{ github.repository_owner }}/webclaw_full:latest \
+          docker pull --platform linux/arm64 ghcr.io/${{ github.repository_owner }}/webclaw_full:${{ steps.version.outputs.image_tag }}
+          docker save ghcr.io/${{ github.repository_owner }}/webclaw_full:${{ steps.version.outputs.image_tag }} \
             | gzip > webclaw_full-arm64-${{ steps.version.outputs.label }}.tar.gz
 
       - name: Upload to Cloudflare R2
@@ -410,8 +432,10 @@ jobs:
         run: |
           if [[ "${{ github.ref_type }}" == "tag" ]]; then
             echo "label=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+            echo "image_tag=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
           else
             echo "label=$(echo '${{ github.sha }}' | cut -c1-7)" >> $GITHUB_OUTPUT
+            echo "image_tag=${{ github.sha }}" >> $GITHUB_OUTPUT
           fi
 
       - uses: docker/login-action@v3
@@ -425,12 +449,12 @@ jobs:
 
       - name: Export webclaw_lite to tar.gz
         run: |
-          docker pull --platform linux/amd64 ghcr.io/${{ github.repository_owner }}/webclaw_lite:latest
-          docker save ghcr.io/${{ github.repository_owner }}/webclaw_lite:latest \
+          docker pull --platform linux/amd64 ghcr.io/${{ github.repository_owner }}/webclaw_lite:${{ steps.version.outputs.image_tag }}
+          docker save ghcr.io/${{ github.repository_owner }}/webclaw_lite:${{ steps.version.outputs.image_tag }} \
             | gzip > webclaw_lite-amd64-${{ steps.version.outputs.label }}.tar.gz
 
-          docker pull --platform linux/arm64 ghcr.io/${{ github.repository_owner }}/webclaw_lite:latest
-          docker save ghcr.io/${{ github.repository_owner }}/webclaw_lite:latest \
+          docker pull --platform linux/arm64 ghcr.io/${{ github.repository_owner }}/webclaw_lite:${{ steps.version.outputs.image_tag }}
+          docker save ghcr.io/${{ github.repository_owner }}/webclaw_lite:${{ steps.version.outputs.image_tag }} \
             | gzip > webclaw_lite-arm64-${{ steps.version.outputs.label }}.tar.gz
 
       - name: Upload to Cloudflare R2
