@@ -261,6 +261,8 @@ jobs:
       contents: read
 
     steps:
+      - uses: actions/checkout@v4
+
       - name: Compute version label
         id: version
         run: |
@@ -330,6 +332,8 @@ jobs:
       contents: read
 
     steps:
+      - uses: actions/checkout@v4
+
       - name: Compute version label
         id: version
         run: |
@@ -399,6 +403,8 @@ jobs:
       contents: read
 
     steps:
+      - uses: actions/checkout@v4
+
       - name: Compute version label
         id: version
         run: |
