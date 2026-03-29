@@ -311,6 +311,30 @@ jobs:
           docker save ghcr.io/${{ github.repository_owner }}/webclaw:${{ steps.version.outputs.image_tag }} \
             | gzip > webclaw-arm64-${{ steps.version.outputs.label }}.tar.gz
 
+      - name: Resolve image digests
+        run: |
+          IMAGE_REF="ghcr.io/${{ github.repository_owner }}/webclaw:${{ steps.version.outputs.image_tag }}"
+          python3 - <<'PY' "$IMAGE_REF" >> "$GITHUB_ENV"
+import json, subprocess, sys
+
+ref = sys.argv[1]
+raw = subprocess.check_output(
+    ["docker", "buildx", "imagetools", "inspect", "--raw", ref],
+    text=True,
+).strip()
+manifest = json.loads(raw)
+
+def find_digest(arch):
+    for item in manifest.get("manifests", []):
+        platform = item.get("platform") or {}
+        if platform.get("os") == "linux" and platform.get("architecture") == arch:
+            return item.get("digest", "")
+    return ""
+
+print(f"AMD64_DIGEST={find_digest('amd64')}")
+print(f"ARM64_DIGEST={find_digest('arm64')}")
+PY
+
       - name: Upload to Cloudflare R2
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -319,6 +343,8 @@ jobs:
           R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
           PUBLIC_BASE_URL: https://launcher.qhkly.com
+          AMD64_DIGEST: ${{ env.AMD64_DIGEST }}
+          ARM64_DIGEST: ${{ env.ARM64_DIGEST }}
         run: |
           chmod +x ./scripts/publish-r2-registry.sh
           ./scripts/publish-r2-registry.sh \
@@ -384,6 +410,30 @@ jobs:
           docker save ghcr.io/${{ github.repository_owner }}/webclaw_full:${{ steps.version.outputs.image_tag }} \
             | gzip > webclaw_full-arm64-${{ steps.version.outputs.label }}.tar.gz
 
+      - name: Resolve image digests
+        run: |
+          IMAGE_REF="ghcr.io/${{ github.repository_owner }}/webclaw_full:${{ steps.version.outputs.image_tag }}"
+          python3 - <<'PY' "$IMAGE_REF" >> "$GITHUB_ENV"
+import json, subprocess, sys
+
+ref = sys.argv[1]
+raw = subprocess.check_output(
+    ["docker", "buildx", "imagetools", "inspect", "--raw", ref],
+    text=True,
+).strip()
+manifest = json.loads(raw)
+
+def find_digest(arch):
+    for item in manifest.get("manifests", []):
+        platform = item.get("platform") or {}
+        if platform.get("os") == "linux" and platform.get("architecture") == arch:
+            return item.get("digest", "")
+    return ""
+
+print(f"AMD64_DIGEST={find_digest('amd64')}")
+print(f"ARM64_DIGEST={find_digest('arm64')}")
+PY
+
       - name: Upload to Cloudflare R2
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -392,6 +442,8 @@ jobs:
           R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
           PUBLIC_BASE_URL: https://launcher.qhkly.com
+          AMD64_DIGEST: ${{ env.AMD64_DIGEST }}
+          ARM64_DIGEST: ${{ env.ARM64_DIGEST }}
         run: |
           chmod +x ./scripts/publish-r2-registry.sh
           ./scripts/publish-r2-registry.sh \
@@ -457,6 +509,30 @@ jobs:
           docker save ghcr.io/${{ github.repository_owner }}/webclaw_lite:${{ steps.version.outputs.image_tag }} \
             | gzip > webclaw_lite-arm64-${{ steps.version.outputs.label }}.tar.gz
 
+      - name: Resolve image digests
+        run: |
+          IMAGE_REF="ghcr.io/${{ github.repository_owner }}/webclaw_lite:${{ steps.version.outputs.image_tag }}"
+          python3 - <<'PY' "$IMAGE_REF" >> "$GITHUB_ENV"
+import json, subprocess, sys
+
+ref = sys.argv[1]
+raw = subprocess.check_output(
+    ["docker", "buildx", "imagetools", "inspect", "--raw", ref],
+    text=True,
+).strip()
+manifest = json.loads(raw)
+
+def find_digest(arch):
+    for item in manifest.get("manifests", []):
+        platform = item.get("platform") or {}
+        if platform.get("os") == "linux" and platform.get("architecture") == arch:
+            return item.get("digest", "")
+    return ""
+
+print(f"AMD64_DIGEST={find_digest('amd64')}")
+print(f"ARM64_DIGEST={find_digest('arm64')}")
+PY
+
       - name: Upload to Cloudflare R2
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -465,6 +541,8 @@ jobs:
           R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
           PUBLIC_BASE_URL: https://launcher.qhkly.com
+          AMD64_DIGEST: ${{ env.AMD64_DIGEST }}
+          ARM64_DIGEST: ${{ env.ARM64_DIGEST }}
         run: |
           chmod +x ./scripts/publish-r2-registry.sh
           ./scripts/publish-r2-registry.sh \

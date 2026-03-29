@@ -11,6 +11,8 @@ IMAGE_NAME="$1"
 VERSION_LABEL="$2"
 AMD64_FILE="$3"
 ARM64_FILE="$4"
+AMD64_DIGEST="${AMD64_DIGEST:-}"
+ARM64_DIGEST="${ARM64_DIGEST:-}"
 
 : "${R2_BUCKET:?R2_BUCKET is required}"
 : "${R2_ENDPOINT:?R2_ENDPOINT is required}"
@@ -26,12 +28,22 @@ upload_file() {
 }
 
 build_manifest() {
-  local amd64_size arm64_size
+  local amd64_size arm64_size amd64_archive_digest arm64_archive_digest
   amd64_size="$(wc -c < "${AMD64_FILE}" | tr -d ' ')"
   arm64_size="$(wc -c < "${ARM64_FILE}" | tr -d ' ')"
+  amd64_archive_digest="sha256:$(sha256sum "${AMD64_FILE}" | awk '{print $1}')"
+  arm64_archive_digest="sha256:$(sha256sum "${ARM64_FILE}" | awk '{print $1}')"
 
   python3 - <<PY
 import json
+
+def normalize_digest(value):
+  value = (value or "").strip()
+  if not value or value.lower() == "null":
+    return None
+  if "@sha256:" in value:
+    return "sha256:" + value.split("@sha256:", 1)[1]
+  return value
 
 data = {
   "image": "${IMAGE_NAME}",
@@ -39,12 +51,14 @@ data = {
   "version": "${VERSION_LABEL}",
   "platforms": {
     "linux/amd64": {
-      "digest": None,
+      "digest": normalize_digest("${AMD64_DIGEST}"),
+      "archiveDigest": "${amd64_archive_digest}",
       "size": int("${amd64_size}"),
       "url": "${PUBLIC_BASE_URL}/registry/${IMAGE_NAME}-amd64-latest.tar.gz",
     },
     "linux/arm64": {
-      "digest": None,
+      "digest": normalize_digest("${ARM64_DIGEST}"),
+      "archiveDigest": "${arm64_archive_digest}",
       "size": int("${arm64_size}"),
       "url": "${PUBLIC_BASE_URL}/registry/${IMAGE_NAME}-arm64-latest.tar.gz",
     },
