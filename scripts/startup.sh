@@ -233,6 +233,10 @@ else
 
     # D-Bus system bus (needed by PulseAudio for null-sink module)
     mkdir -p /run/dbus
+    if [ -f /run/dbus/pid ] && [ ! -S /run/dbus/system_bus_socket ]; then
+        rm -f /run/dbus/pid
+        echo "[startup] Removed stale /run/dbus/pid"
+    fi
     if [ ! -S /run/dbus/system_bus_socket ]; then
         dbus-daemon --system --fork
         echo "[startup] D-Bus system bus started"
