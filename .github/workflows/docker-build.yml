@@ -318,21 +318,32 @@ jobs:
           import json, subprocess, sys
 
           ref = sys.argv[1]
-          raw = subprocess.check_output(
-              ["docker", "buildx", "imagetools", "inspect", "--raw", ref],
-              text=True,
-          ).strip()
-          manifest = json.loads(raw)
+          raw = subprocess.check_output(["docker", "buildx", "imagetools", "inspect", "--raw", ref], text=True).strip()
+          index_manifest = json.loads(raw)
 
-          def find_digest(arch):
-              for item in manifest.get("manifests", []):
+          def find_platform_manifest_digest(arch):
+              for item in index_manifest.get("manifests", []):
                   platform = item.get("platform") or {}
                   if platform.get("os") == "linux" and platform.get("architecture") == arch:
                       return item.get("digest", "")
               return ""
 
-          print(f"AMD64_DIGEST={find_digest('amd64')}")
-          print(f"ARM64_DIGEST={find_digest('arm64')}")
+          def find_config_digest(manifest_digest):
+              if not manifest_digest:
+                  return ""
+              raw_manifest = subprocess.check_output(
+                  ["docker", "buildx", "imagetools", "inspect", "--raw", f"{ref.split(':', 1)[0]}@{manifest_digest}"],
+                  text=True,
+              ).strip()
+              platform_manifest = json.loads(raw_manifest)
+              return (platform_manifest.get("config") or {}).get("digest", "")
+
+          amd64_manifest_digest = find_platform_manifest_digest("amd64")
+          arm64_manifest_digest = find_platform_manifest_digest("arm64")
+          print(f"AMD64_DIGEST={find_config_digest(amd64_manifest_digest)}")
+          print(f"ARM64_DIGEST={find_config_digest(arm64_manifest_digest)}")
+          print(f"AMD64_MANIFEST_DIGEST={amd64_manifest_digest}")
+          print(f"ARM64_MANIFEST_DIGEST={arm64_manifest_digest}")
           PY
 
       - name: Upload to Cloudflare R2
@@ -345,6 +356,8 @@ jobs:
           PUBLIC_BASE_URL: https://launcher.qhkly.com
           AMD64_DIGEST: ${{ env.AMD64_DIGEST }}
           ARM64_DIGEST: ${{ env.ARM64_DIGEST }}
+          AMD64_MANIFEST_DIGEST: ${{ env.AMD64_MANIFEST_DIGEST }}
+          ARM64_MANIFEST_DIGEST: ${{ env.ARM64_MANIFEST_DIGEST }}
         run: |
           chmod +x ./scripts/publish-r2-registry.sh
           ./scripts/publish-r2-registry.sh \
@@ -417,21 +430,32 @@ jobs:
           import json, subprocess, sys
 
           ref = sys.argv[1]
-          raw = subprocess.check_output(
-              ["docker", "buildx", "imagetools", "inspect", "--raw", ref],
-              text=True,
-          ).strip()
-          manifest = json.loads(raw)
+          raw = subprocess.check_output(["docker", "buildx", "imagetools", "inspect", "--raw", ref], text=True).strip()
+          index_manifest = json.loads(raw)
 
-          def find_digest(arch):
-              for item in manifest.get("manifests", []):
+          def find_platform_manifest_digest(arch):
+              for item in index_manifest.get("manifests", []):
                   platform = item.get("platform") or {}
                   if platform.get("os") == "linux" and platform.get("architecture") == arch:
                       return item.get("digest", "")
               return ""
 
-          print(f"AMD64_DIGEST={find_digest('amd64')}")
-          print(f"ARM64_DIGEST={find_digest('arm64')}")
+          def find_config_digest(manifest_digest):
+              if not manifest_digest:
+                  return ""
+              raw_manifest = subprocess.check_output(
+                  ["docker", "buildx", "imagetools", "inspect", "--raw", f"{ref.split(':', 1)[0]}@{manifest_digest}"],
+                  text=True,
+              ).strip()
+              platform_manifest = json.loads(raw_manifest)
+              return (platform_manifest.get("config") or {}).get("digest", "")
+
+          amd64_manifest_digest = find_platform_manifest_digest("amd64")
+          arm64_manifest_digest = find_platform_manifest_digest("arm64")
+          print(f"AMD64_DIGEST={find_config_digest(amd64_manifest_digest)}")
+          print(f"ARM64_DIGEST={find_config_digest(arm64_manifest_digest)}")
+          print(f"AMD64_MANIFEST_DIGEST={amd64_manifest_digest}")
+          print(f"ARM64_MANIFEST_DIGEST={arm64_manifest_digest}")
           PY
 
       - name: Upload to Cloudflare R2
@@ -444,6 +468,8 @@ jobs:
           PUBLIC_BASE_URL: https://launcher.qhkly.com
           AMD64_DIGEST: ${{ env.AMD64_DIGEST }}
           ARM64_DIGEST: ${{ env.ARM64_DIGEST }}
+          AMD64_MANIFEST_DIGEST: ${{ env.AMD64_MANIFEST_DIGEST }}
+          ARM64_MANIFEST_DIGEST: ${{ env.ARM64_MANIFEST_DIGEST }}
         run: |
           chmod +x ./scripts/publish-r2-registry.sh
           ./scripts/publish-r2-registry.sh \
@@ -516,21 +542,32 @@ jobs:
           import json, subprocess, sys
 
           ref = sys.argv[1]
-          raw = subprocess.check_output(
-              ["docker", "buildx", "imagetools", "inspect", "--raw", ref],
-              text=True,
-          ).strip()
-          manifest = json.loads(raw)
+          raw = subprocess.check_output(["docker", "buildx", "imagetools", "inspect", "--raw", ref], text=True).strip()
+          index_manifest = json.loads(raw)
 
-          def find_digest(arch):
-              for item in manifest.get("manifests", []):
+          def find_platform_manifest_digest(arch):
+              for item in index_manifest.get("manifests", []):
                   platform = item.get("platform") or {}
                   if platform.get("os") == "linux" and platform.get("architecture") == arch:
                       return item.get("digest", "")
               return ""
 
-          print(f"AMD64_DIGEST={find_digest('amd64')}")
-          print(f"ARM64_DIGEST={find_digest('arm64')}")
+          def find_config_digest(manifest_digest):
+              if not manifest_digest:
+                  return ""
+              raw_manifest = subprocess.check_output(
+                  ["docker", "buildx", "imagetools", "inspect", "--raw", f"{ref.split(':', 1)[0]}@{manifest_digest}"],
+                  text=True,
+              ).strip()
+              platform_manifest = json.loads(raw_manifest)
+              return (platform_manifest.get("config") or {}).get("digest", "")
+
+          amd64_manifest_digest = find_platform_manifest_digest("amd64")
+          arm64_manifest_digest = find_platform_manifest_digest("arm64")
+          print(f"AMD64_DIGEST={find_config_digest(amd64_manifest_digest)}")
+          print(f"ARM64_DIGEST={find_config_digest(arm64_manifest_digest)}")
+          print(f"AMD64_MANIFEST_DIGEST={amd64_manifest_digest}")
+          print(f"ARM64_MANIFEST_DIGEST={arm64_manifest_digest}")
           PY
 
       - name: Upload to Cloudflare R2
@@ -543,6 +580,8 @@ jobs:
           PUBLIC_BASE_URL: https://launcher.qhkly.com
           AMD64_DIGEST: ${{ env.AMD64_DIGEST }}
           ARM64_DIGEST: ${{ env.ARM64_DIGEST }}
+          AMD64_MANIFEST_DIGEST: ${{ env.AMD64_MANIFEST_DIGEST }}
+          ARM64_MANIFEST_DIGEST: ${{ env.ARM64_MANIFEST_DIGEST }}
         run: |
           chmod +x ./scripts/publish-r2-registry.sh
           ./scripts/publish-r2-registry.sh \

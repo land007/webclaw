@@ -13,6 +13,8 @@ AMD64_FILE="$3"
 ARM64_FILE="$4"
 AMD64_DIGEST="${AMD64_DIGEST:-}"
 ARM64_DIGEST="${ARM64_DIGEST:-}"
+AMD64_MANIFEST_DIGEST="${AMD64_MANIFEST_DIGEST:-}"
+ARM64_MANIFEST_DIGEST="${ARM64_MANIFEST_DIGEST:-}"
 
 : "${R2_BUCKET:?R2_BUCKET is required}"
 : "${R2_ENDPOINT:?R2_ENDPOINT is required}"
@@ -52,12 +54,14 @@ data = {
   "platforms": {
     "linux/amd64": {
       "digest": normalize_digest("${AMD64_DIGEST}"),
+      "manifestDigest": normalize_digest("${AMD64_MANIFEST_DIGEST}"),
       "archiveDigest": "${amd64_archive_digest}",
       "size": int("${amd64_size}"),
       "url": "${PUBLIC_BASE_URL}/registry/${IMAGE_NAME}-amd64-latest.tar.gz",
     },
     "linux/arm64": {
       "digest": normalize_digest("${ARM64_DIGEST}"),
+      "manifestDigest": normalize_digest("${ARM64_MANIFEST_DIGEST}"),
       "archiveDigest": "${arm64_archive_digest}",
       "size": int("${arm64_size}"),
       "url": "${PUBLIC_BASE_URL}/registry/${IMAGE_NAME}-arm64-latest.tar.gz",
