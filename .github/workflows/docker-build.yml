@@ -303,21 +303,30 @@ jobs:
 
       - name: Export webclaw (desktop) to tar.gz
         run: |
-          docker pull --platform linux/amd64 ghcr.io/${{ github.repository_owner }}/webclaw:${{ steps.version.outputs.image_tag }}
-          docker save ghcr.io/${{ github.repository_owner }}/webclaw:${{ steps.version.outputs.image_tag }} \
+          IMAGE_REF="ghcr.io/${{ github.repository_owner }}/webclaw:${{ steps.version.outputs.image_tag }}"
+
+          docker pull --platform linux/amd64 "$IMAGE_REF"
+          docker tag "$IMAGE_REF" "local/webclaw-amd64:${{ steps.version.outputs.label }}"
+          echo "AMD64_DIGEST=$(docker inspect local/webclaw-amd64:${{ steps.version.outputs.label }} --format '{{.Id}}')" >> $GITHUB_ENV
+          docker save "local/webclaw-amd64:${{ steps.version.outputs.label }}" \
             | gzip > webclaw-amd64-${{ steps.version.outputs.label }}.tar.gz
 
-          docker pull --platform linux/arm64 ghcr.io/${{ github.repository_owner }}/webclaw:${{ steps.version.outputs.image_tag }}
-          docker save ghcr.io/${{ github.repository_owner }}/webclaw:${{ steps.version.outputs.image_tag }} \
+          docker pull --platform linux/arm64 "$IMAGE_REF"
+          docker tag "$IMAGE_REF" "local/webclaw-arm64:${{ steps.version.outputs.label }}"
+          echo "ARM64_DIGEST=$(docker inspect local/webclaw-arm64:${{ steps.version.outputs.label }} --format '{{.Id}}')" >> $GITHUB_ENV
+          docker save "local/webclaw-arm64:${{ steps.version.outputs.label }}" \
             | gzip > webclaw-arm64-${{ steps.version.outputs.label }}.tar.gz
 
-      - name: Resolve image digests
+      - name: Resolve manifest digests
         run: |
           IMAGE_REF="ghcr.io/${{ github.repository_owner }}/webclaw:${{ steps.version.outputs.image_tag }}"
           python3 - <<'PY' "$IMAGE_REF" >> "$GITHUB_ENV"
-          import json, subprocess, sys
+          import json, re, subprocess, sys
 
           ref = sys.argv[1]
+          inspect_output = subprocess.check_output(["docker", "buildx", "imagetools", "inspect", ref], text=True)
+          match = re.search(r"^Digest:\s*(sha256:[0-9a-f]+)$", inspect_output, re.MULTILINE)
+          index_digest = match.group(1) if match else ""
           raw = subprocess.check_output(["docker", "buildx", "imagetools", "inspect", "--raw", ref], text=True).strip()
           index_manifest = json.loads(raw)
 
@@ -328,20 +337,9 @@ jobs:
                       return item.get("digest", "")
               return ""
 
-          def find_config_digest(manifest_digest):
-              if not manifest_digest:
-                  return ""
-              raw_manifest = subprocess.check_output(
-                  ["docker", "buildx", "imagetools", "inspect", "--raw", f"{ref.split(':', 1)[0]}@{manifest_digest}"],
-                  text=True,
-              ).strip()
-              platform_manifest = json.loads(raw_manifest)
-              return (platform_manifest.get("config") or {}).get("digest", "")
-
           amd64_manifest_digest = find_platform_manifest_digest("amd64")
           arm64_manifest_digest = find_platform_manifest_digest("arm64")
-          print(f"AMD64_DIGEST={find_config_digest(amd64_manifest_digest)}")
-          print(f"ARM64_DIGEST={find_config_digest(arm64_manifest_digest)}")
+          print(f"INDEX_DIGEST={index_digest}")
           print(f"AMD64_MANIFEST_DIGEST={amd64_manifest_digest}")
           print(f"ARM64_MANIFEST_DIGEST={arm64_manifest_digest}")
           PY
@@ -354,6 +352,7 @@ jobs:
           R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
           PUBLIC_BASE_URL: https://launcher.qhkly.com
+          INDEX_DIGEST: ${{ env.INDEX_DIGEST }}
           AMD64_DIGEST: ${{ env.AMD64_DIGEST }}
           ARM64_DIGEST: ${{ env.ARM64_DIGEST }}
           AMD64_MANIFEST_DIGEST: ${{ env.AMD64_MANIFEST_DIGEST }}
@@ -415,21 +414,30 @@ jobs:
 
       - name: Export webclaw_full (desktop + CLIs) to tar.gz
         run: |
-          docker pull --platform linux/amd64 ghcr.io/${{ github.repository_owner }}/webclaw_full:${{ steps.version.outputs.image_tag }}
-          docker save ghcr.io/${{ github.repository_owner }}/webclaw_full:${{ steps.version.outputs.image_tag }} \
+          IMAGE_REF="ghcr.io/${{ github.repository_owner }}/webclaw_full:${{ steps.version.outputs.image_tag }}"
+
+          docker pull --platform linux/amd64 "$IMAGE_REF"
+          docker tag "$IMAGE_REF" "local/webclaw_full-amd64:${{ steps.version.outputs.label }}"
+          echo "AMD64_DIGEST=$(docker inspect local/webclaw_full-amd64:${{ steps.version.outputs.label }} --format '{{.Id}}')" >> $GITHUB_ENV
+          docker save "local/webclaw_full-amd64:${{ steps.version.outputs.label }}" \
             | gzip > webclaw_full-amd64-${{ steps.version.outputs.label }}.tar.gz
 
-          docker pull --platform linux/arm64 ghcr.io/${{ github.repository_owner }}/webclaw_full:${{ steps.version.outputs.image_tag }}
-          docker save ghcr.io/${{ github.repository_owner }}/webclaw_full:${{ steps.version.outputs.image_tag }} \
+          docker pull --platform linux/arm64 "$IMAGE_REF"
+          docker tag "$IMAGE_REF" "local/webclaw_full-arm64:${{ steps.version.outputs.label }}"
+          echo "ARM64_DIGEST=$(docker inspect local/webclaw_full-arm64:${{ steps.version.outputs.label }} --format '{{.Id}}')" >> $GITHUB_ENV
+          docker save "local/webclaw_full-arm64:${{ steps.version.outputs.label }}" \
             | gzip > webclaw_full-arm64-${{ steps.version.outputs.label }}.tar.gz
 
-      - name: Resolve image digests
+      - name: Resolve manifest digests
         run: |
           IMAGE_REF="ghcr.io/${{ github.repository_owner }}/webclaw_full:${{ steps.version.outputs.image_tag }}"
           python3 - <<'PY' "$IMAGE_REF" >> "$GITHUB_ENV"
-          import json, subprocess, sys
+          import json, re, subprocess, sys
 
           ref = sys.argv[1]
+          inspect_output = subprocess.check_output(["docker", "buildx", "imagetools", "inspect", ref], text=True)
+          match = re.search(r"^Digest:\s*(sha256:[0-9a-f]+)$", inspect_output, re.MULTILINE)
+          index_digest = match.group(1) if match else ""
           raw = subprocess.check_output(["docker", "buildx", "imagetools", "inspect", "--raw", ref], text=True).strip()
           index_manifest = json.loads(raw)
 
@@ -440,20 +448,9 @@ jobs:
                       return item.get("digest", "")
               return ""
 
-          def find_config_digest(manifest_digest):
-              if not manifest_digest:
-                  return ""
-              raw_manifest = subprocess.check_output(
-                  ["docker", "buildx", "imagetools", "inspect", "--raw", f"{ref.split(':', 1)[0]}@{manifest_digest}"],
-                  text=True,
-              ).strip()
-              platform_manifest = json.loads(raw_manifest)
-              return (platform_manifest.get("config") or {}).get("digest", "")
-
           amd64_manifest_digest = find_platform_manifest_digest("amd64")
           arm64_manifest_digest = find_platform_manifest_digest("arm64")
-          print(f"AMD64_DIGEST={find_config_digest(amd64_manifest_digest)}")
-          print(f"ARM64_DIGEST={find_config_digest(arm64_manifest_digest)}")
+          print(f"INDEX_DIGEST={index_digest}")
           print(f"AMD64_MANIFEST_DIGEST={amd64_manifest_digest}")
           print(f"ARM64_MANIFEST_DIGEST={arm64_manifest_digest}")
           PY
@@ -466,6 +463,7 @@ jobs:
           R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
           PUBLIC_BASE_URL: https://launcher.qhkly.com
+          INDEX_DIGEST: ${{ env.INDEX_DIGEST }}
           AMD64_DIGEST: ${{ env.AMD64_DIGEST }}
           ARM64_DIGEST: ${{ env.ARM64_DIGEST }}
           AMD64_MANIFEST_DIGEST: ${{ env.AMD64_MANIFEST_DIGEST }}
@@ -527,21 +525,30 @@ jobs:
 
       - name: Export webclaw_lite to tar.gz
         run: |
-          docker pull --platform linux/amd64 ghcr.io/${{ github.repository_owner }}/webclaw_lite:${{ steps.version.outputs.image_tag }}
-          docker save ghcr.io/${{ github.repository_owner }}/webclaw_lite:${{ steps.version.outputs.image_tag }} \
+          IMAGE_REF="ghcr.io/${{ github.repository_owner }}/webclaw_lite:${{ steps.version.outputs.image_tag }}"
+
+          docker pull --platform linux/amd64 "$IMAGE_REF"
+          docker tag "$IMAGE_REF" "local/webclaw_lite-amd64:${{ steps.version.outputs.label }}"
+          echo "AMD64_DIGEST=$(docker inspect local/webclaw_lite-amd64:${{ steps.version.outputs.label }} --format '{{.Id}}')" >> $GITHUB_ENV
+          docker save "local/webclaw_lite-amd64:${{ steps.version.outputs.label }}" \
             | gzip > webclaw_lite-amd64-${{ steps.version.outputs.label }}.tar.gz
 
-          docker pull --platform linux/arm64 ghcr.io/${{ github.repository_owner }}/webclaw_lite:${{ steps.version.outputs.image_tag }}
-          docker save ghcr.io/${{ github.repository_owner }}/webclaw_lite:${{ steps.version.outputs.image_tag }} \
+          docker pull --platform linux/arm64 "$IMAGE_REF"
+          docker tag "$IMAGE_REF" "local/webclaw_lite-arm64:${{ steps.version.outputs.label }}"
+          echo "ARM64_DIGEST=$(docker inspect local/webclaw_lite-arm64:${{ steps.version.outputs.label }} --format '{{.Id}}')" >> $GITHUB_ENV
+          docker save "local/webclaw_lite-arm64:${{ steps.version.outputs.label }}" \
             | gzip > webclaw_lite-arm64-${{ steps.version.outputs.label }}.tar.gz
 
-      - name: Resolve image digests
+      - name: Resolve manifest digests
         run: |
           IMAGE_REF="ghcr.io/${{ github.repository_owner }}/webclaw_lite:${{ steps.version.outputs.image_tag }}"
           python3 - <<'PY' "$IMAGE_REF" >> "$GITHUB_ENV"
-          import json, subprocess, sys
+          import json, re, subprocess, sys
 
           ref = sys.argv[1]
+          inspect_output = subprocess.check_output(["docker", "buildx", "imagetools", "inspect", ref], text=True)
+          match = re.search(r"^Digest:\s*(sha256:[0-9a-f]+)$", inspect_output, re.MULTILINE)
+          index_digest = match.group(1) if match else ""
           raw = subprocess.check_output(["docker", "buildx", "imagetools", "inspect", "--raw", ref], text=True).strip()
           index_manifest = json.loads(raw)
 
@@ -552,20 +559,9 @@ jobs:
                       return item.get("digest", "")
               return ""
 
-          def find_config_digest(manifest_digest):
-              if not manifest_digest:
-                  return ""
-              raw_manifest = subprocess.check_output(
-                  ["docker", "buildx", "imagetools", "inspect", "--raw", f"{ref.split(':', 1)[0]}@{manifest_digest}"],
-                  text=True,
-              ).strip()
-              platform_manifest = json.loads(raw_manifest)
-              return (platform_manifest.get("config") or {}).get("digest", "")
-
           amd64_manifest_digest = find_platform_manifest_digest("amd64")
           arm64_manifest_digest = find_platform_manifest_digest("arm64")
-          print(f"AMD64_DIGEST={find_config_digest(amd64_manifest_digest)}")
-          print(f"ARM64_DIGEST={find_config_digest(arm64_manifest_digest)}")
+          print(f"INDEX_DIGEST={index_digest}")
           print(f"AMD64_MANIFEST_DIGEST={amd64_manifest_digest}")
           print(f"ARM64_MANIFEST_DIGEST={arm64_manifest_digest}")
           PY
@@ -578,6 +574,7 @@ jobs:
           R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
           PUBLIC_BASE_URL: https://launcher.qhkly.com
+          INDEX_DIGEST: ${{ env.INDEX_DIGEST }}
           AMD64_DIGEST: ${{ env.AMD64_DIGEST }}
           ARM64_DIGEST: ${{ env.ARM64_DIGEST }}
           AMD64_MANIFEST_DIGEST: ${{ env.AMD64_MANIFEST_DIGEST }}

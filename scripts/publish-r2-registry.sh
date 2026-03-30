@@ -11,6 +11,7 @@ IMAGE_NAME="$1"
 VERSION_LABEL="$2"
 AMD64_FILE="$3"
 ARM64_FILE="$4"
+INDEX_DIGEST="${INDEX_DIGEST:-}"
 AMD64_DIGEST="${AMD64_DIGEST:-}"
 ARM64_DIGEST="${ARM64_DIGEST:-}"
 AMD64_MANIFEST_DIGEST="${AMD64_MANIFEST_DIGEST:-}"
@@ -51,6 +52,7 @@ data = {
   "image": "${IMAGE_NAME}",
   "tag": "latest",
   "version": "${VERSION_LABEL}",
+  "indexDigest": normalize_digest("${INDEX_DIGEST}"),
   "platforms": {
     "linux/amd64": {
       "digest": normalize_digest("${AMD64_DIGEST}"),
