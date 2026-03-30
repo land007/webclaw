@@ -6,19 +6,8 @@ ARG WEBCLAW_BASE_VERSION=latest
 ARG WEBCLAW_BASE_IMAGE=ghcr.io/land007/webclaw_base
 FROM ${WEBCLAW_BASE_IMAGE}:${WEBCLAW_BASE_VERSION}
 
-LABEL org.opencontainers.image.title="webclaw" \
-      org.opencontainers.image.description="OpenClaw by WebClaw with editor, optional desktop, and isolated runtime" \
-      org.opencontainers.image.url="https://github.com/land007/webcode" \
-      org.opencontainers.image.source="https://github.com/land007/webcode" \
-      org.opencontainers.image.vendor="land007" \
-      org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.logo="https://raw.githubusercontent.com/land007/webclaw/main/images/icon-source.png" \
-      org.opencontainers.image.version="${WEBCODE_VERSION:-dev}"
-
 # Build-time flags (inherited from base, but can override)
-ARG WEBCODE_VERSION=dev
 ARG INSTALL_DESKTOP=true
-ENV WEBCODE_VERSION=${WEBCODE_VERSION}
 
 # ─── 6. GNOME Flashback desktop (VNC-compatible, no GL needed) ──────
 # Note: intentionally NO --no-install-recommends here so gnome desktop
@@ -279,6 +268,17 @@ RUN mkdir -p /home/ubuntu/.claude/skills && \
 
 RUN echo "land007/webclaw" > /.image_name && \
     echo $(date "+%Y-%m-%d_%H:%M:%S") > /.image_time
+
+# ─── Metadata ───────────────────────────────────────────────────────
+ARG WEBCODE_VERSION=dev
+LABEL org.opencontainers.image.title="webclaw" \
+      org.opencontainers.image.description="OpenClaw by WebClaw with editor, optional desktop, and isolated runtime" \
+      org.opencontainers.image.url="https://github.com/land007/webcode" \
+      org.opencontainers.image.source="https://github.com/land007/webcode" \
+      org.opencontainers.image.vendor="land007" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.logo="https://raw.githubusercontent.com/land007/webclaw/main/images/icon-source.png" \
+      org.opencontainers.image.version="${WEBCODE_VERSION:-dev}"
 
 # ─── Environment defaults ───────────────────────────────────────────
 ENV MODE=desktop

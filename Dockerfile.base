@@ -8,11 +8,6 @@ LABEL org.opencontainers.image.title="webclaw-base" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.logo="https://raw.githubusercontent.com/land007/webclaw/main/images/icon-source.png"
 
-# Build-time version argument
-ARG WEBCODE_VERSION=dev
-# Runtime version environment variable
-ENV WEBCODE_VERSION=${WEBCODE_VERSION}
-
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=zh_CN.UTF-8
 ENV LANGUAGE=zh_CN:zh
@@ -87,6 +82,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ttyd \
 RUN npm install -g openclaw@2026.3.24
 
 # ─── Metadata ───────────────────────────────────────────────────────
+ARG WEBCODE_VERSION=dev
 ARG CODE_SERVER_VER=4.100.2
 LABEL org.opencontainers.image.version="${WEBCODE_VERSION:-dev}" \
       org.opencontainers.image.revision="${CODE_SERVER_VER}" \
