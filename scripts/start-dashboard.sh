@@ -10,7 +10,7 @@ PREPARED_MAIN="/tmp/dashboard-server-override.js"
 if [ -f "${OVERRIDE_MAIN}" ]; then
   echo "[dashboard] using override source: ${OVERRIDE_MAIN}"
 
-  export NODE_PATH="${OVERRIDE_DIR}/node_modules:/usr/lib/node_modules:/usr/lib/node_modules/webclaw-dashboard-server/node_modules"
+  export NODE_PATH="${OVERRIDE_DIR}/node_modules:/usr/local/lib/node_modules:/usr/local/lib/node_modules/webclaw-dashboard-server/node_modules:/usr/lib/node_modules:/usr/lib/node_modules/webclaw-dashboard-server/node_modules"
 
   if [ -f "${OVERRIDE_HTML}" ] && [ -f "${OVERRIDE_FAVICON}" ]; then
     OVERRIDE_MAIN="${OVERRIDE_MAIN}" \
@@ -50,5 +50,5 @@ EOF
 fi
 
 echo "[dashboard] using packaged server: webclaw-dashboard-server"
-export NODE_PATH="/usr/lib/node_modules"
+export NODE_PATH="/usr/local/lib/node_modules:/usr/lib/node_modules"
 exec webclaw-dashboard-server

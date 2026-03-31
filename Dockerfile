@@ -176,11 +176,11 @@ RUN groupadd -f docker && usermod -aG docker ubuntu \
 RUN su -l ubuntu -c \
     'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash'
 
-# ─── 11c. Node 22.22 + Claude Code via nvm ──────────────────────────
+# ─── 11c. Node 22.22.1 + Claude Code via nvm ────────────────────────
 RUN su -l ubuntu -c \
     'source ~/.nvm/nvm.sh && \
-     nvm install 22.22.0 && \
-     nvm alias default 22.22.0 && \
+     nvm install 22.22.1 && \
+     nvm alias default 22.22.1 && \
      npm install -g @anthropic-ai/claude-code@latest'
 
 # ─── 11d. v2rayN (GUI proxy client) ─────────────────────────────────

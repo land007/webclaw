@@ -138,7 +138,7 @@ function Install-NodeJS {
     try {
         # Download Node.js installer
         Write-Host "Downloading Node.js LTS installer..."
-        $installerUrl = "https://nodejs.org/dist/v22.22.0/node-v22.22.0-x64.msi"
+        $installerUrl = "https://nodejs.org/dist/v22.22.1/node-v22.22.1-x64.msi"
         $installerPath = "$tempDir\nodejs-installer.msi"
 
         Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath -UseBasicParsing -TimeoutSec 120
