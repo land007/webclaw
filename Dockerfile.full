@@ -21,6 +21,10 @@ COPY configs/supervisor-claudecodeui.conf /etc/supervisor/conf.d/supervisor-clau
 # Install additional AI CLI tools for CloudUI compatibility
 RUN su -l ubuntu -c \
     'source ~/.nvm/nvm.sh && \
+     npm config set fetch-retries 5 && \
+     npm config set fetch-retry-mintimeout 20000 && \
+     npm config set fetch-retry-maxtimeout 120000 && \
+     npm config set fetch-timeout 300000 && \
      npm install -g @google/gemini-cli && \
      npm install -g @openai/codex && \
      npm install -g opencode-ai@latest && \
@@ -64,11 +68,11 @@ RUN su -l ubuntu -c \
      rm -f /tmp/Obsidian.AppImage'
 
 # ─── 5c. Pre-install Vibe Kanban globally ────────────────────────────────
-RUN npm install -g vibe-kanban@0.1.8
+RUN npm install -g --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000 --fetch-timeout=300000 vibe-kanban@0.1.8
 
 # ─── 5d. Pre-install claudecodeui globally (CLI UI for lite mode support) ─
 # This package requires native compilation (node-pty), takes time to build
-RUN npm install -g @siteboon/claude-code-ui
+RUN npm install -g --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000 --fetch-timeout=300000 @siteboon/claude-code-ui
 
 # ─── 5e. Enable ClaudeCodeUI Platform mode (no authentication required) ─
 COPY scripts/enable-claudecodeui-platform-mode.sh /opt/enable-claudecodeui-platform-mode.sh
