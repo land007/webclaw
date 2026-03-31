@@ -5,13 +5,6 @@ services:
     container_name: webclaw
     ports:
       - "20000:20000"  # Dashboard (四合一入口，via Caddy)
-      - "20001:20001"  # Theia IDE (via Caddy)
-      - "20002:20002"  # Vibe Kanban (via Caddy)
-      - "20003:20003"  # OpenClaw (via Caddy)
-      - "20004:20004"  # noVNC (via Caddy) + Audio WebSocket (/audio path)
-      - "20005:10005"  # TigerVNC (direct connection)
-      - "20007:10007"  # claudecodeui (via Caddy)
-      - "20008:10008"  # ttyd 轻量网页终端
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - dna-data:/home/ubuntu/dna          # DNA 目录：项目源码，空时自动 clone

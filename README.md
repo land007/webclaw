@@ -123,7 +123,7 @@ No GUI needed. Requires [Docker](https://docs.docker.com/engine/install/).
 **Option A — Minimal one-liner (simplest) ⚡:**
 
 ```bash
-docker run -d --name webclaw -p 20000-20004:20000-20004 -p 20005:10005 \
+docker run -d --name webclaw -p 20000:20000 \
   --shm-size=512m --security-opt seccomp=unconfined \
   -v webclaw-config:/home/ubuntu/.webclaw \
   -v projects:/home/ubuntu/projects \
@@ -148,11 +148,6 @@ docker run -d \
   --name webclaw \
   --restart unless-stopped \
   -p 20000:20000 \
-  -p 20001:20001 \
-  -p 20002:20002 \
-  -p 20003:20003 \
-  -p 20004:20004 \
-  -p 20005:10005 \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v webclaw-config:/home/ubuntu/.webclaw \
   -v dna-data:/home/ubuntu/dna \
@@ -516,7 +511,7 @@ irm https://raw.githubusercontent.com/land007/webclaw/main/install.ps1 | iex
 **选项 A — 极简一行命令（最简单）⚡：**
 
 ```bash
-docker run -d --name webclaw -p 20000-20004:20000-20004 -p 20005:10005 \
+docker run -d --name webclaw -p 20000:20000 \
   --shm-size=512m --security-opt seccomp=unconfined \
   -v webclaw-config:/home/ubuntu/.webclaw \
   -v projects:/home/ubuntu/projects \
@@ -541,11 +536,6 @@ docker run -d \
   --name webclaw \
   --restart unless-stopped \
   -p 20000:20000 \
-  -p 20001:20001 \
-  -p 20002:20002 \
-  -p 20003:20003 \
-  -p 20004:20004 \
-  -p 20005:10005 \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v webclaw-config:/home/ubuntu/.webclaw \
   -v dna-data:/home/ubuntu/dna \
