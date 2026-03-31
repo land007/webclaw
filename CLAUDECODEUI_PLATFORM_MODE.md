@@ -59,7 +59,7 @@ sed -i '/router\.get("\/status"/, /catch (error) {/ {
 
 ```ini
 [program:claudecodeui]
-command=/usr/bin/claude-code-ui --port 10007
+command=/usr/local/bin/claude-code-ui --port 10007
 directory=/home/ubuntu/projects
 user=ubuntu
 environment=HOME="/home/ubuntu",NODE_ENV="production",PORT="10007",JWT_SECRET="%(ENV_JWT_SECRET)s",DATABASE_PATH="/home/ubuntu/.cloudcli/auth.db"
