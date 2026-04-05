@@ -304,17 +304,19 @@ jobs:
       - name: Export webclaw (desktop) to tar.gz
         run: |
           IMAGE_REF="ghcr.io/${{ github.repository_owner }}/webclaw:${{ steps.version.outputs.image_tag }}"
+          AMD64_EXPORT_REF="land007/webclaw:latest"
+          ARM64_EXPORT_REF="land007/webclaw:latest"
 
           docker pull --platform linux/amd64 "$IMAGE_REF"
-          docker tag "$IMAGE_REF" "local/webclaw-amd64:${{ steps.version.outputs.label }}"
-          echo "AMD64_DIGEST=$(docker inspect local/webclaw-amd64:${{ steps.version.outputs.label }} --format '{{.Id}}')" >> $GITHUB_ENV
-          docker save "local/webclaw-amd64:${{ steps.version.outputs.label }}" \
+          docker tag "$IMAGE_REF" "$AMD64_EXPORT_REF"
+          echo "AMD64_DIGEST=$(docker inspect $AMD64_EXPORT_REF --format '{{.Id}}')" >> $GITHUB_ENV
+          docker save "$AMD64_EXPORT_REF" \
             | gzip > webclaw-amd64-${{ steps.version.outputs.label }}.tar.gz
 
           docker pull --platform linux/arm64 "$IMAGE_REF"
-          docker tag "$IMAGE_REF" "local/webclaw-arm64:${{ steps.version.outputs.label }}"
-          echo "ARM64_DIGEST=$(docker inspect local/webclaw-arm64:${{ steps.version.outputs.label }} --format '{{.Id}}')" >> $GITHUB_ENV
-          docker save "local/webclaw-arm64:${{ steps.version.outputs.label }}" \
+          docker tag "$IMAGE_REF" "$ARM64_EXPORT_REF"
+          echo "ARM64_DIGEST=$(docker inspect $ARM64_EXPORT_REF --format '{{.Id}}')" >> $GITHUB_ENV
+          docker save "$ARM64_EXPORT_REF" \
             | gzip > webclaw-arm64-${{ steps.version.outputs.label }}.tar.gz
 
       - name: Resolve manifest digests
@@ -415,17 +417,19 @@ jobs:
       - name: Export webclaw_full (desktop + CLIs) to tar.gz
         run: |
           IMAGE_REF="ghcr.io/${{ github.repository_owner }}/webclaw_full:${{ steps.version.outputs.image_tag }}"
+          AMD64_EXPORT_REF="land007/webclaw_full:latest"
+          ARM64_EXPORT_REF="land007/webclaw_full:latest"
 
           docker pull --platform linux/amd64 "$IMAGE_REF"
-          docker tag "$IMAGE_REF" "local/webclaw_full-amd64:${{ steps.version.outputs.label }}"
-          echo "AMD64_DIGEST=$(docker inspect local/webclaw_full-amd64:${{ steps.version.outputs.label }} --format '{{.Id}}')" >> $GITHUB_ENV
-          docker save "local/webclaw_full-amd64:${{ steps.version.outputs.label }}" \
+          docker tag "$IMAGE_REF" "$AMD64_EXPORT_REF"
+          echo "AMD64_DIGEST=$(docker inspect $AMD64_EXPORT_REF --format '{{.Id}}')" >> $GITHUB_ENV
+          docker save "$AMD64_EXPORT_REF" \
             | gzip > webclaw_full-amd64-${{ steps.version.outputs.label }}.tar.gz
 
           docker pull --platform linux/arm64 "$IMAGE_REF"
-          docker tag "$IMAGE_REF" "local/webclaw_full-arm64:${{ steps.version.outputs.label }}"
-          echo "ARM64_DIGEST=$(docker inspect local/webclaw_full-arm64:${{ steps.version.outputs.label }} --format '{{.Id}}')" >> $GITHUB_ENV
-          docker save "local/webclaw_full-arm64:${{ steps.version.outputs.label }}" \
+          docker tag "$IMAGE_REF" "$ARM64_EXPORT_REF"
+          echo "ARM64_DIGEST=$(docker inspect $ARM64_EXPORT_REF --format '{{.Id}}')" >> $GITHUB_ENV
+          docker save "$ARM64_EXPORT_REF" \
             | gzip > webclaw_full-arm64-${{ steps.version.outputs.label }}.tar.gz
 
       - name: Resolve manifest digests
@@ -526,17 +530,19 @@ jobs:
       - name: Export webclaw_lite to tar.gz
         run: |
           IMAGE_REF="ghcr.io/${{ github.repository_owner }}/webclaw_lite:${{ steps.version.outputs.image_tag }}"
+          AMD64_EXPORT_REF="land007/webclaw_lite:latest"
+          ARM64_EXPORT_REF="land007/webclaw_lite:latest"
 
           docker pull --platform linux/amd64 "$IMAGE_REF"
-          docker tag "$IMAGE_REF" "local/webclaw_lite-amd64:${{ steps.version.outputs.label }}"
-          echo "AMD64_DIGEST=$(docker inspect local/webclaw_lite-amd64:${{ steps.version.outputs.label }} --format '{{.Id}}')" >> $GITHUB_ENV
-          docker save "local/webclaw_lite-amd64:${{ steps.version.outputs.label }}" \
+          docker tag "$IMAGE_REF" "$AMD64_EXPORT_REF"
+          echo "AMD64_DIGEST=$(docker inspect $AMD64_EXPORT_REF --format '{{.Id}}')" >> $GITHUB_ENV
+          docker save "$AMD64_EXPORT_REF" \
             | gzip > webclaw_lite-amd64-${{ steps.version.outputs.label }}.tar.gz
 
           docker pull --platform linux/arm64 "$IMAGE_REF"
-          docker tag "$IMAGE_REF" "local/webclaw_lite-arm64:${{ steps.version.outputs.label }}"
-          echo "ARM64_DIGEST=$(docker inspect local/webclaw_lite-arm64:${{ steps.version.outputs.label }} --format '{{.Id}}')" >> $GITHUB_ENV
-          docker save "local/webclaw_lite-arm64:${{ steps.version.outputs.label }}" \
+          docker tag "$IMAGE_REF" "$ARM64_EXPORT_REF"
+          echo "ARM64_DIGEST=$(docker inspect $ARM64_EXPORT_REF --format '{{.Id}}')" >> $GITHUB_ENV
+          docker save "$ARM64_EXPORT_REF" \
             | gzip > webclaw_lite-arm64-${{ steps.version.outputs.label }}.tar.gz
 
       - name: Resolve manifest digests
