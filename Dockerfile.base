@@ -87,7 +87,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ttyd \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # ─── 5b. Pre-install OpenClaw globally (易变，放最后避免破坏缓存) ─────
-RUN npm install -g openclaw@2026.3.24
+RUN npm install -g openclaw@2026.4.5
 
 # ─── Metadata ───────────────────────────────────────────────────────
 ARG WEBCODE_VERSION=dev
