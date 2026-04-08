@@ -17,18 +17,8 @@ COPY configs/supervisord-full.conf /etc/supervisor/supervisord.conf
 COPY configs/supervisor-vibe-kanban.conf /etc/supervisor/conf.d/supervisor-vibe-kanban.conf
 COPY configs/supervisor-claudecodeui.conf /etc/supervisor/conf.d/supervisor-claudecodeui.conf
 
-# ─── AI CLI Tools: Gemini CLI, Codex CLI, Cursor CLI, OpenCode AI ───────────────
-# Install additional AI CLI tools for CloudUI compatibility
-RUN su -l ubuntu -c \
-    'source ~/.nvm/nvm.sh && \
-     npm config set fetch-retries 5 && \
-     npm config set fetch-retry-mintimeout 20000 && \
-     npm config set fetch-retry-maxtimeout 120000 && \
-     npm config set fetch-timeout 300000 && \
-     npm install -g @google/gemini-cli && \
-     npm install -g @openai/codex && \
-     npm install -g opencode-ai@latest && \
-     npm install -g oh-my-opencode'
+# ─── AI Desktop Tools: Cursor CLI, Obsidian ─────────────────────────────
+# (npm-based AI CLI tools moved to Dockerfile.base)
 
 # Install Cursor CLI (cursor-agent) - direct binary download
 RUN su -l ubuntu -c \

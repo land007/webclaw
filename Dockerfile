@@ -172,18 +172,7 @@ RUN groupadd -f docker && usermod -aG docker ubuntu \
     && touch /home/ubuntu/.hushlogin \
     && chown -R ubuntu:ubuntu /home/ubuntu
 
-# ─── 11b. nvm for ubuntu user ────────────────────────────────────────
-RUN su -l ubuntu -c \
-    'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash'
-
-# ─── 11c. Node 22.22.1 + Claude Code via nvm ────────────────────────
-RUN su -l ubuntu -c \
-    'source ~/.nvm/nvm.sh && \
-     nvm install 22.22.1 && \
-     nvm alias default 22.22.1 && \
-     npm install -g @anthropic-ai/claude-code@latest'
-
-# ─── 11d. v2rayN (GUI proxy client) ─────────────────────────────────
+# ─── 11b. v2rayN (GUI proxy client) ─────────────────────────────────
 RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         ARCH=$(dpkg --print-architecture) \
         && case "$ARCH" in \

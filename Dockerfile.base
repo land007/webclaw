@@ -86,7 +86,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends supervisor \
 RUN apt-get update && apt-get install -y --no-install-recommends ttyd \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# ─── 5b. Pre-install OpenClaw globally (易变，放最后避免破坏缓存) ─────
+# ─── 5b. Pre-install global AI CLI tools ──────────────────────────────
+RUN npm config set fetch-retries 5 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm config set fetch-timeout 300000 && \
+    npm install -g @anthropic-ai/claude-code@latest && \
+    npm install -g @openai/codex && \
+    npm install -g @google/gemini-cli && \
+    npm install -g opencode-ai@latest && \
+    npm install -g oh-my-opencode
+
+# ─── 5c. Pre-install OpenClaw globally (易变，放最后避免破坏缓存) ─────
 RUN npm install -g openclaw@2026.4.5
 
 # ─── Metadata ───────────────────────────────────────────────────────
