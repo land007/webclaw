@@ -21,12 +21,9 @@ mkdir -p /home/ubuntu/projects
 mkdir -p /home/ubuntu/Desktop
 mkdir -p /home/ubuntu/.local/share/vibe-kanban
 
-# 后台执行 projects 目录的 chown，避免阻塞启动（包含大量文件）
-echo "[startup] Starting background chown for /home/ubuntu/projects (may take several minutes)..."
-(chown -R ubuntu:ubuntu /home/ubuntu/projects >/dev/null 2>&1 || true) &
-
-chown -R ubuntu:ubuntu /home/ubuntu/Desktop
-chown -R ubuntu:ubuntu /home/ubuntu/.local
+# 后台递归修复 /home/ubuntu 权限，避免大目录阻塞启动
+echo "[startup] Starting background chown for /home/ubuntu (may take several minutes)..."
+(chown -R ubuntu:ubuntu /home/ubuntu >/dev/null 2>&1 || true) &
 
 mkdir -p /home/ubuntu/recordings
 chown ubuntu:ubuntu /home/ubuntu/recordings
