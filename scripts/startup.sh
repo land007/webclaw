@@ -21,9 +21,29 @@ mkdir -p /home/ubuntu/projects
 mkdir -p /home/ubuntu/Desktop
 mkdir -p /home/ubuntu/.local/share/vibe-kanban
 
-# 后台递归修复 /home/ubuntu 权限，避免大目录阻塞启动
-echo "[startup] Starting background chown for /home/ubuntu (may take several minutes)..."
-(chown -R ubuntu:ubuntu /home/ubuntu >/dev/null 2>&1 || true) &
+# 后台递归修复 /home/ubuntu 权限，避免大目录阻塞启动。
+# 保留用户本地目录挂载点的原始 owner，避免把宿主机目录重置成 ubuntu。
+readonly LOCAL_PROJECT_DIRS=(
+    "/home/ubuntu/projects/desktop"
+    "/home/ubuntu/projects/documents"
+    "/home/ubuntu/projects/downloads"
+    "/home/ubuntu/projects/movies"
+    "/home/ubuntu/projects/pictures"
+)
+
+background_chown_home() {
+    local find_args=("/home/ubuntu")
+    local skip_dir
+
+    for skip_dir in "${LOCAL_PROJECT_DIRS[@]}"; do
+        find_args+=("(" "-path" "$skip_dir" "-o" "-path" "$skip_dir/*" ")" "-prune" "-o")
+    done
+
+    find "${find_args[@]}" -exec chown ubuntu:ubuntu {} + >/dev/null 2>&1 || true
+}
+
+echo "[startup] Starting background chown for /home/ubuntu (excluding local project mounts)..."
+(background_chown_home) &
 
 mkdir -p /home/ubuntu/recordings
 chown ubuntu:ubuntu /home/ubuntu/recordings
