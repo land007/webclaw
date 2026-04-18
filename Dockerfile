@@ -261,7 +261,7 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         && cp /tmp/clipboard-server.js /opt/clipboard-server.js \
         && cp /tmp/custom-clipboard-image.js /opt/noVNC/custom-clipboard-image.js \
         && chmod +x /opt/clipboard-server.js \
-        && sed -i 's|</body>|<script src="/custom-clipboard-image.js"></script></body>|' /opt/noVNC/vnc.html; \
+        && sed -i 's|</body>|<script type="module">import UI from "./app/ui.js";window.UI=UI;</script><script src="custom-clipboard-image.js"></script></body>|' /opt/noVNC/vnc.html; \
     fi \
     && mkdir -p /opt/dashboard-override \
     && chown -R ubuntu:ubuntu /opt/dashboard-override \

@@ -9,15 +9,12 @@
 
 const express = require('express');
 const multer = require('multer');
-const { exec } = require('child_process');
+const { spawn } = require('child_process');
 const fs = require('fs').promises;
-const util = require('util');
 const path = require('path');
 
-const execPromise = util.promisify(exec);
-
 const app = express();
-const PORT = 20005;
+const PORT = 10009;
 
 // 配置 multer 处理文件上传
 const upload = multer({
@@ -65,26 +62,27 @@ app.post('/api/clipboard-image', upload.single('image'), async (req, res) => {
     console.log(`[clipboard] 临时文件已保存: ${tempPath}`);
 
     // 使用 xclip 将图片写入容器剪贴板
-    // -selection clipboard: 使用剪贴板（而非 primary selection）
-    // -target image/png: 指定目标格式为 PNG
+    // xclip -i 会 fork 守护进程持有 clipboard，阻塞到别人 paste 才退出；
+    // 这里必须 detach 后立刻返回响应，让前端再 send Ctrl+V 触发 paste，否则会死锁。
     try {
-      await execPromise(
-        `xclip -selection clipboard -target image/png -i "${tempPath}"`
-      );
-      console.log(`[clipboard] xclip 执行成功`);
+      const child = spawn('xclip',
+        ['-selection', 'clipboard', '-target', 'image/png', '-i', tempPath],
+        { detached: true, stdio: 'ignore' });
+      child.unref();
+      console.log(`[clipboard] xclip 后台启动 pid=${child.pid}`);
+
+      // 延迟 5 秒清理临时文件，确保 xclip 已读入数据
+      setTimeout(() => {
+        fs.unlink(tempPath).catch(err => {
+          if (err.code !== 'ENOENT') {
+            console.warn(`[clipboard] 清理临时文件失败: ${err.message}`);
+          }
+        });
+      }, 5000);
     } catch (error) {
-      console.error('[clipboard] xclip 执行失败:', error);
+      console.error('[clipboard] xclip 启动失败:', error);
       throw new Error('写入剪贴板失败');
     }
-
-    // 清理临时文件（延迟 1 秒，确保 xclip 完成读取）
-    setTimeout(() => {
-      fs.unlink(tempPath).catch(err => {
-        if (err.code !== 'ENOENT') {
-          console.warn(`[clipboard] 清理临时文件失败: ${err.message}`);
-        }
-      });
-    }, 1000);
 
     const elapsed = Date.now() - startTime;
     console.log(`[clipboard] 处理完成，耗时: ${elapsed}ms`);

@@ -47,19 +47,27 @@
   }
 
   // 检查是否在 noVNC 焦点
+  // 放宽规则：只要不是在输入框/可编辑元素里输入，就认为是在 noVNC 粘贴
+  // 因为点击 canvas 后 document.activeElement 常常仍是 body，不会进入 #noVNC_container
   function isNoVNCFocused() {
     const activeElement = document.activeElement;
+    if (!activeElement) return true;
 
-    // 排除输入框、文本域等可编辑元素
     if (activeElement.tagName === 'INPUT' ||
         activeElement.tagName === 'TEXTAREA' ||
         activeElement.isContentEditable) {
       return false;
     }
 
-    // 检查是否在 noVNC 显示区域内
-    const container = document.querySelector('#noVNC_container');
-    return container && container.contains(activeElement);
+    return true;
+  }
+
+  // 构造剪贴板 API URL（同 audio-bar.js 的 getAudioWebSocketUrl 写法）
+  // noVNC 挂在 /proxy/10004/ 下 → 走 /proxy/10009/api/clipboard-image
+  // 开发直连 → /api/clipboard-image
+  function getClipboardApiUrl() {
+    const basePath = location.pathname.match(/\/proxy\/10004\//) ? '/proxy/10009/' : '/';
+    return location.protocol + '//' + location.host + basePath + 'api/clipboard-image';
   }
 
   // 上传图片到服务器
@@ -67,7 +75,7 @@
     const formData = new FormData();
     formData.append('image', blob, 'pasted-image.png');
 
-    const response = await fetch('http://127.0.0.1:20005/api/clipboard-image', {
+    const response = await fetch(getClipboardApiUrl(), {
       method: 'POST',
       body: formData
     });
@@ -80,24 +88,18 @@
     return await response.json();
   }
 
-  // 发送 Ctrl+V 到容器
+  // 发送 Ctrl+V 到容器（完整 Ctrl↓ V↓ V↑ Ctrl↑ 序列）
   async function sendCtrlVToContainer() {
-    if (!window.UI || !window.UI.rfb) {
-      throw new Error('noVNC 未连接');
+    const rfb = (window.UI && window.UI.rfb) || window.rfb;
+    if (!rfb || typeof rfb.sendKey !== 'function') {
+      throw new Error('noVNC RFB 实例不可用');
     }
-
-    try {
-      // 动态导入 KeyTable
-      const keysymModule = await import('/opt/noVNC/core/input/keysymdef.js');
-      const XK_V = keysymModule.default.XK_V;
-
-      // 发送 Ctrl+V 按键事件
-      window.UI.rfb.sendKey(XK_V, 'KeyV', true);   // KeyDown
-      window.UI.rfb.sendKey(XK_V, 'KeyV', false);  // KeyUp
-    } catch (error) {
-      console.error('发送按键失败:', error);
-      throw new Error('发送按键失败: ' + error.message);
-    }
+    const XK_Control_L = 0xffe3;
+    const XK_V = 0x0076;
+    rfb.sendKey(XK_Control_L, 'ControlLeft', true);
+    rfb.sendKey(XK_V, 'KeyV', true);
+    rfb.sendKey(XK_V, 'KeyV', false);
+    rfb.sendKey(XK_Control_L, 'ControlLeft', false);
   }
 
   // 从剪贴板项中提取图片
@@ -255,15 +257,18 @@
     // 请求权限
     requestClipboardPermission();
 
-    // 监听键盘事件
-    document.addEventListener('keydown', (e) => {
-      if (e.ctrlKey && e.key === 'v' && isNoVNCFocused()) {
-        console.log('[clipboard] 检测到 Ctrl+V，开始处理');
-        handleCtrlV(e);
-      }
-    });
+    // 监听键盘事件（同时接受 Ctrl+V 与 macOS 的 Cmd+V）
+    // 使用 capture 阶段，抢在 noVNC 的 keydown 处理之前接管，避免被 stopPropagation 截掉
+    const keyHandler = (e) => {
+      if (!((e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V'))) return;
+      if (!isNoVNCFocused()) return;
+      e.stopPropagation();
+      handleCtrlV(e);
+    };
+    document.addEventListener('keydown', keyHandler, true);
+    window.addEventListener('keydown', keyHandler, true);
 
-    console.log('[clipboard] 已就绪，按 Ctrl+V 粘贴图片或文本');
+    console.log('[clipboard] 已就绪，按 Ctrl+V / Cmd+V 粘贴图片或文本');
   }
 
   // 页面加载完成后初始化
