@@ -1,0 +1,154 @@
+#!/usr/bin/env node
+
+/**
+ * clipboard-server.js
+ *
+ * 剪贴板图片服务
+ * 接收浏览器上传的图片，使用 xclip 写入容器剪贴板
+ */
+
+const express = require('express');
+const multer = require('multer');
+const { exec } = require('child_process');
+const fs = require('fs').promises;
+const util = require('util');
+const path = require('path');
+
+const execPromise = util.promisify(exec);
+
+const app = express();
+const PORT = 20005;
+
+// 配置 multer 处理文件上传
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 限制 10MB
+    files: 1
+  },
+  fileFilter: (req, file, cb) => {
+    // 只接受图片格式
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('只支持图片格式'));
+    }
+  }
+});
+
+// 健康检查端点
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', service: 'clipboard-server' });
+});
+
+// 图片剪贴板 API
+app.post('/api/clipboard-image', upload.single('image'), async (req, res) => {
+  const startTime = Date.now();
+
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        error: '没有上传文件',
+        code: 'NO_FILE'
+      });
+    }
+
+    console.log(`[clipboard] 收到图片: ${req.file.mimetype}, ${(req.file.size / 1024).toFixed(2)} KB`);
+
+    // 生成临时文件路径
+    const tempFileName = `pasted-image-${Date.now()}.png`;
+    const tempPath = path.join('/tmp', tempFileName);
+
+    // 写入临时文件
+    await fs.writeFile(tempPath, req.file.buffer);
+
+    console.log(`[clipboard] 临时文件已保存: ${tempPath}`);
+
+    // 使用 xclip 将图片写入容器剪贴板
+    // -selection clipboard: 使用剪贴板（而非 primary selection）
+    // -target image/png: 指定目标格式为 PNG
+    try {
+      await execPromise(
+        `xclip -selection clipboard -target image/png -i "${tempPath}"`
+      );
+      console.log(`[clipboard] xclip 执行成功`);
+    } catch (error) {
+      console.error('[clipboard] xclip 执行失败:', error);
+      throw new Error('写入剪贴板失败');
+    }
+
+    // 清理临时文件（延迟 1 秒，确保 xclip 完成读取）
+    setTimeout(() => {
+      fs.unlink(tempPath).catch(err => {
+        if (err.code !== 'ENOENT') {
+          console.warn(`[clipboard] 清理临时文件失败: ${err.message}`);
+        }
+      });
+    }, 1000);
+
+    const elapsed = Date.now() - startTime;
+    console.log(`[clipboard] 处理完成，耗时: ${elapsed}ms`);
+
+    res.json({
+      success: true,
+      message: '图片已同步到剪贴板',
+      size: req.file.size,
+      elapsed: elapsed
+    });
+
+  } catch (error) {
+    console.error('[clipboard] 处理失败:', error);
+
+    res.status(500).json({
+      error: error.message,
+      code: 'PROCESSING_ERROR'
+    });
+  }
+});
+
+// 错误处理
+app.use((error, req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        error: '文件过大（最大 10MB）',
+        code: 'FILE_TOO_LARGE'
+      });
+    }
+    return res.status(400).json({
+      error: error.message,
+      code: 'UPLOAD_ERROR'
+    });
+  }
+
+  if (error.message === '只支持图片格式') {
+    return res.status(400).json({
+      error: error.message,
+      code: 'INVALID_FILE_TYPE'
+    });
+  }
+
+  console.error('[clipboard] 未处理的错误:', error);
+  res.status(500).json({
+    error: '服务器内部错误',
+    code: 'INTERNAL_ERROR'
+  });
+});
+
+// 启动服务器
+app.listen(PORT, '127.0.0.1', () => {
+  console.log(`[clipboard] 服务已启动，监听端口: ${PORT}`);
+  console.log(`[clipboard] 健康检查: http://127.0.0.1:${PORT}/health`);
+  console.log(`[clipboard] API 端点: http://127.0.0.1:${PORT}/api/clipboard-image`);
+});
+
+// 优雅关闭
+process.on('SIGTERM', () => {
+  console.log('[clipboard] 收到 SIGTERM 信号，正在关闭...');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('[clipboard] 收到 SIGINT 信号，正在关闭...');
+  process.exit(0);
+});

@@ -204,6 +204,14 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         && apt-get clean && rm -rf /var/lib/apt/lists/*; \
     fi
 
+# ─── 11c. Enhanced clipboard support (xclip + Node.js) ─────────────────
+# 安装 xclip 用于剪贴板操作，安装 Node.js 依赖用于剪贴板服务
+RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
+        apt-get update && apt-get install -y --no-install-recommends xclip \
+        && npm install -g express multer \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*; \
+    fi
+
 # ─── 12. Config files (COPY last — most likely to change) ───────────
 COPY configs/supervisord.conf /etc/supervisor/supervisord.conf
 COPY configs/supervisord-lite.conf /etc/supervisor/conf.d/supervisord-lite.conf
@@ -216,6 +224,9 @@ COPY configs/supervisor-dind.conf /etc/supervisor/conf.d/supervisor-dind.conf
 
 # Dashboard server (needed for both desktop and lite modes)
 COPY configs/supervisor-dashboard.conf /etc/supervisor/conf.d/supervisor-dashboard.conf
+
+# Clipboard server (enhanced image paste support)
+COPY configs/supervisor-clipboard.conf /etc/supervisor/conf.d/supervisor-clipboard.conf
 
 # Desktop-specific configs (audio, noVNC, desktop shortcuts)
 COPY configs/supervisor-audio.conf /tmp/
@@ -231,6 +242,8 @@ COPY scripts/start-webtty.sh /opt/start-webtty.sh
 COPY scripts/start-openclaw.sh /opt/start-openclaw.sh
 COPY configs/desktop-shortcuts/ /tmp/desktop-shortcuts/
 COPY scripts/patch-novnc.sh /tmp/patch-novnc.sh
+COPY configs/clipboard-server.js /tmp/clipboard-server.js
+COPY configs/custom-clipboard-image.js /tmp/custom-clipboard-image.js
 RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         cp /tmp/supervisor-audio.conf /etc/supervisor/conf.d/ \
         && cp /tmp/audio-player.html /opt/noVNC/audio.html \
@@ -244,7 +257,11 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         && cp -r /tmp/desktop-shortcuts/ /opt/ \
         && cp /tmp/audio-ws-server.py /opt/ \
         && cp /tmp/audio-ws-wrapper.sh /opt/ \
-        && chmod +x /opt/audio-ws-server.py /opt/audio-ws-wrapper.sh; \
+        && chmod +x /opt/audio-ws-server.py /opt/audio-ws-wrapper.sh \
+        && cp /tmp/clipboard-server.js /opt/clipboard-server.js \
+        && cp /tmp/custom-clipboard-image.js /opt/noVNC/custom-clipboard-image.js \
+        && chmod +x /opt/clipboard-server.js \
+        && sed -i 's|</body>|<script src="/custom-clipboard-image.js"></script></body>|' /opt/noVNC/vnc.html; \
     fi \
     && mkdir -p /opt/dashboard-override \
     && chown -R ubuntu:ubuntu /opt/dashboard-override \
@@ -252,7 +269,7 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
     && rm -rf /tmp/supervisor-audio.conf /tmp/audio-player.html /tmp/audio-bar.js \
            /tmp/touch-handler.js /tmp/key-remap.js /tmp/xsession /tmp/desktop-shortcuts/ \
            /tmp/audio-ws-server.py /tmp/audio-ws-wrapper.sh \
-           /tmp/patch-novnc.sh
+           /tmp/patch-novnc.sh /tmp/clipboard-server.js /tmp/custom-clipboard-image.js
 
 COPY scripts/startup.sh /opt/startup.sh
 COPY scripts/run-cloudflared.sh /usr/local/bin/run-cloudflared.sh
