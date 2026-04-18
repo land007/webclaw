@@ -1,0 +1,14 @@
+[Desktop Entry]
+Name=VS Code
+Name[zh_CN]=VS Code
+Comment=Code editing. Redefined.
+Comment[zh_CN]=代码编辑器
+GenericName=Text Editor
+Exec=/usr/bin/code %F
+Icon=vscode
+Type=Application
+Categories=TextEditor;IDE;Development;
+StartupNotify=true
+StartupWMClass=code
+Keywords=Text;Editor;Write;Code;Programming;
+Keywords[zh_CN]=文本;编辑器;编写;代码;编程;

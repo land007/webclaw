@@ -93,6 +93,28 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         && apt-get clean && rm -rf /var/lib/apt/lists/*; \
     fi
 
+# ─── 8c. VS Code desktop edition (multi-arch: amd64 + arm64) ─────────────
+# Microsoft VS Code 官方仓库自动支持多架构
+RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
+        wget -qO- https://packages.microsoft.com/keys/microsoft.asc | \
+            gpg --dearmor > /usr/share/keyrings/microsoft-archive-keyring.gpg && \
+        echo "deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/microsoft-archive-keyring.gpg] \
+             https://packages.microsoft.com/repos/code stable main" \
+             > /etc/apt/sources.list.d/vscode.list && \
+        apt-get update && apt-get install -y code && \
+        apt-get clean && rm -rf /var/lib/apt/lists/*; \
+    fi
+
+# ─── 8d. VS Code 共享 code-server 扩展目录 ─────────────────────────────
+RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
+        mkdir -p /home/ubuntu/.vscode && \
+        ln -s /opt/code-server-extensions /home/ubuntu/.vscode/extensions && \
+        chown -h ubuntu:ubuntu /home/ubuntu/.vscode/extensions && \
+        mkdir -p /home/ubuntu/.config/Code/User && \
+        echo '{"locale":"zh-cn"}' > /home/ubuntu/.config/Code/User/locale.json && \
+        chown -R ubuntu:ubuntu /home/ubuntu/.vscode /home/ubuntu/.config/Code; \
+    fi
+
 # ─── 8b. PulseAudio + Python WebSocket server deps ──────────────────
 RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         apt-get update && apt-get install -y --no-install-recommends \
