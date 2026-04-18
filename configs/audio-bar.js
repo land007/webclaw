@@ -69,7 +69,14 @@
   function getAudioWebSocketUrl() {
     // Use current page's protocol, host, and port with /audio path
     var protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    return protocol + '//' + location.host + '/audio';
+
+    // Extract base path (similar to relative path concept)
+    // If current path is /proxy/10004/vnc.html, base path is /proxy/10004/
+    // If current path is /vnc.html, base path is /
+    var currentPath = location.pathname;
+    var basePath = currentPath.match(/\/proxy\/10004\//) ? '/proxy/10004/' : '/';
+
+    return protocol + '//' + location.host + basePath + 'audio';
   }
 
   var AUDIO_WS_URL = getAudioWebSocketUrl();

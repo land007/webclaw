@@ -142,7 +142,13 @@
     nextPlayTime = audioCtx.currentTime + 0.02;
 
     var protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    var wsUrl = protocol + '//' + location.host + '/audio';
+
+    // Extract base path (similar to relative path concept)
+    // If current path is /proxy/10004/audio.html, base path is /proxy/10004/
+    // If current path is /audio.html, base path is /
+    var currentPath = location.pathname;
+    var basePath = currentPath.match(/\/proxy\/10004\//) ? '/proxy/10004/' : '/';
+    var wsUrl = protocol + '//' + location.host + basePath + 'audio';
     try {
       ws = new WebSocket(wsUrl);
     } catch (e) {
