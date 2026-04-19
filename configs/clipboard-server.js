@@ -38,6 +38,22 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'clipboard-server' });
 });
 
+// 反向：读取容器当前 X11 剪贴板里的 image/png
+// 无图时 xclip 退出码非 0 或 stdout 空，返回 404
+app.get('/api/clipboard-image', (req, res) => {
+  const child = spawn('xclip', ['-selection', 'clipboard', '-target', 'image/png', '-o']);
+  const chunks = [];
+  child.stdout.on('data', (b) => chunks.push(b));
+  child.stderr.on('data', () => {});
+  child.on('error', () => res.status(500).end());
+  child.on('close', (code) => {
+    if (code !== 0 || chunks.length === 0) return res.status(404).end();
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'no-store');
+    res.end(Buffer.concat(chunks));
+  });
+});
+
 // 图片剪贴板 API
 app.post('/api/clipboard-image', upload.single('image'), async (req, res) => {
   const startTime = Date.now();

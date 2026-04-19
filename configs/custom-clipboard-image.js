@@ -268,7 +268,75 @@
     document.addEventListener('keydown', keyHandler, true);
     window.addEventListener('keydown', keyHandler, true);
 
+    // 反向：Cmd+C / Ctrl+C 在 noVNC 焦点内时，事后拉容器剪贴板图片写进 Mac 剪贴板
+    // 不 stopPropagation —— 保持 Ctrl+C 在 terminal 的中断语义；容器正常执行 Ctrl+C
+    const copyHandler = (e) => {
+      if (!((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C'))) return;
+      if (!isNoVNCFocused()) return;
+      handleCopy();
+    };
+    document.addEventListener('keydown', copyHandler, true);
+
+    // 反向：监听 RFB clipboard 事件，容器里复制的文本自动进 Mac 剪贴板
+    hookRfbClipboardOut();
+
     console.log('[clipboard] 已就绪，按 Ctrl+V / Cmd+V 粘贴图片或文本');
+  }
+
+  // 反向-文本：挂 RFB clipboard 事件 → navigator.clipboard.writeText
+  function hookRfbClipboardOut() {
+    let tries = 0;
+    (function tryBind() {
+      const rfb = window.UI && window.UI.rfb;
+      if (!rfb) {
+        if (++tries < 60) setTimeout(tryBind, 500);
+        return;
+      }
+      console.log('[clipboard] RFB clipboard 事件监听已挂接');
+      rfb.addEventListener('clipboard', (e) => {
+        const text = e && e.detail && e.detail.text;
+        console.log('[clipboard] <- RFB clipboard event, text length:', text ? text.length : 0);
+        if (!text) return;
+        navigator.clipboard.writeText(text).then(() => {
+          console.log('[clipboard] ✓ writeText 成功，已写入 Mac 剪贴板');
+        }).catch((err) => {
+          console.warn('[clipboard] ✗ writeText 失败（可能 user activation 丢失）:', err && err.message);
+        });
+      });
+    })();
+  }
+
+  // 反向-图片：去重签名，避免 terminal Ctrl+C 中断场景反复写同一张图到 Mac 剪贴板
+  let lastImageSig = null;
+
+  async function handleCopy() {
+    // 等容器端完成 Ctrl+C → xclip 填入 X11 剪贴板
+    await new Promise((r) => setTimeout(r, 300));
+    try {
+      const resp = await fetch(getClipboardApiUrl(), { method: 'GET' });
+      if (resp.status === 404) {
+        console.log('[clipboard] 反向图片: 容器剪贴板无图片（文本或中断场景，正常）');
+        return;
+      }
+      if (!resp.ok) {
+        console.warn('[clipboard] 反向图片: GET 异常', resp.status);
+        return;
+      }
+      const blob = await resp.blob();
+      if (!blob.size) return;
+      const sig = `${blob.size}:${blob.type}`;
+      if (sig === lastImageSig) {
+        console.log('[clipboard] 反向图片: 与上次相同，跳过');
+        return;
+      }
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      lastImageSig = sig;
+      console.log('[clipboard] ✓ 反向图片已写入 Mac 剪贴板，', blob.size, 'B');
+      showLoading('✓ 图片已同步到系统剪贴板', 'success');
+      hideLoading();
+    } catch (err) {
+      console.warn('[clipboard] 反向图片失败:', err && err.message);
+    }
   }
 
   // 页面加载完成后初始化
