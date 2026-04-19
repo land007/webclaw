@@ -18,6 +18,7 @@ services:
       - v2rayn-data:/home/ubuntu/.local/share/v2rayN
       - recordings:/home/ubuntu/recordings
       - webclaw-config:/home/ubuntu/.webclaw  # 持久化运行时配置
+      - ssh-data:/home/ubuntu/.ssh           # SSH密钥和配置持久化
       - ./backups:/home/ubuntu/backups       # 备份目录（映射到宿主机）
     tmpfs:
       - /run:size=10M
@@ -56,3 +57,4 @@ volumes:
   gitconfig:
   recordings:
   webclaw-config:
+  ssh-data:

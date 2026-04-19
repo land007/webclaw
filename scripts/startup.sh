@@ -58,6 +58,17 @@ chown ubuntu:ubuntu /home/ubuntu/recordings
 mkdir -p /home/ubuntu/.config
 chown ubuntu:ubuntu /home/ubuntu/.config
 
+# ─── SSH directory (persistent keys and config) ───────────────────────
+mkdir -p /home/ubuntu/.ssh
+chown ubuntu:ubuntu /home/ubuntu/.ssh
+chmod 700 /home/ubuntu/.ssh
+
+# Fix permissions for existing SSH files
+find /home/ubuntu/.ssh -type f \( -name 'id_rsa' -o -name 'id_ed25519' -o -name 'id_ecdsa' \) -exec chmod 600 {} \; 2>/dev/null || true
+find /home/ubuntu/.ssh -type f -name '*.pub' -exec chmod 644 {} \; 2>/dev/null || true
+chmod 600 /home/ubuntu/.ssh/config 2>/dev/null || true
+chmod 600 /home/ubuntu/.ssh/authorized_keys 2>/dev/null || true
+
 # # ─── DNA directory (self-evolution source) ───────────────────────────
 # # DNA_REPO_URL: 机器人的基因来源，支持 fork 仓库，默认指向原始库
 # DNA_REPO_URL="${DNA_REPO_URL:-https://github.com/land007/webcode}"
