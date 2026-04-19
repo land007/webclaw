@@ -21,6 +21,12 @@ mkdir -p /home/ubuntu/projects
 mkdir -p /home/ubuntu/Desktop
 mkdir -p /home/ubuntu/.local/share/vibe-kanban
 
+# ─── Initialize common skills directory ───────────────────────────────
+if [ -f /opt/init-skills.sh ]; then
+    echo "[startup] Initializing common skills directory..."
+    /opt/init-skills.sh
+fi
+
 # 后台递归修复 /home/ubuntu 权限，避免大目录阻塞启动。
 # 保留用户本地目录挂载点的原始 owner，避免把宿主机目录重置成 ubuntu。
 readonly LOCAL_PROJECT_DIRS=(

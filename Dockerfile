@@ -272,6 +272,7 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
            /tmp/patch-novnc.sh /tmp/clipboard-server.js /tmp/custom-clipboard-image.js
 
 COPY scripts/startup.sh /opt/startup.sh
+COPY scripts/init-skills.sh /opt/init-skills.sh
 COPY scripts/run-cloudflared.sh /usr/local/bin/run-cloudflared.sh
 COPY scripts/vnc-setpass.py /opt/vnc-setpass.py
 COPY scripts/analytics.sh /scripts/analytics.sh
@@ -281,7 +282,7 @@ COPY scripts/restore.sh /opt/restore.sh
 COPY scripts/snapshot.sh /opt/snapshot.sh
 COPY scripts/snapshot-restore.sh /opt/snapshot-restore.sh
 COPY scripts/snapshot-base.sh /opt/snapshot-base.sh
-RUN chmod +x /opt/startup.sh /usr/local/bin/run-cloudflared.sh /scripts/analytics.sh /usr/local/bin/dockerd-condition.sh /opt/backup.sh /opt/restore.sh /opt/snapshot.sh /opt/snapshot-restore.sh /opt/snapshot-base.sh
+RUN chmod +x /opt/startup.sh /opt/init-skills.sh /usr/local/bin/run-cloudflared.sh /scripts/analytics.sh /usr/local/bin/dockerd-condition.sh /opt/backup.sh /opt/restore.sh /opt/snapshot.sh /opt/snapshot-restore.sh /opt/snapshot-base.sh
 
 # ─── 13. Skills for Claude Code (host-ops, etc.) ───────────────────────
 COPY skills/ /opt/skills/
