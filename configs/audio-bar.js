@@ -70,7 +70,7 @@
     var protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
     // Through unified proxy (noVNC at /proxy/10004/) → audio at /proxy/10006/audio
     // Direct dev mode → root /audio (audio-ws-server doesn't parse path)
-    var basePath = location.pathname.match(/\/proxy\/10004\//) ? '/proxy/10006/' : '/';
+    var basePath = /^\/proxy\//.test(location.pathname) ? '/proxy/10006/' : '/';
     return protocol + '//' + location.host + basePath + 'audio';
   }
 
