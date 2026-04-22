@@ -77,9 +77,7 @@ with open("${MANIFEST_PATH}", "w", encoding="utf-8") as f:
 PY
 }
 
-upload_file "${AMD64_FILE}" "registry/${IMAGE_NAME}-amd64-${VERSION_LABEL}.tar.gz"
 upload_file "${AMD64_FILE}" "registry/${IMAGE_NAME}-amd64-latest.tar.gz"
-upload_file "${ARM64_FILE}" "registry/${IMAGE_NAME}-arm64-${VERSION_LABEL}.tar.gz"
 upload_file "${ARM64_FILE}" "registry/${IMAGE_NAME}-arm64-latest.tar.gz"
 
 build_manifest
