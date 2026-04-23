@@ -35,6 +35,8 @@ readonly LOCAL_PROJECT_DIRS=(
     "/home/ubuntu/projects/downloads"
     "/home/ubuntu/projects/movies"
     "/home/ubuntu/projects/pictures"
+    "/home/ubuntu/projects/docker"
+    "/home/ubuntu/projects/docker_build"
 )
 
 background_chown_home() {
