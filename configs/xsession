@@ -37,6 +37,12 @@ export XMODIFIERS=@im=fcitx
 eval $(dbus-launch --sh-syntax)
 export DBUS_SESSION_BUS_ADDRESS
 
+# ─── GNOME Keyring (empty password for Chrome) ────────────────────────
+# Auto-unlock keyring with empty password so Chrome doesn't prompt
+if ! pgrep -x gnome-keyring-daemon >/dev/null; then
+    echo "" | gnome-keyring-daemon --login --daemonize --components=secrets,ssh 2>/dev/null || true
+fi
+
 # ─── AT-SPI accessibility bus (required by many GNOME apps) ────────
 /usr/lib/at-spi2-core/at-spi-bus-launcher --launch-immediately 2>/dev/null &
 
