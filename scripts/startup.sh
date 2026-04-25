@@ -223,6 +223,18 @@ export ENABLE_OPENCLAW="${ENABLE_OPENCLAW:-true}"
 export ENABLE_CLAUDECODEUI="${ENABLE_CLAUDECODEUI:-$WEBCODE_HAS_CLAUDECODEUI}"
 export ENABLE_FUSE="${ENABLE_FUSE:-false}"
 
+# ─── Ubuntu user password setup ────────────────────────────────────
+# 设置 ubuntu 用户密码（如果提供了 PASSWORD 环境变量）
+if [ -n "$PASSWORD" ]; then
+    echo "[startup] Setting ubuntu user password"
+    echo "ubuntu:$PASSWORD" | chpasswd
+    # 移除 NOPASSWD，改为使用密码验证
+    if grep -q "NOPASSWD" /etc/sudoers; then
+        sed -i '/NOPASSWD/d' /etc/sudoers
+        echo "[startup] Removed NOPASSWD from sudoers, password now required"
+    fi
+fi
+
 # ─── Mode selection ─────────────────────────────────────────────────
 if [ "$MODE" = "lite" ]; then
     echo "[startup] Lite mode: starting code-server + OpenClaw only (no VNC desktop)"
