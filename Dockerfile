@@ -212,6 +212,28 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         && apt-get clean && rm -rf /var/lib/apt/lists/*; \
     fi
 
+# ─── 11d. CC Switch - AI CLI 工具统一管理器（桌面模式专用）──────────────
+RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
+        ARCH=$(dpkg --print-architecture) \
+        && case "$ARCH" in \
+             amd64) CC_SWITCH_ARCH="x86_64" ;; \
+             arm64) CC_SWITCH_ARCH="arm64" ;; \
+             *) echo "Unsupported CC Switch architecture: $ARCH" >&2; exit 1 ;; \
+           esac \
+        && CC_SWITCH_VERSION=$(curl -fsSL https://api.github.com/repos/farion1231/cc-switch/releases/latest | grep '"tag_name"' | sed 's/.*"tag_name": *"v//;s/".*//') \
+        && echo "[build] Installing CC Switch ${CC_SWITCH_VERSION} for ${CC_SWITCH_ARCH}..." \
+        && apt-get update \
+        && apt-get install -y --no-install-recommends \
+             libwebkit2gtk-4.1-0 \
+             libayatana-appindicator3-1 \
+             libgtk-3-0 \
+        && curl -fsSL "https://github.com/farion1231/cc-switch/releases/download/v${CC_SWITCH_VERSION}/CC-Switch-v${CC_SWITCH_VERSION}-Linux-${CC_SWITCH_ARCH}.deb" -o /tmp/cc-switch.deb \
+        && apt-get install -y /tmp/cc-switch.deb \
+        && rm /tmp/cc-switch.deb \
+        && apt-get clean && rm -rf /var/lib/apt/lists/* \
+        && echo "[build] CC Switch installed successfully"; \
+    fi
+
 # ─── 12. Config files (COPY last — most likely to change) ───────────
 COPY configs/supervisord.conf /etc/supervisor/supervisord.conf
 COPY configs/supervisord-lite.conf /etc/supervisor/conf.d/supervisord-lite.conf

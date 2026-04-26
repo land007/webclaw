@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=CC Switch
+Name[zh_CN]=CC Switch
+Comment=All-in-One Assistant for Claude Code, Codex & Gemini CLI
+Comment[zh_CN]=Claude Code、Codex 和 Gemini CLI 的统一管理工具
+Exec=/usr/bin/cc-switch
+Icon=cc-switch
+Terminal=false
+Type=Application
+Categories=Utility;Settings;Development;
+StartupNotify=true
+StartupWMClass=cc-switch
