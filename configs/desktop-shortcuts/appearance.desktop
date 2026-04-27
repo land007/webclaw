@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Appearance
+Name[zh_CN]=外观
+Comment=Switch desktop theme (Light/Dark mode)
+Comment[zh_CN]=切换桌面主题（浅色/深色模式）
+Exec=/usr/local/bin/desktop-theme-picker
+Icon=preferences-desktop-theme
+Terminal=false
+Type=Application
+Categories=Utility;Settings;
+StartupNotify=true

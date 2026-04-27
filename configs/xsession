@@ -3,6 +3,20 @@ export XDG_SESSION_TYPE=x11
 export XDG_CURRENT_DESKTOP=GNOME-Flashback:GNOME
 export DESKTOP_SESSION=gnome-flashback-metacity
 
+cleanup_desktop() {
+    local current_pid="$$"
+    pkill -TERM -u "$(id -u)" -x gnome-panel 2>/dev/null || true
+    pkill -TERM -u "$(id -u)" -x gnome-flashback 2>/dev/null || true
+    pkill -TERM -u "$(id -u)" -x metacity 2>/dev/null || true
+    pkill -TERM -u "$(id -u)" -x gsd-xsettings 2>/dev/null || true
+    pkill -TERM -u "$(id -u)" -x gsd-keyboard 2>/dev/null || true
+    pkill -TERM -u "$(id -u)" -x fcitx 2>/dev/null || true
+    pkill -TERM -u "$(id -u)" -x at-spi-bus-launcher 2>/dev/null || true
+    pkill -TERM -u "$(id -u)" -x at-spi2-registryd 2>/dev/null || true
+    pkill -TERM -P "$current_pid" 2>/dev/null || true
+}
+trap cleanup_desktop EXIT TERM INT
+
 # ─── Locale（从保存的语言偏好读取）────────────────────────────
 LANG_FILE="$HOME/.config/gnome-language"
 if [ -f "$LANG_FILE" ]; then

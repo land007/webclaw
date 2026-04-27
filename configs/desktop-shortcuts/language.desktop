@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Language
+Name[zh_CN]=语言
+Comment=Switch system language (Chinese/English)
+Comment[zh_CN]=切换系统语言（中文/英文）
+Exec=/usr/local/bin/desktop-language-picker
+Icon=preferences-desktop-locale
+Terminal=false
+Type=Application
+Categories=Utility;Settings;
+StartupNotify=true

@@ -34,6 +34,16 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         && apt-get clean && rm -rf /var/lib/apt/lists/*; \
     fi
 
+# Ubuntu 24.04 stores language-pack translations under locale-langpack,
+# while some desktop applications only search /usr/share/locale.
+RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
+        for lang in zh_CN zh_TW en_US; do \
+            if [ -d "/usr/share/locale-langpack/$lang" ] && [ ! -e "/usr/share/locale/$lang" ]; then \
+                ln -sf "/usr/share/locale-langpack/$lang" "/usr/share/locale/$lang"; \
+            fi; \
+        done; \
+    fi
+
 # ─── 6b. GNOME / Terminal font defaults + panel layout fix + flashback 桌面图标默认开 ───
 RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         mkdir -p /etc/dconf/profile /etc/dconf/db/local.d \
@@ -255,6 +265,10 @@ COPY configs/key-remap.js /tmp/
 COPY configs/xsession /tmp/
 COPY scripts/audio-ws-server.py /tmp/
 COPY scripts/audio-ws-wrapper.sh /tmp/
+COPY scripts/theme-switch.sh /usr/local/bin/theme-switch
+COPY scripts/lang-switch.sh /usr/local/bin/lang-switch
+COPY scripts/desktop-language-picker.sh /usr/local/bin/desktop-language-picker
+COPY scripts/desktop-theme-picker.sh /usr/local/bin/desktop-theme-picker
 COPY scripts/start-dashboard.sh /opt/start-dashboard.sh
 COPY scripts/start-webtty.sh /opt/start-webtty.sh
 COPY scripts/start-openclaw.sh /opt/start-openclaw.sh
@@ -283,6 +297,13 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
     fi \
     && mkdir -p /opt/dashboard-override \
     && chown -R ubuntu:ubuntu /opt/dashboard-override \
+    && chmod +x /usr/local/bin/theme-switch /usr/local/bin/lang-switch \
+       /usr/local/bin/desktop-language-picker /usr/local/bin/desktop-theme-picker \
+    && printf 'ubuntu ALL=(root) NOPASSWD: /usr/local/bin/lang-switch *\n' > /etc/sudoers.d/webclaw-lang-switch \
+    && chmod 0440 /etc/sudoers.d/webclaw-lang-switch \
+    && visudo -c -f /etc/sudoers.d/webclaw-lang-switch \
+    && printf '\n# Theme switch aliases\nalias light-mode="/usr/local/bin/theme-switch light"\nalias dark-mode="/usr/local/bin/theme-switch dark"\n' >> /home/ubuntu/.bashrc \
+    && printf '\n# Language switch aliases\nalias chinese="/usr/local/bin/lang-switch zh"\nalias english="/usr/local/bin/lang-switch en"\n' >> /home/ubuntu/.bashrc \
     && chmod +x /opt/start-dashboard.sh /opt/start-webtty.sh /opt/start-openclaw.sh \
     && rm -rf /tmp/supervisor-audio.conf /tmp/audio-player.html /tmp/audio-bar.js \
            /tmp/touch-handler.js /tmp/key-remap.js /tmp/xsession /tmp/desktop-shortcuts/ \
