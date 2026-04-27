@@ -6,6 +6,7 @@ OVERRIDE_MAIN="${OVERRIDE_DIR}/dashboard-server.js"
 OVERRIDE_HTML="${OVERRIDE_DIR}/dashboard.html"
 OVERRIDE_FAVICON="${OVERRIDE_DIR}/dashboard-favicon.ico"
 PREPARED_MAIN="/tmp/dashboard-server-override.js"
+NODE_BIN="$(command -v node)"
 
 if [ -f "${OVERRIDE_MAIN}" ]; then
   echo "[dashboard] using override source: ${OVERRIDE_MAIN}"
@@ -42,11 +43,11 @@ source = source.replace(
 fs.writeFileSync(outputPath, source, 'utf8');
 EOF
 
-    exec /usr/bin/node "${PREPARED_MAIN}"
+    exec "${NODE_BIN}" "${PREPARED_MAIN}"
   fi
 
   echo "[dashboard] override html/favicon missing, running source directly"
-  exec /usr/bin/node "${OVERRIDE_MAIN}"
+  exec "${NODE_BIN}" "${OVERRIDE_MAIN}"
 fi
 
 echo "[dashboard] using packaged server: webclaw-dashboard-server"

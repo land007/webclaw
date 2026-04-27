@@ -48,9 +48,10 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
 # Ubuntu 24.04 stores language-pack translations under locale-langpack,
 # while some desktop applications only search /usr/share/locale.
 RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
-        for lang in zh_CN zh_TW en_US ja_JP es_ES pt_BR ko_KR de_DE; do \
-            if [ -d "/usr/share/locale-langpack/$lang" ] && [ ! -e "/usr/share/locale/$lang" ]; then \
-                ln -sf "/usr/share/locale-langpack/$lang" "/usr/share/locale/$lang"; \
+        for pair in zh_CN:zh_CN zh_TW:zh_TW en_US:en_US ja_JP:ja es_ES:es pt_BR:pt_BR ko_KR:ko de_DE:de; do \
+            target="${pair%%:*}"; source="${pair##*:}"; \
+            if [ -d "/usr/share/locale-langpack/$source" ] && [ ! -e "/usr/share/locale/$target" ]; then \
+                ln -sf "/usr/share/locale-langpack/$source" "/usr/share/locale/$target"; \
             fi; \
         done; \
     fi
