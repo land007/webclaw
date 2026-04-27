@@ -1,0 +1,8 @@
+{
+  "id": "vscode",
+  "name": "Visual Studio Code",
+  "package": "code",
+  "binary": "/usr/bin/code",
+  "install_method": "apt",
+  "apt_package": "code"
+}

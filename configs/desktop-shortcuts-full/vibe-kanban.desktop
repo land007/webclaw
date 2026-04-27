@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Vibe Kanban
+Comment=AI Coding Agent task board (web app)
+Comment[zh_CN]=AI 编码任务看板（Web 应用）
+Exec=/usr/local/bin/browser --no-sandbox --app=http://127.0.0.1:10002
+Icon=applications-internet
+Categories=Development;Office;
+StartupNotify=true
+StartupWMClass=vibe-kanban

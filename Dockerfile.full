@@ -17,6 +17,9 @@ COPY configs/supervisord-full.conf /etc/supervisor/supervisord.conf
 COPY configs/supervisor-vibe-kanban.conf /etc/supervisor/conf.d/supervisor-vibe-kanban.conf
 COPY configs/supervisor-claudecodeui.conf /etc/supervisor/conf.d/supervisor-claudecodeui.conf
 
+# full 镜像专属桌面图标(vibe-kanban 等服务在 webclaw 镜像不启用,所以图标也不出现)
+COPY configs/desktop-shortcuts-full/ /opt/desktop-shortcuts/
+
 # ─── AI Desktop Tools: Cursor CLI, Obsidian ─────────────────────────────
 # (npm-based AI CLI tools moved to Dockerfile.base)
 

@@ -95,17 +95,16 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         && apt-get clean && rm -rf /var/lib/apt/lists/*; \
     fi
 
-# ─── 8e. VS Code desktop edition + 共享 code-server 扩展目录 ─────────────
-# Microsoft VS Code 官方仓库支持 amd64/arm64
-# 语言默认跟随系统(英文),用户可从命令面板切换;扩展目录与 code-server 共享
+# ─── 8e. VS Code apt repo + 共享 code-server 扩展目录(本体按需安装) ──────
+# Microsoft VS Code 官方仓库支持 amd64/arm64,只添加仓库,不预装本体;
+# /usr/bin/code 在用户首次点击桌面图标时由 webclaw-app-launcher (apt 模式) 安装。
+# 扩展目录提前软链到共享的 code-server-extensions,装完即用。
 RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         wget -qO- https://packages.microsoft.com/keys/microsoft.asc | \
             gpg --dearmor > /usr/share/keyrings/microsoft-archive-keyring.gpg && \
         echo "deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/microsoft-archive-keyring.gpg] \
              https://packages.microsoft.com/repos/code stable main" \
              > /etc/apt/sources.list.d/vscode.list && \
-        apt-get update && apt-get install -y code && \
-        apt-get clean && rm -rf /var/lib/apt/lists/* && \
         mkdir -p /home/ubuntu/.vscode && \
         ln -s /opt/code-server-extensions /home/ubuntu/.vscode/extensions && \
         chown -h ubuntu:ubuntu /home/ubuntu/.vscode/extensions && \
@@ -165,20 +164,18 @@ RUN set -eux; \
     rm -rf /var/lib/apt/lists/*
 
 # ─── 10. Browser: amd64=Google Chrome, arm64=Chromium ────────────────
-# Use container-specific user-data-dir to avoid SingletonLock conflicts
-# when multiple containers share the same chrome-data volume
+# /usr/local/bin/browser 由 scripts/browser.sh 统一提供(运行时探测 chrome/chromium),
+# 避免之前 Dockerfile inline printf '$$HOSTNAME=$$(hostname)' 的 $$ 逃逸陷阱
+# (RUN 指令里 docker 不把 $$ 转成 $,只有 docker compose YAML 才转,
+#  导致脚本被 sh 当成 PID 拼接,Browser 图标长期点击无反应)。
 RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
             curl -LO https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
             && apt-get update && apt-get install -y ./google-chrome-stable_current_amd64.deb \
-            && rm -f google-chrome-stable_current_amd64.deb \
-            && printf '#!/bin/sh\nexport PULSE_SERVER="unix:/run/user/1000/pulse/native"\nexport PULSE_SINK="webcode_null"\nexport PULSE_SOURCE="webcode_mic"\nHOSTNAME=$$(hostname)\nUSER_DATA_DIR=/home/ubuntu/.config/google-chrome-$$HOSTNAME\nmkdir -p "$$USER_DATA_DIR"\nexec /usr/bin/google-chrome-stable --user-data-dir="$$USER_DATA_DIR" --password-store=basic "$@"\n' > /usr/local/bin/browser \
-            && chmod +x /usr/local/bin/browser; \
+            && rm -f google-chrome-stable_current_amd64.deb; \
         else \
             add-apt-repository -y ppa:xtradeb/apps \
-            && apt-get update && apt-get install -y chromium \
-            && printf '#!/bin/sh\nexport PULSE_SERVER="unix:/run/user/1000/pulse/native"\nexport PULSE_SINK="webcode_null"\nexport PULSE_SOURCE="webcode_mic"\nHOSTNAME=$$(hostname)\nUSER_DATA_DIR=/home/ubuntu/.config/chromium-$$HOSTNAME\nmkdir -p "$$USER_DATA_DIR"\nexec /usr/bin/chromium --user-data-dir="$$USER_DATA_DIR" --password-store=basic "$@"\n' > /usr/local/bin/browser \
-            && chmod +x /usr/local/bin/browser; \
+            && apt-get update && apt-get install -y chromium; \
         fi \
         && apt-get clean && rm -rf /var/lib/apt/lists/*; \
     fi
@@ -291,6 +288,10 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
            /tmp/touch-handler.js /tmp/key-remap.js /tmp/xsession /tmp/desktop-shortcuts/ \
            /tmp/audio-ws-server.py /tmp/audio-ws-wrapper.sh \
            /tmp/patch-novnc.sh /tmp/clipboard-server.js /tmp/custom-clipboard-image.js
+
+# ─── browser launcher: 替代之前 Dockerfile inline 写错的 /usr/local/bin/browser ────
+COPY scripts/browser.sh /usr/local/bin/browser
+RUN chmod +x /usr/local/bin/browser
 
 # ─── 按需安装框架: 调度脚本 + 应用清单 + 占位图标 + 专用 sudoers ────────
 # 桌面图标 .desktop 的 Exec 指向 webclaw-app-launcher,首次点击触发 zenity 询问 → 下载 .deb → apt-get install

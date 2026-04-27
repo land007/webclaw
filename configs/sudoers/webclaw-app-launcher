@@ -1,4 +1,12 @@
 # 按需安装专用 sudoers 片段
 # 只允许 ubuntu 用户对调度脚本下载到固定前缀的 .deb 执行 apt-get install,
 # 不影响全局 sudo 策略(即便 startup.sh 在设置 PASSWORD 时移除了全局 NOPASSWD)
+
+# github_release 模式: 固定路径前缀的 .deb (OpenTypeless / CC Switch 等)
 ubuntu ALL=(root) NOPASSWD: /usr/bin/apt-get install -y /tmp/webclaw-ondemand-*.deb
+
+# apt 模式: 刷新索引(每个 apt 应用安装前都需要)
+ubuntu ALL=(root) NOPASSWD: /usr/bin/apt-get update
+
+# apt 模式: 显式列出每个允许按需安装的包名(避免通配符放权)
+ubuntu ALL=(root) NOPASSWD: /usr/bin/apt-get install -y code

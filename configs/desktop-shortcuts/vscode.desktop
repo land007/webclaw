@@ -1,11 +1,11 @@
 [Desktop Entry]
 Name=VS Code
 Name[zh_CN]=VS Code
-Comment=Code editing. Redefined.
-Comment[zh_CN]=代码编辑器
+Comment=Code editing. Redefined. (click to install on first use)
+Comment[zh_CN]=代码编辑器（首次点击触发按需安装）
 GenericName=Text Editor
-Exec=/usr/bin/code %F
-Icon=vscode
+Exec=/usr/local/bin/webclaw-app-launcher vscode %F
+Icon=/opt/on-demand-icons/vscode.png
 Type=Application
 Categories=TextEditor;IDE;Development;
 StartupNotify=true
