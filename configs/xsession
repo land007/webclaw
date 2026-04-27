@@ -78,14 +78,22 @@ DARK_WALLPAPERS=(
 
 if [ "$INITIAL_THEME" = "light" ]; then
     WP="${LIGHT_WALLPAPERS[$((RANDOM % ${#LIGHT_WALLPAPERS[@]}))]}"
-    hsetroot -cover "$WP" 2>/dev/null || xsetroot -solid '#f0f0f0'
-    xsetroot -cursor_name left_ptr
     export GTK_THEME=Adwaita
 else
     WP="${DARK_WALLPAPERS[$((RANDOM % ${#DARK_WALLPAPERS[@]}))]}"
-    hsetroot -cover "$WP" 2>/dev/null || xsetroot -solid '#0d1117'
-    xsetroot -cursor_name left_ptr
     export GTK_THEME=Adwaita-dark
+fi
+xsetroot -cursor_name left_ptr
+
+# 壁纸：优先用 gsettings（gnome-flashback 桌面接管根窗口后只认这个），
+# 找不到 gnome-flashback 时回退到 hsetroot 直绘根窗口。
+GF_BIN=$(command -v gnome-flashback 2>/dev/null || true)
+[ -z "$GF_BIN" ] && [ -x /usr/libexec/gnome-flashback ] && GF_BIN=/usr/libexec/gnome-flashback
+if [ -n "$GF_BIN" ]; then
+    gsettings set org.gnome.desktop.background picture-uri "file://$WP" 2>/dev/null || true
+    gsettings set org.gnome.desktop.background picture-uri-dark "file://$WP" 2>/dev/null || true
+else
+    hsetroot -cover "$WP" 2>/dev/null || xsetroot -solid '#0d1117'
 fi
 
 # ─── Window manager ─────────────────────────────────────────────────
@@ -97,6 +105,14 @@ sleep 0.5
 /usr/libexec/gsd-xsettings 2>/dev/null &
 /usr/libexec/gsd-keyboard 2>/dev/null &
 sleep 0.5
+
+# ─── GNOME Flashback（绘制桌面背景 + 渲染 ~/Desktop/*.desktop 图标）─────
+# Ubuntu 24.04 上 Nautilus 不再画桌面图标，gnome-flashback 是唯一接管者；
+# 没启动它就只能看到壁纸，看不到任何图标。二进制可能不在 PATH 里，要搜索。
+if [ -n "$GF_BIN" ]; then
+    "$GF_BIN" &
+    sleep 0.5
+fi
 
 # ─── Desktop panel (taskbar, system tray, clock) ────────────────────
 export XDG_MENU_PREFIX=gnome-flashback-

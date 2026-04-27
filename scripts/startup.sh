@@ -325,6 +325,10 @@ FCITX_PROFILE_EOF
     # This handles stale layout data persisted in Docker volumes.
     sudo -u ubuntu dbus-run-session -- dconf reset -f /org/gnome/gnome-panel/ 2>/dev/null || true
 
+    # 兜底：旧的 Docker 卷可能持久化了 show-icons=false，导致镜像里的 dconf 默认值被覆盖。
+    # 写一次保证桌面图标始终启用。
+    sudo -u ubuntu dbus-run-session -- dconf write /org/gnome/gnome-flashback/desktop/show-icons true 2>/dev/null || true
+
     # Clean stale X locks (previously in vnc-wrapper.sh)
     rm -f /tmp/.X1-lock /tmp/.X11-unix/X1
 
