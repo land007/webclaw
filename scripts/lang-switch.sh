@@ -51,6 +51,8 @@ set_gnome_locale() {
     local lang="$1"
 
     if [ "$(id -u)" -eq 0 ]; then
+        mkdir -p /run/user/1000/dconf
+        chown -R ubuntu:ubuntu /run/user/1000/dconf 2>/dev/null || true
         sudo -u ubuntu DISPLAY="$DISPLAY" XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" \
             gsettings set org.gnome.system.locale locale "$lang" 2>/dev/null || true
     else
@@ -95,5 +97,6 @@ esac
 
 # 重启 supervisor 的 desktop 进程以应用新语言
 if command -v supervisorctl >/dev/null 2>&1; then
-    supervisorctl restart desktop >/dev/null 2>&1 &
+    nohup setsid sh -c 'sleep 0.5; supervisorctl restart desktop >/dev/null 2>&1' \
+        >/dev/null 2>&1 &
 fi
