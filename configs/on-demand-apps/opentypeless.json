@@ -1,0 +1,12 @@
+{
+  "id": "opentypeless",
+  "name": "OpenTypeless",
+  "package": "open-typeless",
+  "binary": "/usr/bin/opentypeless",
+  "github_repo": "land007/opentypeless",
+  "asset_pattern": "OpenTypeless_{version}_{arch}.deb",
+  "arch_map": {
+    "amd64": "amd64",
+    "arm64": "arm64"
+  }
+}

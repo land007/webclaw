@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=OpenTypeless
+Name[zh_CN]=OpenTypeless
+Comment=AI voice input tool (click to install on first use)
+Comment[zh_CN]=AI 语音输入工具（首次点击触发按需安装）
+Exec=/usr/local/bin/webclaw-app-launcher opentypeless
+Icon=/opt/on-demand-icons/opentypeless.png
+Terminal=false
+Type=Application
+Categories=Utility;AudioVideo;
+StartupNotify=true
+StartupWMClass=opentypeless

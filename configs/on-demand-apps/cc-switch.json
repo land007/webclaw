@@ -1,0 +1,12 @@
+{
+  "id": "cc-switch",
+  "name": "CC Switch",
+  "package": "cc-switch",
+  "binary": "/usr/bin/cc-switch",
+  "github_repo": "farion1231/cc-switch",
+  "asset_pattern": "CC-Switch-v{version}-Linux-{arch}.deb",
+  "arch_map": {
+    "amd64": "x86_64",
+    "arm64": "arm64"
+  }
+}

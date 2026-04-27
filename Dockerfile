@@ -34,12 +34,14 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         && apt-get clean && rm -rf /var/lib/apt/lists/*; \
     fi
 
-# ─── 6b. GNOME / Terminal font defaults + panel layout fix ────────────
+# ─── 6b. GNOME / Terminal font defaults + panel layout fix + flashback 桌面图标默认开 ───
 RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         mkdir -p /etc/dconf/profile /etc/dconf/db/local.d \
         && printf 'user-db:user\nsystem-db:local\n' > /etc/dconf/profile/user \
         && printf '[org/gnome/desktop/interface]\nmonospace-font-name='"'"'Hack 11'"'"'\n' \
            > /etc/dconf/db/local.d/00-terminal-font \
+        && printf '[org/gnome/gnome-flashback/desktop]\nshow-icons=true\n' \
+           > /etc/dconf/db/local.d/01-flashback-desktop-icons \
         && dconf update \
         && cp /usr/share/gnome-panel/layouts/default.layout \
            /usr/share/gnome-panel/layouts/gnome-flashback.layout \
@@ -212,42 +214,23 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         && apt-get clean && rm -rf /var/lib/apt/lists/*; \
     fi
 
-# ─── 11d. CC Switch - AI CLI 工具统一管理器（桌面模式专用）──────────────
+# ─── 11d. 按需安装运行时依赖 + zenity（替代 CC Switch / OpenTypeless 预装）─────
+# CC Switch 与 OpenTypeless 都是 Tauri 应用,共用同一组运行时库;
+# 这些库装在镜像里(每个应用按需安装时不再各自拉一遍依赖,体验更顺畅)。
+# .deb 本体不再预装,改由 /usr/local/bin/webclaw-app-launcher 在用户首次点击时下载安装。
+# zenity 用于安装时弹出确认对话框 + 进度条。
+# libxdo3: OpenTypeless 上游 .deb 的 control 漏声明该依赖,运行期 ldd 才能发现,
+# 而镜像构建末段会清 apt 缓存,在线 apt-get install 找不到该包。预装兜底。
 RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
-        ARCH=$(dpkg --print-architecture) \
-        && case "$ARCH" in \
-             amd64) CC_SWITCH_ARCH="x86_64" ;; \
-             arm64) CC_SWITCH_ARCH="arm64" ;; \
-             *) echo "Unsupported CC Switch architecture: $ARCH" >&2; exit 1 ;; \
-           esac \
-        && CC_SWITCH_VERSION=$(curl -fsSL https://api.github.com/repos/farion1231/cc-switch/releases/latest | grep '"tag_name"' | sed 's/.*"tag_name": *"v//;s/".*//') \
-        && echo "[build] Installing CC Switch ${CC_SWITCH_VERSION} for ${CC_SWITCH_ARCH}..." \
-        && apt-get update \
+        apt-get update \
         && apt-get install -y --no-install-recommends \
              libwebkit2gtk-4.1-0 \
              libayatana-appindicator3-1 \
              libgtk-3-0 \
-        && curl -fsSL "https://github.com/farion1231/cc-switch/releases/download/v${CC_SWITCH_VERSION}/CC-Switch-v${CC_SWITCH_VERSION}-Linux-${CC_SWITCH_ARCH}.deb" -o /tmp/cc-switch.deb \
-        && apt-get install -y /tmp/cc-switch.deb \
-        && rm /tmp/cc-switch.deb \
-        && apt-get clean && rm -rf /var/lib/apt/lists/* \
-        && echo "[build] CC Switch installed successfully"; \
-    fi
-
-# ─── 11e. OpenTypeless - AI 语音输入工具（桌面模式专用）──────────────
-RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
-        ARCH=$(dpkg --print-architecture) \
-        && case "$ARCH" in \
-             amd64) OPENTYPELESS_ARCH="amd64" ;; \
-             arm64) OPENTYPELESS_ARCH="arm64" ;; \
-             *) echo "Unsupported OpenTypeless architecture: $ARCH" >&2; exit 1 ;; \
-           esac \
-        && OPENTYPELESS_VERSION=$(curl -fsSL https://api.github.com/repos/land007/opentypeless/releases/latest | grep '"tag_name"' | sed 's/.*"tag_name": *"v//;s/".*//') \
-        && echo "[build] Installing OpenTypeless ${OPENTYPELESS_VERSION} for ${OPENTYPELESS_ARCH}..." \
-        && curl -fsSL "https://github.com/land007/opentypeless/releases/download/v${OPENTYPELESS_VERSION}/OpenTypeless_${OPENTYPELESS_VERSION}_${OPENTYPELESS_ARCH}.deb" -o /tmp/opentypeless.deb \
-        && apt-get install -y /tmp/opentypeless.deb \
-        && rm /tmp/opentypeless.deb \
-        && echo "[build] OpenTypeless installed successfully"; \
+             libxdo3 \
+             zenity \
+             jq \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*; \
     fi
 
 # ─── 12. Config files (COPY last — most likely to change) ───────────
@@ -308,6 +291,16 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
            /tmp/touch-handler.js /tmp/key-remap.js /tmp/xsession /tmp/desktop-shortcuts/ \
            /tmp/audio-ws-server.py /tmp/audio-ws-wrapper.sh \
            /tmp/patch-novnc.sh /tmp/clipboard-server.js /tmp/custom-clipboard-image.js
+
+# ─── 按需安装框架: 调度脚本 + 应用清单 + 占位图标 + 专用 sudoers ────────
+# 桌面图标 .desktop 的 Exec 指向 webclaw-app-launcher,首次点击触发 zenity 询问 → 下载 .deb → apt-get install
+COPY scripts/webclaw-app-launcher.sh /usr/local/bin/webclaw-app-launcher
+COPY configs/on-demand-apps/ /opt/on-demand-apps/
+COPY configs/on-demand-icons/ /opt/on-demand-icons/
+COPY configs/sudoers/webclaw-app-launcher /etc/sudoers.d/webclaw-app-launcher
+RUN chmod +x /usr/local/bin/webclaw-app-launcher \
+    && chmod 0440 /etc/sudoers.d/webclaw-app-launcher \
+    && visudo -c -f /etc/sudoers.d/webclaw-app-launcher
 
 COPY scripts/startup.sh /opt/startup.sh
 COPY scripts/init-skills.sh /opt/init-skills.sh
