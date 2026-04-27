@@ -42,9 +42,13 @@ NAME=$(jq -r '.name' "$MANIFEST")
 BIN=$(jq -r '.binary' "$MANIFEST")
 INSTALL_METHOD=$(jq -r '.install_method // "github_release"' "$MANIFEST")
 
+# 可选: manifest 里固定要传给二进制的参数(比如 VS Code 在容器里必须 --no-sandbox,
+# 不带的话 chrome-sandbox SUID 检查失败立刻静默退出)
+mapfile -t DEFAULT_ARGS < <(jq -r '.default_args // [] | .[]' "$MANIFEST")
+
 # 已装 -> 直接启动,setsid 脱离终端避免阻塞 dbus-launch 等
 if dpkg -s "$PKG" >/dev/null 2>&1 && [ -x "$BIN" ]; then
-    setsid "$BIN" "$@" </dev/null >/dev/null 2>&1 &
+    setsid "$BIN" "${DEFAULT_ARGS[@]}" "$@" </dev/null >/dev/null 2>&1 &
     exit 0
 fi
 

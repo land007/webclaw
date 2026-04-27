@@ -4,5 +4,6 @@
   "package": "code",
   "binary": "/usr/bin/code",
   "install_method": "apt",
-  "apt_package": "code"
+  "apt_package": "code",
+  "default_args": ["--no-sandbox"]
 }
