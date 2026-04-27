@@ -106,10 +106,9 @@ fi
 
 # ─── code-server data directory ─────────────────────────────────────
 mkdir -p /home/ubuntu/.code-server/User
-# Generate languagepacks.json on first start (CLI install doesn't create it)
-if [ ! -f /home/ubuntu/.code-server/languagepacks.json ]; then
-    /opt/create-languagepacks.sh /home/ubuntu/.code-server /opt/code-server-extensions
-fi
+# Generate languagepacks.json on every start (CLI install doesn't create it, and
+# rebuilt images may add more language packs while reusing an old user volume).
+/opt/create-languagepacks.sh /home/ubuntu/.code-server /opt/code-server-extensions
 # Write default argv.json (locale) if not already set by user
 if [ ! -f /home/ubuntu/.code-server/User/argv.json ]; then
     echo '{"locale":"zh-cn"}' > /home/ubuntu/.code-server/User/argv.json

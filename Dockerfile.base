@@ -65,11 +65,18 @@ RUN ARCH=$(dpkg --print-architecture) \
     && ln -s /opt/code-server/bin/code-server /usr/local/bin/code-server \
     && chown -R ubuntu:ubuntu /opt/code-server
 
-# ─── 4b. code-server Chinese language pack extension ────────────────
+# ─── 4b. code-server language pack extensions ────────────────
 RUN mkdir -p /opt/code-server-extensions \
     && for i in 1 2 3 4 5; do \
-         code-server --extensions-dir /opt/code-server-extensions \
-             --install-extension MS-CEINTL.vscode-language-pack-zh-hans \
+         for ext in \
+             MS-CEINTL.vscode-language-pack-zh-hans \
+             MS-CEINTL.vscode-language-pack-ja \
+             MS-CEINTL.vscode-language-pack-es \
+             MS-CEINTL.vscode-language-pack-pt-BR \
+             MS-CEINTL.vscode-language-pack-ko \
+             MS-CEINTL.vscode-language-pack-de; do \
+           code-server --extensions-dir /opt/code-server-extensions --install-extension "$ext" || exit 1; \
+         done \
          && break || (echo "Retry $i/5..." && sleep 10); \
        done \
     && chown -R ubuntu:ubuntu /opt/code-server-extensions
