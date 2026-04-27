@@ -60,37 +60,85 @@ set_gnome_locale() {
     fi
 }
 
+locale_available() {
+    local lang="$1"
+    local normalized
+    normalized=$(printf '%s\n' "$lang" | tr '[:upper:]' '[:lower:]' | sed 's/utf-8/utf8/')
+
+    locale -a 2>/dev/null | tr '[:upper:]' '[:lower:]' | sed 's/utf-8/utf8/' | grep -qx "$normalized" && return 0
+    return 1
+}
+
+ensure_locale_available() {
+    local lang="$1"
+    local base="${lang%%.*}"
+
+    locale_available "$lang" && return 0
+
+    if [ "$(id -u)" -eq 0 ] && [ -f "/usr/share/i18n/locales/$base" ] && command -v locale-gen >/dev/null 2>&1; then
+        sed -i "s/^# *${base}.UTF-8 UTF-8/${base}.UTF-8 UTF-8/" /etc/locale.gen 2>/dev/null || true
+        locale-gen "$lang" >/dev/null 2>&1 || true
+    fi
+
+    locale_available "$lang"
+}
+
+switch_language() {
+    local requested_lang="$1"
+    local language_chain="$2"
+    local label="$3"
+    local lang="$requested_lang"
+
+    if ! ensure_locale_available "$lang"; then
+        echo "Requested locale $requested_lang is not installed; falling back to English (en_US.UTF-8)." >&2
+        lang="en_US.UTF-8"
+        language_chain="en_US:en"
+        label="English"
+    fi
+
+    echo "$lang" > "$LANG_FILE"
+    if [ "$(id -u)" -eq 0 ]; then
+        chown ubuntu:ubuntu "$LANG_FILE"
+    fi
+
+    apply_locale "$lang" "$language_chain"
+    set_gnome_locale "$lang"
+
+    echo "已切换到 $label ($lang)"
+    echo "Restarting desktop..."
+}
+
 case "$1" in
-    zh|zh_CN|chinese|中文)
-        # 保存语言偏好
-        echo "zh_CN.UTF-8" > "$LANG_FILE"
-        if [ "$(id -u)" -eq 0 ]; then
-            chown ubuntu:ubuntu "$LANG_FILE"
-        fi
-
-        apply_locale "zh_CN.UTF-8" "zh_CN:zh"
-        set_gnome_locale "zh_CN.UTF-8"
-
-        echo "已切换到中文 (zh_CN.UTF-8)"
-        echo "正在重启桌面..."
+    zh|zh_CN|zh-CN|chinese|中文)
+        switch_language "zh_CN.UTF-8" "zh_CN:zh" "中文"
         ;;
-    en|en_US|english)
-        # 保存语言偏好
-        echo "en_US.UTF-8" > "$LANG_FILE"
-        if [ "$(id -u)" -eq 0 ]; then
-            chown ubuntu:ubuntu "$LANG_FILE"
-        fi
-
-        apply_locale "en_US.UTF-8" "en_US:en"
-        set_gnome_locale "en_US.UTF-8"
-
-        echo "已切换到英文 (en_US.UTF-8)"
-        echo "Restarting desktop..."
+    en|en_US|en-US|english)
+        switch_language "en_US.UTF-8" "en_US:en" "English"
+        ;;
+    ja|ja_JP|ja-JP|japanese|日本語)
+        switch_language "ja_JP.UTF-8" "ja_JP:ja" "日本語"
+        ;;
+    es|es_ES|es-ES|es-419|spanish|español)
+        switch_language "es_ES.UTF-8" "es_ES:es" "Español"
+        ;;
+    pt|pt_BR|pt-BR|portuguese|português)
+        switch_language "pt_BR.UTF-8" "pt_BR:pt" "Português"
+        ;;
+    ko|ko_KR|ko-KR|korean|한국어)
+        switch_language "ko_KR.UTF-8" "ko_KR:ko" "한국어"
+        ;;
+    de|de_DE|de-DE|german|deutsch)
+        switch_language "de_DE.UTF-8" "de_DE:de" "Deutsch"
         ;;
     *)
-        echo "用法: lang-switch {zh|en}"
-        echo "  zh    - 切换到中文 (Switch to Chinese)"
-        echo "  en    - 切换到英文 (Switch to English)"
+        echo "用法: lang-switch {zh|en|ja|es|pt|ko|de}"
+        echo "  zh    - 中文 (Chinese)"
+        echo "  en    - English"
+        echo "  ja    - 日本語 (Japanese)"
+        echo "  es    - Español (Spanish)"
+        echo "  pt    - Português (Portuguese Brazil)"
+        echo "  ko    - 한국어 (Korean)"
+        echo "  de    - Deutsch (German)"
         exit 1
         ;;
 esac

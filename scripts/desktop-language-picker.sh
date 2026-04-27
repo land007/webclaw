@@ -12,7 +12,12 @@ CHOICE=$(zenity --list --title="Language / 语言" \
     --radiolist --column="" --column="Language" \
     "$( [ "$CURRENT_LANG" = "zh_CN.UTF-8" ] && echo TRUE || echo FALSE )" "中文 Chinese" \
     "$( [ "$CURRENT_LANG" = "en_US.UTF-8" ] && echo TRUE || echo FALSE )" "English 英文" \
-    --width=300 --height=200)
+    "$( [ "$CURRENT_LANG" = "ja_JP.UTF-8" ] && echo TRUE || echo FALSE )" "日本語 Japanese" \
+    "$( [ "$CURRENT_LANG" = "es_ES.UTF-8" ] && echo TRUE || echo FALSE )" "Español Spanish" \
+    "$( [ "$CURRENT_LANG" = "pt_BR.UTF-8" ] && echo TRUE || echo FALSE )" "Português Brazilian" \
+    "$( [ "$CURRENT_LANG" = "ko_KR.UTF-8" ] && echo TRUE || echo FALSE )" "한국어 Korean" \
+    "$( [ "$CURRENT_LANG" = "de_DE.UTF-8" ] && echo TRUE || echo FALSE )" "Deutsch German" \
+    --width=360 --height=360)
 
 if [ $? -eq 0 ]; then
     case "$CHOICE" in
@@ -21,6 +26,21 @@ if [ $? -eq 0 ]; then
             ;;
         "English 英文")
             /usr/local/bin/lang-switch en
+            ;;
+        "日本語 Japanese")
+            /usr/local/bin/lang-switch ja
+            ;;
+        "Español Spanish")
+            /usr/local/bin/lang-switch es
+            ;;
+        "Português Brazilian")
+            /usr/local/bin/lang-switch pt
+            ;;
+        "한국어 Korean")
+            /usr/local/bin/lang-switch ko
+            ;;
+        "Deutsch German")
+            /usr/local/bin/lang-switch de
             ;;
     esac
 fi

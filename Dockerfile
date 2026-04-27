@@ -24,20 +24,31 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         && apt-get clean && rm -rf /var/lib/apt/lists/*; \
     fi
 
-# ─── 6b. Language packs for Chinese and English localization ─────────────
+# ─── 6b. Language packs for desktop localization ─────────────
 RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         apt-get update && apt-get install -y --no-install-recommends \
             language-pack-zh-hans language-pack-zh-hans-base \
             language-pack-gnome-zh-hans language-pack-gnome-zh-hans-base \
             language-pack-en language-pack-en-base \
             language-pack-gnome-en language-pack-gnome-en-base \
+            language-pack-ja language-pack-ja-base \
+            language-pack-gnome-ja language-pack-gnome-ja-base \
+            language-pack-es language-pack-es-base \
+            language-pack-gnome-es language-pack-gnome-es-base \
+            language-pack-pt language-pack-pt-base \
+            language-pack-gnome-pt language-pack-gnome-pt-base \
+            language-pack-ko language-pack-ko-base \
+            language-pack-gnome-ko language-pack-gnome-ko-base \
+            language-pack-de language-pack-de-base \
+            language-pack-gnome-de language-pack-gnome-de-base \
+        && locale-gen en_US.UTF-8 zh_CN.UTF-8 ja_JP.UTF-8 es_ES.UTF-8 pt_BR.UTF-8 ko_KR.UTF-8 de_DE.UTF-8 \
         && apt-get clean && rm -rf /var/lib/apt/lists/*; \
     fi
 
 # Ubuntu 24.04 stores language-pack translations under locale-langpack,
 # while some desktop applications only search /usr/share/locale.
 RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
-        for lang in zh_CN zh_TW en_US; do \
+        for lang in zh_CN zh_TW en_US ja_JP es_ES pt_BR ko_KR de_DE; do \
             if [ -d "/usr/share/locale-langpack/$lang" ] && [ ! -e "/usr/share/locale/$lang" ]; then \
                 ln -sf "/usr/share/locale-langpack/$lang" "/usr/share/locale/$lang"; \
             fi; \
