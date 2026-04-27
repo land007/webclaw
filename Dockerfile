@@ -234,6 +234,22 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         && echo "[build] CC Switch installed successfully"; \
     fi
 
+# ─── 11e. OpenTypeless - AI 语音输入工具（桌面模式专用）──────────────
+RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
+        ARCH=$(dpkg --print-architecture) \
+        && case "$ARCH" in \
+             amd64) OPENTYPELESS_ARCH="amd64" ;; \
+             arm64) OPENTYPELESS_ARCH="arm64" ;; \
+             *) echo "Unsupported OpenTypeless architecture: $ARCH" >&2; exit 1 ;; \
+           esac \
+        && OPENTYPELESS_VERSION=$(curl -fsSL https://api.github.com/repos/land007/opentypeless/releases/latest | grep '"tag_name"' | sed 's/.*"tag_name": *"v//;s/".*//') \
+        && echo "[build] Installing OpenTypeless ${OPENTYPELESS_VERSION} for ${OPENTYPELESS_ARCH}..." \
+        && curl -fsSL "https://github.com/land007/opentypeless/releases/download/v${OPENTYPELESS_VERSION}/OpenTypeless_${OPENTYPELESS_VERSION}_${OPENTYPELESS_ARCH}.deb" -o /tmp/opentypeless.deb \
+        && apt-get install -y /tmp/opentypeless.deb \
+        && rm /tmp/opentypeless.deb \
+        && echo "[build] OpenTypeless installed successfully"; \
+    fi
+
 # ─── 12. Config files (COPY last — most likely to change) ───────────
 COPY configs/supervisord.conf /etc/supervisor/supervisord.conf
 COPY configs/supervisord-lite.conf /etc/supervisor/conf.d/supervisord-lite.conf
