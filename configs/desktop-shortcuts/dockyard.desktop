@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Dockyard
+Name[zh_CN]=Dockyard Docker 管理器
+Exec=bash -c 'pgrep -x dockyard > /dev/null && echo "Dockyard 已在运行" || /usr/bin/dockyard %F'
+Icon=/opt/on-demand-icons/dockyard.png
+Type=Application
+Categories=System;Utility;Development;

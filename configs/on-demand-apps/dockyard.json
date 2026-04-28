@@ -1,0 +1,14 @@
+{
+  "id": "dockyard",
+  "name": "Dockyard",
+  "package": "dockyard",
+  "binary": "/usr/bin/dockyard",
+  "install_method": "github_release",
+  "github_repo": "land007/dockyard",
+  "version": "v0.7.4",
+  "asset_pattern": "dockyard_{version}_{arch}.deb",
+  "arch_map": {
+    "arm64": "arm64"
+  },
+  "default_args": []
+}
