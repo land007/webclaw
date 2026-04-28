@@ -6,7 +6,16 @@ MODE="${MODE:-desktop}"
 # ─── Docker socket GID fix ───────────────────────────────────────────
 if [ -S /var/run/docker.sock ]; then
     DOCKER_GID=$(stat -c '%g' /var/run/docker.sock)
-    groupmod -g "$DOCKER_GID" docker 2>/dev/null || true
+    if [ "$DOCKER_GID" = "0" ]; then
+        # 宿主 socket 归属 root:root（GID 0），常见于 macOS Docker Desktop 透传。
+        # 没法把容器内 docker 组改成 GID 0（会与 root 组冲突），
+        # 改方向：把 socket 的组所有权交给容器内已存在的 docker 组。
+        chgrp docker /var/run/docker.sock 2>/dev/null || true
+        chmod 660 /var/run/docker.sock 2>/dev/null || true
+    else
+        # 正常 Linux 宿主：把容器内 docker 组 GID 对齐到宿主 socket 的 GID。
+        groupmod -g "$DOCKER_GID" docker 2>/dev/null || true
+    fi
     usermod -aG docker ubuntu 2>/dev/null || true
 fi
 

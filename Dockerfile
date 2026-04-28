@@ -206,7 +206,6 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
 RUN groupadd -f docker && usermod -aG docker ubuntu \
     && mkdir -p /home/ubuntu/projects /home/ubuntu/Desktop \
        /home/ubuntu/.local/share /home/ubuntu/.code-server \
-    && echo 'alias docker="sudo /usr/bin/docker"' >> /home/ubuntu/.bashrc \
     && touch /home/ubuntu/.hushlogin \
     && chown -R ubuntu:ubuntu /home/ubuntu
 
