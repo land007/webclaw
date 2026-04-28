@@ -77,6 +77,13 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         && apt-get clean && rm -rf /var/lib/apt/lists/*; \
     fi
 
+# ─── 6d. FUSE for AppImage support (跨平台: amd64/arm64) ───────────────
+# AppImage 需要 FUSE 来挂载文件系统。虽然我们使用解压安装方式,
+# 但预装 fuse3 可以让用户选择直接运行 AppImage。
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        fuse3 libfuse3-3 \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*;
+
 # ─── 6d. Theme switch script (light/dark mode) ─────────────────────────
 RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         if [ -f scripts/theme-switch.sh ]; then \
@@ -285,6 +292,7 @@ COPY scripts/start-dashboard.sh /opt/start-dashboard.sh
 COPY scripts/start-webtty.sh /opt/start-webtty.sh
 COPY scripts/start-openclaw.sh /opt/start-openclaw.sh
 COPY configs/desktop-shortcuts/ /tmp/desktop-shortcuts/
+COPY configs/desktop-icons/ /tmp/desktop-icons/
 COPY scripts/patch-novnc.sh /tmp/patch-novnc.sh
 COPY configs/clipboard-server.js /tmp/clipboard-server.js
 COPY configs/custom-clipboard-image.js /tmp/custom-clipboard-image.js
@@ -299,6 +307,7 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         && cp /tmp/xsession /opt/xsession \
         && chmod +x /opt/xsession \
         && cp -r /tmp/desktop-shortcuts/ /opt/ \
+        && cp -r /tmp/desktop-icons/ /opt/ \
         && cp /tmp/audio-ws-server.py /opt/ \
         && cp /tmp/audio-ws-wrapper.sh /opt/ \
         && chmod +x /opt/audio-ws-server.py /opt/audio-ws-wrapper.sh \
@@ -318,7 +327,7 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
     && printf '\n# Language switch aliases\nalias chinese="/usr/local/bin/lang-switch zh"\nalias english="/usr/local/bin/lang-switch en"\n' >> /home/ubuntu/.bashrc \
     && chmod +x /opt/start-dashboard.sh /opt/start-webtty.sh /opt/start-openclaw.sh \
     && rm -rf /tmp/supervisor-audio.conf /tmp/audio-player.html /tmp/audio-bar.js \
-           /tmp/touch-handler.js /tmp/key-remap.js /tmp/xsession /tmp/desktop-shortcuts/ \
+           /tmp/touch-handler.js /tmp/key-remap.js /tmp/xsession /tmp/desktop-shortcuts/ /tmp/desktop-icons/ \
            /tmp/audio-ws-server.py /tmp/audio-ws-wrapper.sh \
            /tmp/patch-novnc.sh /tmp/clipboard-server.js /tmp/custom-clipboard-image.js
 
