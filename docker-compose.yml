@@ -9,6 +9,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - dna-data:/home/ubuntu/dna          # DNA 目录：项目源码，空时自动 clone
       - projects:/home/ubuntu/projects
+      - obsidian-data:/home/ubuntu/obsidian # Obsidian 笔记库目录
       - vibe-kanban-data:/home/ubuntu/.local/share/vibe-kanban
       - code-server-data:/home/ubuntu/.code-server
       - user-data:/home/ubuntu/.local/share
@@ -48,6 +49,7 @@ services:
 volumes:
   dna-data:
   projects:
+  obsidian-data:
   vibe-kanban-data:
   code-server-data:
   user-data:
