@@ -18,10 +18,16 @@ ubuntu ALL=(root) NOPASSWD: /usr/bin/apt-get install -y flameshot
 
 # Wireshark 权限配置
 ubuntu ALL=(root) NOPASSWD: /usr/sbin/usermod -a -G wireshark ubuntu
-ubuntu ALL=(root) NOPASSWD: /usr/bin/setcap cap_net_raw,cap_net_admin=ep /usr/bin/dumpcap
+# setcap 的 capabilities 参数含 = 号,sudoers 把它误解析为 env 赋值;
+# 用反斜杠转义 = 和 , 让 sudoers 把整段当成命令实参
+ubuntu ALL=(root) NOPASSWD: /usr/bin/setcap cap_net_raw\,cap_net_admin\=ep /usr/bin/dumpcap
 
-# appimage 模式: 创建目录、移动解压内容 (Obsidian 等)
-# AppImage 解压安装方式: 下载到 /tmp, 解压后移动 squashfs-root 到目标目录
+# appimage 模式: 创建目录、嵌套移动解压内容 (Ghostty / Obsidian 等)
+# AppImage 解压后内容嵌套放进 /opt/ondemand-apps/<id>/AppDir/,
+# 让 manifest 里的 binary 路径形如 /opt/ondemand-apps/<id>/AppDir/bin/<bin> 自然成立。
+# pkgforge 系列 AppImage (如 Ghostty) 解压出 /tmp/AppDir,
+# 标准 AppImage 解压出 /tmp/squashfs-root,两种都允许。
 ubuntu ALL=(root) NOPASSWD: /bin/mkdir -p /opt/ondemand-apps
 ubuntu ALL=(root) NOPASSWD: /bin/mkdir -p /opt/ondemand-apps/*
-ubuntu ALL=(root) NOPASSWD: /bin/mv -f /tmp/squashfs-root /opt/ondemand-apps/*
+ubuntu ALL=(root) NOPASSWD: /bin/mv -f /tmp/AppDir /opt/ondemand-apps/*/AppDir
+ubuntu ALL=(root) NOPASSWD: /bin/mv -f /tmp/squashfs-root /opt/ondemand-apps/*/AppDir

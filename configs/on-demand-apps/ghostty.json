@@ -1,0 +1,15 @@
+{
+  "id": "ghostty",
+  "name": "Ghostty",
+  "package": "ghostty",
+  "binary": "/opt/ondemand-apps/ghostty/AppDir/bin/ghostty",
+  "install_method": "appimage",
+  "github_repo": "pkgforge-dev/ghostty-appimage",
+  "asset_pattern": "Ghostty-{version}-{arch_suffix}.AppImage",
+  "arch_map": {
+    "amd64": "x86_64",
+    "arm64": "aarch64"
+  },
+  "unbundle_gl": true,
+  "default_args": []
+}

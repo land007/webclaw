@@ -1,0 +1,14 @@
+[Desktop Entry]
+Name=Ghostty
+Name[zh_CN]=Ghostty 终端
+Comment=Fast, feature-rich, and cross-platform terminal emulator
+Comment[zh_CN]=快速、功能丰富的跨平台终端模拟器（首次点击触发按需安装）
+GenericName=Terminal Emulator
+GenericName[zh_CN]=终端模拟器
+Exec=/usr/local/bin/webclaw-app-launcher ghostty
+Icon=/opt/on-demand-icons/ghostty.png
+Type=Application
+Categories=System;TerminalEmulator;
+Keywords=terminal;shell;command;cli;
+Keywords[zh_CN]=终端;命令行;控制台;
+StartupNotify=true

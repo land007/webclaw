@@ -210,19 +210,49 @@ case "$INSTALL_METHOD" in
             echo "50"
             echo "# 正在解压 AppImage..."
             cd /tmp
+            rm -rf /tmp/squashfs-root /tmp/AppDir
             if ! "$APPIMAGE_TMP" --appimage-extract >/dev/null 2>>"$LOG"; then
                 echo "解压失败" >> "$LOG"
                 rm -f "$APPIMAGE_TMP"
                 echo "100"; exit 1
             fi
 
+            # pkgforge 系列 AppImage: /tmp/squashfs-root 是个 symlink → ./AppDir,
+            # 必须解到真实目录,否则后面 mv 走的是 symlink 本身、留下孤儿 AppDir
+            EXTRACTED=$(readlink -f /tmp/squashfs-root)
+
+            # 可选: 把 AppImage 自带的旧 Mesa GL 库替换为系统 Mesa 的符号链接,
+            # 解决 pkgforge 的 anylinux.so 劫持 dlopen 强制加载老 GL 导致 GTK4
+            # 应用(如 Ghostty)只能拿到 OpenGL 3.3、达不到 4.3+ 要求的问题
+            if [ "$(jq -r '.unbundle_gl // false' "$MANIFEST")" = "true" ]; then
+                echo "65"
+                echo "# 正在卸绑 AppImage 自带 GL 库,改用系统 Mesa..."
+                LIBD="$EXTRACTED/shared/lib"
+                SYSD="/usr/lib/$(gcc -print-multiarch 2>/dev/null || dpkg-architecture -qDEB_HOST_MULTIARCH 2>/dev/null || echo aarch64-linux-gnu)"
+                if [ -d "$LIBD" ]; then
+                    mkdir -p "$LIBD/.gl-bundled-bak"
+                    for pat in libEGL libGL libGLX libGLES libGLdispatch libgbm; do
+                        for f in "$LIBD/${pat}"*; do
+                            [ -e "$f" ] || continue
+                            case "$f" in *.gl-bundled-bak*) continue ;; esac
+                            mv -f "$f" "$LIBD/.gl-bundled-bak/" 2>>"$LOG" || true
+                        done
+                    done
+                    for name in libEGL.so.1 libGL.so.1 libGLX.so.0 libGLdispatch.so.0 \
+                                libGLX_mesa.so.0 libEGL_mesa.so.0 libgbm.so.1 libGLESv2.so.2; do
+                        [ -e "$SYSD/$name" ] && ln -sfn "$SYSD/$name" "$LIBD/$name"
+                    done
+                fi
+            fi
+
             echo "75"
             echo "# 正在安装..."
-            # 移动解压内容到目标目录
-            if ! sudo /bin/mv -f squashfs-root "$APPIMAGE_EXTRACT_DIR" 2>>"$LOG"; then
+            # 把解压结果嵌套放进 $APPIMAGE_EXTRACT_DIR/AppDir,
+            # 让 manifest 里的 binary 路径(如 .../ghostty/AppDir/bin/ghostty)自然成立
+            if ! sudo /bin/mv -f "$EXTRACTED" "$APPIMAGE_EXTRACT_DIR/AppDir" 2>>"$LOG"; then
                 echo "移动失败" >> "$LOG"
                 rm -f "$APPIMAGE_TMP"
-                rm -rf /tmp/squashfs-root
+                rm -rf /tmp/squashfs-root "$EXTRACTED"
                 echo "100"; exit 1
             fi
 
