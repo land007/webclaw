@@ -1,0 +1,14 @@
+[Desktop Entry]
+Name=Flameshot
+Name[zh_CN]=Flameshot 截图
+Comment=Powerful screenshot software
+Comment[zh_CN]=功能强大的截图软件（首次点击触发按需安装）
+GenericName=Screenshot Tool
+GenericName[zh_CN]=截图工具
+Exec=/usr/local/bin/webclaw-app-launcher flameshot %F
+Icon=/opt/on-demand-icons/flameshot.png
+Type=Application
+Categories=Graphics;Utility;
+Keywords=screenshot;capture;snip;screen;
+Keywords[zh_CN]=截图;截屏;剪裁;屏幕;
+StartupNotify=true

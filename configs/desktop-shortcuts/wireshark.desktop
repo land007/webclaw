@@ -1,0 +1,14 @@
+[Desktop Entry]
+Name=Wireshark
+Name[zh_CN]=Wireshark 网络分析器
+Comment=Network protocol analyzer
+Comment[zh_CN]=网络协议分析器（首次点击触发按需安装）
+GenericName=Network Analyzer
+GenericName[zh_CN]=网络分析器
+Exec=/usr/local/bin/webclaw-app-launcher wireshark %F
+Icon=/opt/on-demand-icons/wireshark.png
+Type=Application
+Categories=Network;System;Monitor;
+Keywords=network;analyzer;protocol;sniffer;packet;
+Keywords[zh_CN]=网络;分析器;协议;抓包;数据包;
+StartupNotify=true

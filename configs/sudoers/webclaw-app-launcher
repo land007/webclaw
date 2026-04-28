@@ -8,8 +8,17 @@ ubuntu ALL=(root) NOPASSWD: /usr/bin/apt-get install -y /tmp/webclaw-ondemand-*.
 # apt 模式: 刷新索引(每个 apt 应用安装前都需要)
 ubuntu ALL=(root) NOPASSWD: /usr/bin/apt-get update
 
+# debconf 预配置（用于 Wireshark 等需要非交互安装的包）
+ubuntu ALL=(root) NOPASSWD: /usr/bin/debconf-set-selections
+
 # apt 模式: 显式列出每个允许按需安装的包名(避免通配符放权)
 ubuntu ALL=(root) NOPASSWD: /usr/bin/apt-get install -y code
+ubuntu ALL=(root) NOPASSWD: /usr/bin/apt-get install -y wireshark
+ubuntu ALL=(root) NOPASSWD: /usr/bin/apt-get install -y flameshot
+
+# Wireshark 权限配置
+ubuntu ALL=(root) NOPASSWD: /usr/sbin/usermod -a -G wireshark ubuntu
+ubuntu ALL=(root) NOPASSWD: /usr/bin/setcap cap_net_raw,cap_net_admin=ep /usr/bin/dumpcap
 
 # appimage 模式: 创建目录、移动解压内容 (Obsidian 等)
 # AppImage 解压安装方式: 下载到 /tmp, 解压后移动 squashfs-root 到目标目录

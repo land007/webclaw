@@ -1,0 +1,9 @@
+{
+  "id": "wireshark",
+  "name": "Wireshark",
+  "package": "wireshark",
+  "binary": "/usr/bin/wireshark",
+  "install_method": "apt",
+  "apt_package": "wireshark",
+  "default_args": []
+}

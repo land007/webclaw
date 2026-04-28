@@ -1,0 +1,9 @@
+{
+  "id": "flameshot",
+  "name": "Flameshot",
+  "package": "flameshot",
+  "binary": "/usr/bin/flameshot",
+  "install_method": "apt",
+  "apt_package": "flameshot",
+  "default_args": []
+}

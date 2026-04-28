@@ -84,9 +84,23 @@ case "$INSTALL_METHOD" in
 
             echo "40"
             echo "# 正在安装 $NAME ($APT_PKG)..."
+            # Wireshark 需要预配置 debconf 避免交互提示
+            if [ "$APT_PKG" = "wireshark" ]; then
+                echo "wireshark-common wireshark-common/setuid boolean true" | sudo debconf-set-selections >>"$LOG" 2>&1
+            fi
             if ! sudo /usr/bin/apt-get install -y "$APT_PKG" >>"$LOG" 2>&1; then
                 echo "apt-get install $APT_PKG 失败" >> "$LOG"
                 echo "100"; exit 1
+            fi
+
+            # Wireshark 特殊处理: 配置 dumpcap 权限
+            if [ "$APT_PKG" = "wireshark" ]; then
+                echo "70"
+                echo "# 正在配置网络捕获权限..."
+                # 将 ubuntu 用户添加到 wireshark 组
+                sudo usermod -a -G wireshark ubuntu >>"$LOG" 2>&1
+                # 设置 dumpcap 的 capabilities
+                sudo setcap cap_net_raw,cap_net_admin=ep /usr/bin/dumpcap >>"$LOG" 2>&1
             fi
 
             echo "100"
