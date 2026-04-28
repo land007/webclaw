@@ -2,7 +2,7 @@
   "id": "obsidian",
   "name": "Obsidian",
   "package": "obsidian",
-  "binary": "/opt/ondemand-apps/obsidian/squashfs-root/obsidian",
+  "binary": "/opt/ondemand-apps/obsidian/AppDir/AppRun",
   "install_method": "appimage",
   "github_repo": "obsidianmd/obsidian-releases",
   "asset_pattern": "Obsidian-{version}{arch_suffix}.AppImage",
