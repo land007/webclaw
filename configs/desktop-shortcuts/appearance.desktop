@@ -1,8 +1,18 @@
 [Desktop Entry]
 Name=Appearance
 Name[zh_CN]=外观
+Name[ja_JP]=外観
+Name[es_ES]=Apariencia
+Name[pt_BR]=Aparência
+Name[ko_KR]=모양
+Name[de_DE]=Erscheinungsbild
 Comment=Switch desktop theme (Light/Dark mode)
 Comment[zh_CN]=切换桌面主题（浅色/深色模式）
+Comment[ja_JP]=デスクトップ テーマを切り替え（ライト/ダーク モード）
+Comment[es_ES]=Cambiar tema del escritorio (modo claro/oscuro)
+Comment[pt_BR]=Alternar tema da área de trabalho (modo claro/escuro)
+Comment[ko_KR]=데스크톱 테마 전환 (밝게/어둡게)
+Comment[de_DE]=Desktop-Design wechseln (heller/dunkler Modus)
 Exec=/usr/local/bin/desktop-theme-picker
 Icon=preferences-desktop-theme
 Terminal=false

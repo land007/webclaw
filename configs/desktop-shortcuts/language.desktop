@@ -1,8 +1,18 @@
 [Desktop Entry]
 Name=Language
 Name[zh_CN]=语言
-Comment=Switch system language (Chinese/English)
-Comment[zh_CN]=切换系统语言（中文/英文）
+Name[ja_JP]=言語
+Name[es_ES]=Idioma
+Name[pt_BR]=Idioma
+Name[ko_KR]=언어
+Name[de_DE]=Sprache
+Comment=Switch system language
+Comment[zh_CN]=切换系统语言
+Comment[ja_JP]=システム言語を切り替え
+Comment[es_ES]=Cambiar idioma del sistema
+Comment[pt_BR]=Alterar idioma do sistema
+Comment[ko_KR]=시스템 언어 전환
+Comment[de_DE]=Systemsprache wechseln
 Exec=/usr/local/bin/desktop-language-picker
 Icon=preferences-desktop-locale
 Terminal=false

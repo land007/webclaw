@@ -1,8 +1,18 @@
 [Desktop Entry]
 Name=CC Switch
 Name[zh_CN]=CC Switch
+Name[ja_JP]=CC Switch
+Name[es_ES]=CC Switch
+Name[pt_BR]=CC Switch
+Name[ko_KR]=CC Switch
+Name[de_DE]=CC Switch
 Comment=All-in-One Assistant for Claude Code, Codex & Gemini CLI
 Comment[zh_CN]=Claude Code、Codex 和 Gemini CLI 的统一管理工具
+Comment[ja_JP]=Claude Code、Codex、Gemini CLI 用のオールインワン管理ツール
+Comment[es_ES]=Asistente todo en uno para Claude Code, Codex y Gemini CLI
+Comment[pt_BR]=Assistente integrado para Claude Code, Codex e Gemini CLI
+Comment[ko_KR]=Claude Code, Codex, Gemini CLI 통합 관리 도구
+Comment[de_DE]=All-in-One-Assistent für Claude Code, Codex und Gemini CLI
 Exec=/usr/local/bin/webclaw-app-launcher cc-switch
 Icon=/opt/on-demand-icons/cc-switch.png
 Terminal=false

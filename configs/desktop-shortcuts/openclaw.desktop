@@ -1,8 +1,18 @@
 [Desktop Entry]
 Name=OpenClaw
 Name[zh_CN]=OpenClaw
+Name[ja_JP]=OpenClaw
+Name[es_ES]=OpenClaw
+Name[pt_BR]=OpenClaw
+Name[ko_KR]=OpenClaw
+Name[de_DE]=OpenClaw
 Comment=OpenClaw AI Gateway Dashboard
 Comment[zh_CN]=OpenClaw AI 网关管理界面
+Comment[ja_JP]=OpenClaw AI ゲートウェイ ダッシュボード
+Comment[es_ES]=Panel de control de OpenClaw AI Gateway
+Comment[pt_BR]=Painel do OpenClaw AI Gateway
+Comment[ko_KR]=OpenClaw AI 게이트웨이 대시보드
+Comment[de_DE]=OpenClaw AI Gateway-Dashboard
 Exec=xdg-open http://127.0.0.1:10003
 Icon=/opt/desktop-icons/openclaw.png
 Terminal=false

@@ -1,8 +1,18 @@
 [Desktop Entry]
 Name=OpenTypeless
 Name[zh_CN]=OpenTypeless
+Name[ja_JP]=OpenTypeless
+Name[es_ES]=OpenTypeless
+Name[pt_BR]=OpenTypeless
+Name[ko_KR]=OpenTypeless
+Name[de_DE]=OpenTypeless
 Comment=AI voice input tool (click to install on first use)
 Comment[zh_CN]=AI 语音输入工具（首次点击触发按需安装）
+Comment[ja_JP]=AI 音声入力ツール（初回クリック時にインストール）
+Comment[es_ES]=Herramienta de entrada de voz con IA (se instala al primer clic)
+Comment[pt_BR]=Ferramenta de entrada de voz com IA (instala ao primeiro clique)
+Comment[ko_KR]=AI 음성 입력 도구 (첫 클릭 시 자동 설치)
+Comment[de_DE]=KI-Spracheingabewerkzeug (Installation bei erstem Klick)
 Exec=/usr/local/bin/webclaw-app-launcher opentypeless
 Icon=/opt/on-demand-icons/opentypeless.png
 Terminal=false

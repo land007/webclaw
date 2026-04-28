@@ -1,6 +1,18 @@
 [Desktop Entry]
 Name=v2rayN
+Name[zh_CN]=v2rayN
+Name[ja_JP]=v2rayN
+Name[es_ES]=v2rayN
+Name[pt_BR]=v2rayN
+Name[ko_KR]=v2rayN
+Name[de_DE]=v2rayN
 Comment=A GUI client for Windows and Linux, support Xray core and sing-box-core and others
+Comment[zh_CN]=Windows 和 Linux 的 GUI 代理客户端,支持 Xray 内核、sing-box 内核等
+Comment[ja_JP]=Windows と Linux 用 GUI クライアント、Xray コアと sing-box-core などに対応
+Comment[es_ES]=Cliente GUI para Windows y Linux, compatible con Xray core, sing-box-core y otros
+Comment[pt_BR]=Cliente GUI para Windows e Linux, compatível com Xray core, sing-box-core e outros
+Comment[ko_KR]=Windows 및 Linux용 GUI 클라이언트, Xray 코어 및 sing-box-core 등 지원
+Comment[de_DE]=GUI-Client für Windows und Linux, unterstützt Xray-Core, sing-box-Core u.a.
 Exec=/opt/v2rayN/v2rayN
 Icon=/opt/v2rayN/v2rayN.png
 Terminal=false
