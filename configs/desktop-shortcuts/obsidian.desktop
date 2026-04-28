@@ -1,0 +1,14 @@
+[Desktop Entry]
+Name=Obsidian
+Name[zh_CN]=Obsidian
+Comment=Knowledge base that works on local Markdown files
+Comment[zh_CN]=本地 Markdown 文件知识库（首次点击触发按需安装）
+GenericName=Note Taking App
+GenericName[zh_CN]=笔记应用
+Exec=/usr/local/bin/webclaw-app-launcher obsidian %F
+Icon=/opt/on-demand-icons/obsidian.png
+Type=Application
+Categories=Office;Utility;TextEditor;
+StartupNotify=true
+Keywords=Notes;Knowledge;Markdown;Writing;Wiki;
+Keywords[zh_CN]=笔记;知识;Markdown;写作;百科;

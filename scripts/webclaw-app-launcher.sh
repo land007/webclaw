@@ -47,9 +47,20 @@ INSTALL_METHOD=$(jq -r '.install_method // "github_release"' "$MANIFEST")
 mapfile -t DEFAULT_ARGS < <(jq -r '.default_args // [] | .[]' "$MANIFEST")
 
 # 已装 -> 直接启动,setsid 脱离终端避免阻塞 dbus-launch 等
-if dpkg -s "$PKG" >/dev/null 2>&1 && [ -x "$BIN" ]; then
-    setsid "$BIN" "${DEFAULT_ARGS[@]}" "$@" </dev/null >/dev/null 2>&1 &
-    exit 0
+# 根据安装方法使用不同的检查方式
+if [ "$INSTALL_METHOD" = "appimage" ]; then
+    # AppImage 解压安装: 检查解压目录是否存在且可执行
+    APPIMAGE_EXTRACT_DIR="/opt/ondemand-apps/${APP_ID}"
+    if [ -x "$BIN" ]; then
+        setsid "$BIN" "${DEFAULT_ARGS[@]}" "$@" </dev/null >/dev/null 2>&1 &
+        exit 0
+    fi
+else
+    # apt/github_release: 检查 dpkg 包是否已安装
+    if dpkg -s "$PKG" >/dev/null 2>&1 && [ -x "$BIN" ]; then
+        setsid "$BIN" "${DEFAULT_ARGS[@]}" "$@" </dev/null >/dev/null 2>&1 &
+        exit 0
+    fi
 fi
 
 # 未装 -> 询问
@@ -137,6 +148,82 @@ case "$INSTALL_METHOD" in
             --percentage=0 --auto-close --no-cancel --width=420
         ;;
 
+    appimage)
+        # ─── GitHub release 下 AppImage 解压安装(Obsidian 等) ───────
+        # AppImage 解压安装更可靠，不依赖 fuse 挂载
+        REPO=$(jq -r '.github_repo' "$MANIFEST")
+        ASSET_PATTERN=$(jq -r '.asset_pattern' "$MANIFEST")
+        ARCH=$(dpkg --print-architecture)
+        ARCH_VAR=$(jq -r --arg a "$ARCH" '.arch_map[$a] // empty' "$MANIFEST")
+        if [ -z "$ARCH_VAR" ]; then
+            zenity --error --title="$NAME" --text="不支持的架构: $ARCH" --width=320
+            exit 1
+        fi
+
+        # AppImage 解压目录
+        APPIMAGE_EXTRACT_DIR="/opt/ondemand-apps/${APP_ID}"
+        APPIMAGE_TMP="/tmp/webclaw-ondemand-${APP_ID}.AppImage"
+        sudo /bin/mkdir -p "$APPIMAGE_EXTRACT_DIR" 2>>"$LOG"
+
+        {
+            echo "5"
+            echo "# 正在查询最新版本..."
+            VERSION=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" 2>>"$LOG" \
+                | grep '"tag_name"' | sed 's/.*"tag_name": *"v//;s/".*//')
+            if [ -z "$VERSION" ]; then
+                echo "无法获取最新版本号" >> "$LOG"
+                echo "100"; exit 1
+            fi
+
+            # 替换版本和架构后缀(注意: arch_var 可能是空字符串)
+            ASSET=${ASSET_PATTERN//\{version\}/$VERSION}
+            ASSET=${ASSET//\{arch_suffix\}/$ARCH_VAR}
+            URL="https://github.com/${REPO}/releases/download/v${VERSION}/${ASSET}"
+
+            echo "15"
+            echo "# 正在下载 $NAME v$VERSION..."
+            rm -f "$APPIMAGE_TMP"
+            rm -rf "$APPIMAGE_EXTRACT_DIR"
+            if ! curl -fsSL "$URL" -o "$APPIMAGE_TMP" 2>>"$LOG"; then
+                echo "下载失败: $URL" >> "$LOG"
+                echo "100"; exit 1
+            fi
+
+            echo "40"
+            echo "# 正在准备 AppImage..."
+            chmod +x "$APPIMAGE_TMP" 2>>"$LOG"
+
+            echo "50"
+            echo "# 正在解压 AppImage..."
+            cd /tmp
+            if ! "$APPIMAGE_TMP" --appimage-extract >/dev/null 2>>"$LOG"; then
+                echo "解压失败" >> "$LOG"
+                rm -f "$APPIMAGE_TMP"
+                echo "100"; exit 1
+            fi
+
+            echo "75"
+            echo "# 正在安装..."
+            # 移动解压内容到目标目录
+            if ! sudo /bin/mv -f squashfs-root "$APPIMAGE_EXTRACT_DIR" 2>>"$LOG"; then
+                echo "移动失败" >> "$LOG"
+                rm -f "$APPIMAGE_TMP"
+                rm -rf /tmp/squashfs-root
+                echo "100"; exit 1
+            fi
+
+            # 清理临时文件
+            rm -f "$APPIMAGE_TMP"
+            rm -rf /tmp/squashfs-root
+
+            echo "100"
+            echo "# 完成"
+        } | zenity --progress \
+            --title="安装 $NAME" \
+            --text="准备中..." \
+            --percentage=0 --auto-close --no-cancel --width=420
+        ;;
+
     *)
         zenity --error --title="$NAME" \
             --text="未知的 install_method: $INSTALL_METHOD" --width=380
@@ -145,7 +232,23 @@ case "$INSTALL_METHOD" in
 esac
 
 # 验证安装结果
-if dpkg -s "$PKG" >/dev/null 2>&1; then
+if [ "$INSTALL_METHOD" = "appimage" ]; then
+    # AppImage: 检查文件是否存在且可执行
+    if [ -x "$BIN" ]; then
+        INSTALL_OK=1
+    else
+        INSTALL_OK=0
+    fi
+else
+    # apt/github_release: 检查 dpkg 包
+    if dpkg -s "$PKG" >/dev/null 2>&1; then
+        INSTALL_OK=1
+    else
+        INSTALL_OK=0
+    fi
+fi
+
+if [ "$INSTALL_OK" = 1 ]; then
     zenity --info \
         --title="$NAME" \
         --text="<b>$NAME</b> 安装完成!\n\n再次点击桌面图标即可启动。" \

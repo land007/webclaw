@@ -77,13 +77,6 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         && apt-get clean && rm -rf /var/lib/apt/lists/*; \
     fi
 
-# ─── 6d. FUSE for AppImage support (跨平台: amd64/arm64) ───────────────
-# AppImage 需要 FUSE 来挂载文件系统。虽然我们使用解压安装方式,
-# 但预装 fuse3 可以让用户选择直接运行 AppImage。
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        fuse3 libfuse3-3 \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*;
-
 # ─── 6d. Theme switch script (light/dark mode) ─────────────────────────
 RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         if [ -f scripts/theme-switch.sh ]; then \
