@@ -6,6 +6,7 @@
   "install_method": "cursor_api",
   "api_base": "https://api2.cursor.sh/updates/download/golden",
   "version": "3.2",
+  "version_api": "https://api2.cursor.sh/updates/latest",
   "arch_map": {
     "amd64": "linux-x64",
     "arm64": "linux-arm64"
