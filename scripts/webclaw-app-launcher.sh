@@ -433,6 +433,7 @@ EOF
         DOWNLOAD_URL=$(jq -r '.download_url' "$MANIFEST")
         ARCH=$(dpkg --print-architecture)
         ARCH_VAR=$(jq -r --arg a "$ARCH" '.arch_map[$a] // empty' "$MANIFEST")
+        ARCH_SUFFIX=$(jq -r --arg a "$ARCH" --arg fallback "$ARCH_VAR" '.arch_suffix_map[$a] // $fallback // empty' "$MANIFEST")
         if [ -z "$ARCH_VAR" ]; then
             zenity --error --title="$NAME" --text="不支持的架构: $ARCH" --width=320
             exit 1
@@ -440,6 +441,7 @@ EOF
 
         # 替换架构占位符
         DOWNLOAD_URL="${DOWNLOAD_URL//\{arch\}/$ARCH_VAR}"
+        DOWNLOAD_URL="${DOWNLOAD_URL//\{arch_suffix\}/$ARCH_SUFFIX}"
         INSTALL_DIR="/opt/${APP_ID}"
 
         {
