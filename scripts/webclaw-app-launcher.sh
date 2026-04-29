@@ -272,8 +272,27 @@ case "$INSTALL_METHOD" in
     r2_download)
         # ─── R2 自定义 API 下载安装(WebClaw Launcher) ───────────────────
         DOWNLOAD_API=$(jq -r '.download_api' "$MANIFEST")
-        ASSET_KEY=$(jq -r '.asset_key' "$MANIFEST")
-        INSTALL_DIR="/opt/webclaw-launcher"
+
+        # 检查架构支持
+        ARCH=$(dpkg --print-architecture)
+        UNSUPPORTED_ARCHS=$(jq -r '.unsupported_archs // [] | .[]' "$MANIFEST" 2>/dev/null || echo "")
+        for UNSUP in $UNSUPPORTED_ARCHS; do
+            if [ "$ARCH" = "$UNSUP" ]; then
+                zenity --error --title="$NAME" \
+                    --text="$NAME 暂不支持 $ARCH 架构。\n\n目前仅支持 AMD64 (x86_64) 平台。" \
+                    --width=380
+                exit 1
+            fi
+        done
+
+        # 根据 arch_map 获取对应的 asset_key
+        ASSET_KEY=$(jq -r --arg a "$ARCH" '.arch_map[$a] // .asset_key // empty' "$MANIFEST")
+        if [ -z "$ASSET_KEY" ]; then
+            zenity --error --title="$NAME" --text="不支持的架构: $ARCH" --width=320
+            exit 1
+        fi
+
+        INSTALL_DIR="/opt/${APP_ID}"
 
         {
             echo "5"
@@ -317,49 +336,88 @@ case "$INSTALL_METHOD" in
                 echo "100"; exit 1
             fi
 
+            echo "50"
+            echo "# 正在解压 zip..."
+            mkdir -p "$TMP_EXTRACT"
+            if ! unzip -q "$TMP_ZIP" -d "$TMP_EXTRACT" 2>>"$LOG"; then
+                echo "解压 zip 失败" >> "$LOG"
+                rm -f "$TMP_ZIP"
+                echo "100"; exit 1
+            fi
+
+            echo "60"
+            echo "# 正在准备 AppImage..."
+
+            # 查找 zip 中的 AppImage 文件
+            APPIMAGE_FILE=$(find "$TMP_EXTRACT" -maxdepth 1 -name "*.AppImage" | head -1)
+            if [ -z "$APPIMAGE_FILE" ]; then
+                echo "未找到 AppImage 文件" >> "$LOG"
+                rm -rf "$TMP_EXTRACT" "$TMP_ZIP"
+                echo "100"; exit 1
+            fi
+
+            chmod +x "$APPIMAGE_FILE" 2>>"$LOG"
+
             echo "70"
+            echo "# 正在解压 AppImage..."
+
+            # 解压 AppImage
+            cd /tmp
+            rm -rf /tmp/squashfs-root /tmp/AppDir
+            if ! "$APPIMAGE_FILE" --appimage-extract >/dev/null 2>>"$LOG"; then
+                echo "AppImage 解压失败" >> "$LOG"
+                rm -rf "$TMP_EXTRACT" "$TMP_ZIP"
+                echo "100"; exit 1
+            fi
+
+            EXTRACTED=$(readlink -f /tmp/squashfs-root)
+
+            echo "85"
             echo "# 正在安装..."
 
             # 创建安装目录
             sudo /bin/mkdir -p "$INSTALL_DIR" 2>>"$LOG"
 
-            # 查找解压后的可执行文件并移动到安装目录
-            # zip 包结构可能是: webclaw-launcher 或 webclaw-launcher/webclaw-launcher
-            if [ -f "$TMP_EXTRACT/webclaw-launcher" ]; then
-                sudo /bin/mv -f "$TMP_EXTRACT/webclaw-launcher" "$INSTALL_DIR/" 2>>"$LOG"
-            elif [ -f "$TMP_EXTRACT/webclaw-launcher/webclaw-launcher" ]; then
-                sudo /bin/mv -f "$TMP_EXTRACT/webclaw-launcher/webclaw-launcher" "$INSTALL_DIR/" 2>>"$LOG"
-                sudo /bin/mv -f "$TMP_EXTRACT/webclaw-launcher/"* "$INSTALL_DIR/" 2>>"$LOG" || true
-            else
-                # 找到第一个可执行文件
-                EXECUTABLE=$(find "$TMP_EXTRACT" -type f -executable -name "webclaw-launcher" | head -1)
-                if [ -n "$EXECUTABLE" ]; then
-                    sudo /bin/mv -f "$EXECUTABLE" "$INSTALL_DIR/" 2>>"$LOG"
-                else
-                    echo "未找到可执行文件" >> "$LOG"
-                    rm -rf "$TMP_EXTRACT" "$TMP_ZIP"
-                    echo "100"; exit 1
-                fi
+            # 将解压结果移动到安装目录
+            if ! sudo /bin/mv -f "$EXTRACTED" "$INSTALL_DIR/AppDir" 2>>"$LOG"; then
+                echo "移动失败" >> "$LOG"
+                rm -rf "$TMP_EXTRACT" "$TMP_ZIP" /tmp/squashfs-root
+                echo "100"; exit 1
             fi
 
-            sudo /bin/chmod +x "$INSTALL_DIR/webclaw-launcher" 2>>"$LOG"
+            # 创建启动脚本，指向 AppDir 中的可执行文件
+            # 需要找到实际的二进制文件位置
+            ACTUAL_BIN=$(find "$INSTALL_DIR/AppDir" -type f -executable -name "webclaw-launcher" | head -1)
+            if [ -n "$ACTUAL_BIN" ]; then
+                # 创建一个启动脚本
+                cat > /tmp/webclaw-launcher-wrapper.sh <<EOF
+#!/bin/bash
+exec "$ACTUAL_BIN" "\$@"
+EOF
+                sudo /bin/mv -f /tmp/${APP_ID}-wrapper.sh "$INSTALL_DIR/${APP_ID}" 2>>"$LOG"
+                sudo /bin/chmod +x "$INSTALL_DIR/${APP_ID}" 2>>"$LOG"
+            else
+                echo "未找到 ${APP_ID} 可执行文件" >> "$LOG"
+                rm -rf "$TMP_EXTRACT" "$TMP_ZIP" /tmp/squashfs-root
+                echo "100"; exit 1
+            fi
+
+            # 清理临时文件
+            rm -rf "$TMP_EXTRACT" "$TMP_ZIP" /tmp/squashfs-root
 
             # 创建 desktop 快捷方式
-            cat > /tmp/webclaw-launcher.desktop <<EOF
+            cat > /tmp/${APP_ID}.desktop <<EOF
 [Desktop Entry]
 Version=1.0
 Type=Application
-Name=WebClaw Launcher
-Comment=WebClaw Desktop Launcher
-Exec=$INSTALL_DIR/webclaw-launcher %F
-Icon=webclaw-launcher
+Name=$NAME
+Comment=$NAME
+Exec=$INSTALL_DIR/${APP_ID} %F
+Icon=$APP_ID
 Terminal=false
 Categories=Utility;Application;
 EOF
-            sudo /bin/mv -f /tmp/webclaw-launcher.desktop /usr/share/applications/ 2>>"$LOG"
-
-            # 清理临时文件
-            rm -rf "$TMP_EXTRACT" "$TMP_ZIP"
+            sudo /bin/mv -f /tmp/${APP_ID}.desktop /usr/share/applications/ 2>>"$LOG"
 
             echo "100"
             echo "# 完成"
