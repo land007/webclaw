@@ -330,10 +330,11 @@ RUN chmod +x /usr/local/bin/browser
 # ─── 按需安装框架: 调度脚本 + 应用清单 + 占位图标 + 专用 sudoers ────────
 # 桌面图标 .desktop 的 Exec 指向 webclaw-app-launcher,首次点击触发 zenity 询问 → 下载 .deb → apt-get install
 COPY scripts/webclaw-app-launcher.sh /usr/local/bin/webclaw-app-launcher
+COPY scripts/update-desktop-icons.sh /usr/local/bin/update-desktop-icons
 COPY configs/on-demand-apps/ /opt/on-demand-apps/
 COPY configs/on-demand-icons/ /opt/on-demand-icons/
 COPY configs/sudoers/webclaw-app-launcher /etc/sudoers.d/webclaw-app-launcher
-RUN chmod +x /usr/local/bin/webclaw-app-launcher \
+RUN chmod +x /usr/local/bin/webclaw-app-launcher /usr/local/bin/update-desktop-icons \
     && chmod 0440 /etc/sudoers.d/webclaw-app-launcher \
     && visudo -c -f /etc/sudoers.d/webclaw-app-launcher
 

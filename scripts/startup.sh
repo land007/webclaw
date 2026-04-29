@@ -357,5 +357,10 @@ FCITX_PROFILE_EOF
     chmod +x /home/ubuntu/Desktop/*.desktop 2>/dev/null || true
     chown -R ubuntu:ubuntu /home/ubuntu/Desktop
 
+    # 更新桌面图标状态（未安装应用显示下载标记）
+    if [ -x /usr/local/bin/update-desktop-icons ]; then
+        /usr/local/bin/update-desktop-icons
+    fi
+
     exec /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf
 fi
