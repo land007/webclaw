@@ -75,17 +75,36 @@ zenity --question \
 
 case "$INSTALL_METHOD" in
     apt)
-        # ─── apt 仓库直装(VS Code 等) ───────────────────────────────
+        # ─── apt 仓库直装(VS Code 等 / Antigravity 等) ─────────────────
         APT_PKG=$(jq -r '.apt_package' "$MANIFEST")
+        INSTALL_SCRIPT=$(jq -r '.install_script // empty' "$MANIFEST")
+
+        # 如果有预安装脚本(如添加 apt 仓库),先执行
+        if [ -n "$INSTALL_SCRIPT" ] && [ -x "$INSTALL_SCRIPT" ]; then
+            {
+                echo "5"
+                echo "# 正在准备安装环境..."
+                if ! sudo "$INSTALL_SCRIPT" >>"$LOG" 2>&1; then
+                    echo "安装脚本执行失败" >> "$LOG"
+                    echo "100"; exit 1
+                fi
+                echo "35"
+                echo "# 环境准备完成"
+            } | zenity --progress \
+                --title="安装 $NAME" \
+                --text="准备中..." \
+                --percentage=0 --auto-close --no-cancel --width=420
+        fi
+
         {
-            echo "10"
+            echo "40"
             echo "# 正在刷新 apt 索引..."
             if ! sudo /usr/bin/apt-get update >>"$LOG" 2>&1; then
                 echo "apt-get update 失败" >> "$LOG"
                 echo "100"; exit 1
             fi
 
-            echo "40"
+            echo "60"
             echo "# 正在安装 $NAME ($APT_PKG)..."
             # Wireshark 需要预配置 debconf 避免交互提示
             if [ "$APT_PKG" = "wireshark" ]; then

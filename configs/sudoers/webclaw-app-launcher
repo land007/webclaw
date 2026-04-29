@@ -15,6 +15,13 @@ ubuntu ALL=(root) NOPASSWD: /usr/bin/debconf-set-selections
 ubuntu ALL=(root) NOPASSWD: /usr/bin/apt-get install -y code
 ubuntu ALL=(root) NOPASSWD: /usr/bin/apt-get install -y wireshark
 ubuntu ALL=(root) NOPASSWD: /usr/bin/apt-get install -y flameshot
+ubuntu ALL=(root) NOPASSWD: /usr/bin/apt-get install -y antigravity
+
+# 预安装脚本权限（用于 Antigravity 等需要先配置仓库的应用）
+ubuntu ALL=(root) NOPASSWD: /usr/local/bin/install-antigravity
+ubuntu ALL=(root) NOPASSWD: /usr/bin/gpg --dearmor -o /etc/apt/keyrings/*
+ubuntu ALL=(root) NOPASSWD: /bin/tee /etc/apt/sources.list.d/*
+ubuntu ALL=(root) NOPASSWD: /bin/chmod +x /etc/apt/keyrings/*
 
 # Wireshark 权限配置
 ubuntu ALL=(root) NOPASSWD: /usr/sbin/usermod -a -G wireshark ubuntu

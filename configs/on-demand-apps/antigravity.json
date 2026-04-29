@@ -1,0 +1,9 @@
+{
+  "id": "antigravity",
+  "name": "Google Antigravity",
+  "package": "antigravity",
+  "binary": "/usr/bin/antigravity",
+  "install_method": "apt",
+  "apt_package": "antigravity",
+  "install_script": "/usr/local/bin/install-antigravity"
+}
