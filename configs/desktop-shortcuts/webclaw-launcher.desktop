@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=WebClaw Launcher
+Name[zh_CN]=WebClaw 启动器
+Comment=WebClaw Desktop Launcher (click to install on first use)
+Comment[zh_CN]=WebClaw 桌面启动器（首次点击触发按需安装）
+Exec=/usr/local/bin/webclaw-app-launcher webclaw-launcher
+Icon=/opt/on-demand-icons/webclaw-launcher.png
+Type=Application
+Categories=System;Utility;
+StartupNotify=true
