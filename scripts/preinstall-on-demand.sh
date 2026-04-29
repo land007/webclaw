@@ -28,8 +28,19 @@ warn() { echo "[preinstall] WARN: $*" >&2; }
 # ── apt 模式 ────────────────────────────────────────────────────────
 preinstall_apt() {
     local id="$1" manifest="$2"
-    local apt_pkg
+    local apt_pkg install_script
     apt_pkg=$(jq -r '.apt_package' "$manifest")
+    install_script=$(jq -r '.install_script // empty' "$manifest")
+
+    # 如果有 install_script，先执行（用于添加仓库密钥等）
+    if [ -n "$install_script" ] && [ -x "$install_script" ]; then
+        log "$id: 执行安装脚本 $install_script"
+        "$install_script" || {
+            warn "$id: 安装脚本执行失败"
+            return 1
+        }
+    fi
+
     log "$id: apt install $apt_pkg"
 
     # Wireshark 装前预设 dumpcap setuid 不询问
