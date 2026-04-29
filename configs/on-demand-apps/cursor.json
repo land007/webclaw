@@ -3,14 +3,11 @@
   "name": "Cursor",
   "package": "cursor",
   "binary": "/opt/cursor/cursor",
-  "install_method": "direct_download",
-  "download_url": "https://downloads.cursor.com/production/3e548838cf824b70851dd3ef27d0c6aae371b3f6/linux/arm64/Cursor-3.2.16-aarch64.AppImage",
+  "install_method": "cursor_api",
+  "api_base": "https://api2.cursor.sh/updates/download/golden",
+  "version": "3.2",
   "arch_map": {
-    "arm64": "arm64"
-  },
-  "arch_suffix_map": {
-    "arm64": "aarch64"
-  },
-  "unsupported_archs": ["amd64"],
-  "version": "3.2.16"
+    "amd64": "linux-x64",
+    "arm64": "linux-arm64"
+  }
 }
