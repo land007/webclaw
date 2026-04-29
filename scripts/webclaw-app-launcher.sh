@@ -430,8 +430,9 @@ EOF
         ;;
 
     direct_download)
-        # ─── 直接 URL 下载安装(Cursor 等) ─────────────────────────────────
+        # ─── 直接 URL 下载安装(Cursor / WebClaw Launcher 等) ────────────────
         DOWNLOAD_URL=$(jq -r '.download_url' "$MANIFEST")
+        VERSION_API=$(jq -r '.version_api // empty' "$MANIFEST")
         ARCH=$(dpkg --print-architecture)
         ARCH_VAR=$(jq -r --arg a "$ARCH" '.arch_map[$a] // empty' "$MANIFEST")
         ARCH_SUFFIX=$(jq -r --arg a "$ARCH" --arg fallback "$ARCH_VAR" '.arch_suffix_map[$a] // $fallback // empty' "$MANIFEST")
@@ -440,37 +441,85 @@ EOF
             exit 1
         fi
 
-        # 替换架构占位符
-        DOWNLOAD_URL="${DOWNLOAD_URL//\{arch\}/$ARCH_VAR}"
-        DOWNLOAD_URL="${DOWNLOAD_URL//\{arch_suffix\}/$ARCH_SUFFIX}"
+        # 如果提供了 version_api，先获取版本号
+        if [ -n "$VERSION_API" ]; then
+            VERSION=$(curl -fsSL "$VERSION_API" 2>>"$LOG" | jq -r '.version // .latest // empty' 2>>"$LOG")
+            if [ -z "$VERSION" ]; then
+                zenity --error --title="$NAME" --text="无法获取版本号" --width=320
+                exit 1
+            fi
+        fi
+
+        # 替换版本和架构占位符（使用 sed 因为 bash 模式替换对花括号支持不佳）
+        DOWNLOAD_URL=$(echo "$DOWNLOAD_URL" | sed "s/{version}/${VERSION}/g")
+        DOWNLOAD_URL=$(echo "$DOWNLOAD_URL" | sed "s/{arch}/${ARCH_VAR}/g")
+        DOWNLOAD_URL=$(echo "$DOWNLOAD_URL" | sed "s/{arch_suffix}/${ARCH_SUFFIX}/g")
         INSTALL_DIR="/opt/${APP_ID}"
 
         {
             echo "10"
             echo "# 正在下载 $NAME..."
             TMP_APPIMAGE="/tmp/${APP_ID}.AppImage"
-            rm -f "$TMP_APPIMAGE"
+            TMP_ZIP="/tmp/${APP_ID}.zip"
+            rm -f "$TMP_APPIMAGE" "$TMP_ZIP"
 
-            # Cursor 的 latest 实际上会重定向到具体的版本文件
-            if ! curl -fsSL "$DOWNLOAD_URL" -o "$TMP_APPIMAGE" 2>>"$LOG"; then
-                echo "下载失败: $DOWNLOAD_URL" >> "$LOG"
-                echo "100"; exit 1
+            # 检测文件类型（AppImage 或 zip）
+            if [[ "$DOWNLOAD_URL" == *.zip ]]; then
+                if ! curl -fsSL "$DOWNLOAD_URL" -o "$TMP_ZIP" 2>>"$LOG"; then
+                    echo "下载失败: $DOWNLOAD_URL" >> "$LOG"
+                    echo "100"; exit 1
+                fi
+            else
+                # Cursor 的 latest 实际上会重定向到具体的版本文件
+                if ! curl -fsSL "$DOWNLOAD_URL" -o "$TMP_APPIMAGE" 2>>"$LOG"; then
+                    echo "下载失败: $DOWNLOAD_URL" >> "$LOG"
+                    echo "100"; exit 1
+                fi
             fi
 
-            chmod +x "$TMP_APPIMAGE" 2>>"$LOG"
-
             echo "50"
-            echo "# 正在解压 AppImage..."
+            echo "# 正在解压..."
 
             cd /tmp
             rm -rf /tmp/squashfs-root /tmp/AppDir
-            if ! "$TMP_APPIMAGE" --appimage-extract >/dev/null 2>>"$LOG"; then
-                echo "AppImage 解压失败" >> "$LOG"
-                rm -f "$TMP_APPIMAGE"
+
+            if [ -f "$TMP_ZIP" ]; then
+                # 解压 zip 包
+                TMP_EXTRACT="/tmp/${APP_ID}-extract"
+                rm -rf "$TMP_EXTRACT"
+                mkdir -p "$TMP_EXTRACT"
+                if ! unzip -q "$TMP_ZIP" -d "$TMP_EXTRACT" 2>>"$LOG"; then
+                    echo "解压 zip 失败" >> "$LOG"
+                    rm -f "$TMP_ZIP"
+                    echo "100"; exit 1
+                fi
+
+                # 查找 AppImage 并解压
+                APPIMAGE_FILE=$(find "$TMP_EXTRACT" -maxdepth 2 -name "*.AppImage" | head -1)
+                if [ -z "$APPIMAGE_FILE" ]; then
+                    # 没有 AppImage，直接使用解压后的内容
+                    EXTRACTED="$TMP_EXTRACT"
+                else
+                    chmod +x "$APPIMAGE_FILE" 2>>"$LOG"
+                    if ! "$APPIMAGE_FILE" --appimage-extract >/dev/null 2>>"$LOG"; then
+                        echo "AppImage 解压失败" >> "$LOG"
+                        rm -rf "$TMP_EXTRACT" "$TMP_ZIP"
+                        echo "100"; exit 1
+                    fi
+                    EXTRACTED=$(readlink -f /tmp/squashfs-root)
+                fi
+            elif [ -f "$TMP_APPIMAGE" ]; then
+                chmod +x "$TMP_APPIMAGE" 2>>"$LOG"
+                if ! "$TMP_APPIMAGE" --appimage-extract >/dev/null 2>>"$LOG"; then
+                    echo "AppImage 解压失败" >> "$LOG"
+                    rm -f "$TMP_APPIMAGE"
+                    echo "100"; exit 1
+                fi
+                EXTRACTED=$(readlink -f /tmp/squashfs-root)
+            else
+                echo "未找到有效的安装包" >> "$LOG"
                 echo "100"; exit 1
             fi
-
-            EXTRACTED=$(readlink -f /tmp/squashfs-root)
 
             echo "70"
             echo "# 正在安装..."
@@ -478,13 +527,23 @@ EOF
             sudo /bin/mkdir -p "$INSTALL_DIR" 2>>"$LOG"
             if ! sudo /bin/mv -f "$EXTRACTED" "$INSTALL_DIR/AppDir" 2>>"$LOG"; then
                 echo "移动失败" >> "$LOG"
-                rm -f "$TMP_APPIMAGE"
-                rm -rf /tmp/squashfs-root
+                rm -f "$TMP_APPIMAGE" "$TMP_ZIP"
+                rm -rf /tmp/squashfs-root "$TMP_EXTRACT"
                 echo "100"; exit 1
             fi
 
-            # 查找实际的二进制文件
-            ACTUAL_BIN=$(find "$INSTALL_DIR/AppDir" -type f -executable -name "cursor" | head -1)
+            # 查找实际的二进制文件（按优先级尝试多个可能的名字）
+            ACTUAL_BIN=$(find "$INSTALL_DIR/AppDir" -type f -executable -name "${APP_ID}" | head -1)
+            if [ -z "$ACTUAL_BIN" ]; then
+                ACTUAL_BIN=$(find "$INSTALL_DIR/AppDir" -type f -executable -name "cursor" | head -1)
+            fi
+            if [ -z "$ACTUAL_BIN" ]; then
+                ACTUAL_BIN=$(find "$INSTALL_DIR/AppDir" -type f -executable -name "tauri-app" | head -1)
+            fi
+            # 最后尝试：找 usr/bin 下任何可执行文件
+            if [ -z "$ACTUAL_BIN" ] && [ -d "$INSTALL_DIR/AppDir/usr/bin" ]; then
+                ACTUAL_BIN=$(find "$INSTALL_DIR/AppDir/usr/bin" -type f -executable | head -1)
+            fi
             if [ -n "$ACTUAL_BIN" ]; then
                 cat > /tmp/${APP_ID}-wrapper.sh <<EOF
 #!/bin/bash
@@ -493,9 +552,9 @@ EOF
                 sudo /bin/mv -f /tmp/${APP_ID}-wrapper.sh "$INSTALL_DIR/${APP_ID}" 2>>"$LOG"
                 sudo /bin/chmod +x "$INSTALL_DIR/${APP_ID}" 2>>"$LOG"
             else
-                echo "未找到 cursor 可执行文件" >> "$LOG"
-                rm -f "$TMP_APPIMAGE"
-                rm -rf /tmp/squashfs-root
+                echo "未找到可执行文件" >> "$LOG"
+                rm -f "$TMP_APPIMAGE" "$TMP_ZIP"
+                rm -rf /tmp/squashfs-root "$TMP_EXTRACT"
                 echo "100"; exit 1
             fi
 
@@ -505,17 +564,16 @@ EOF
 Version=1.0
 Type=Application
 Name=$NAME
-Comment=AI Code Editor
 Exec=$INSTALL_DIR/${APP_ID} %F
 Icon=$APP_ID
 Terminal=false
-Categories=IDE;Development;
+Categories=Utility;
 EOF
             sudo /bin/mv -f /tmp/${APP_ID}.desktop /usr/share/applications/ 2>>"$LOG"
 
             # 清理临时文件
-            rm -f "$TMP_APPIMAGE"
-            rm -rf /tmp/squashfs-root
+            rm -f "$TMP_APPIMAGE" "$TMP_ZIP"
+            rm -rf /tmp/squashfs-root "$TMP_EXTRACT"
 
             echo "100"
             echo "# 完成"

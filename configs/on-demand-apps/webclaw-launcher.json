@@ -3,10 +3,11 @@
   "name": "WebClaw Launcher",
   "package": "webclaw-launcher",
   "binary": "/opt/webclaw-launcher/webclaw-launcher",
-  "install_method": "r2_download",
-  "download_api": "https://webclaw.qhkly.com/api/download/latest",
+  "install_method": "direct_download",
+  "version_api": "https://webclaw.qhkly.com/api/download/latest",
+  "download_url": "https://launcher.qhkly.com/launcher/versions/v{version}/webclaw-launcher-linux-{arch}.zip",
   "arch_map": {
-    "amd64": "linux"
-  },
-  "unsupported_archs": ["arm64"]
+    "amd64": "x64",
+    "arm64": "arm64"
+  }
 }
