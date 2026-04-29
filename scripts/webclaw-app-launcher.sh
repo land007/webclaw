@@ -702,6 +702,8 @@ else
 fi
 
 if [ "$INSTALL_OK" = 1 ]; then
+    # 更新桌面图标状态（移除下载标记）
+    [ -x /usr/local/bin/update-desktop-icons ] && /usr/local/bin/update-desktop-icons
     zenity --info \
         --title="$NAME" \
         --text="<b>$NAME</b> 安装完成!\n\n再次点击桌面图标即可启动。" \
