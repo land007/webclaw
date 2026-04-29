@@ -15,6 +15,7 @@
 #                              (适合本来就在 apt 仓库的包,如 VS Code)
 #   - "appimage":              从 GitHub 下载 AppImage,解压到 /opt/ondemand-apps/<id>/AppDir
 #   - "r2_download":           从自定义 R2 API 下载 zip 包,解压安装到指定目录
+#   - "direct_download":       从直接 URL 下载 AppImage,解压安装到指定目录
 #
 # sudo 授权由 /etc/sudoers.d/webclaw-app-launcher 提供:
 #   - apt-get install -y /tmp/webclaw-ondemand-*.deb (固定路径前缀)
@@ -50,7 +51,7 @@ mapfile -t DEFAULT_ARGS < <(jq -r '.default_args // [] | .[]' "$MANIFEST")
 
 # 已装 -> 直接启动,setsid 脱离终端避免阻塞 dbus-launch 等
 # 根据安装方法使用不同的检查方式
-if [ "$INSTALL_METHOD" = "appimage" ] || [ "$INSTALL_METHOD" = "r2_download" ]; then
+if [ "$INSTALL_METHOD" = "appimage" ] || [ "$INSTALL_METHOD" = "r2_download" ] || [ "$INSTALL_METHOD" = "direct_download" ]; then
     # AppImage / r2_download: 检查二进制文件是否存在且可执行
     if [ -x "$BIN" ]; then
         setsid "$BIN" "${DEFAULT_ARGS[@]}" "$@" </dev/null >/dev/null 2>&1 &
@@ -427,6 +428,100 @@ EOF
             --percentage=0 --auto-close --no-cancel --width=420
         ;;
 
+    direct_download)
+        # ─── 直接 URL 下载安装(Cursor 等) ─────────────────────────────────
+        DOWNLOAD_URL=$(jq -r '.download_url' "$MANIFEST")
+        ARCH=$(dpkg --print-architecture)
+        ARCH_VAR=$(jq -r --arg a "$ARCH" '.arch_map[$a] // empty' "$MANIFEST")
+        if [ -z "$ARCH_VAR" ]; then
+            zenity --error --title="$NAME" --text="不支持的架构: $ARCH" --width=320
+            exit 1
+        fi
+
+        # 替换架构占位符
+        DOWNLOAD_URL="${DOWNLOAD_URL//\{arch\}/$ARCH_VAR}"
+        INSTALL_DIR="/opt/${APP_ID}"
+
+        {
+            echo "10"
+            echo "# 正在下载 $NAME..."
+            TMP_APPIMAGE="/tmp/${APP_ID}.AppImage"
+            rm -f "$TMP_APPIMAGE"
+
+            # Cursor 的 latest 实际上会重定向到具体的版本文件
+            if ! curl -fsSL "$DOWNLOAD_URL" -o "$TMP_APPIMAGE" 2>>"$LOG"; then
+                echo "下载失败: $DOWNLOAD_URL" >> "$LOG"
+                echo "100"; exit 1
+            fi
+
+            chmod +x "$TMP_APPIMAGE" 2>>"$LOG"
+
+            echo "50"
+            echo "# 正在解压 AppImage..."
+
+            cd /tmp
+            rm -rf /tmp/squashfs-root /tmp/AppDir
+            if ! "$TMP_APPIMAGE" --appimage-extract >/dev/null 2>>"$LOG"; then
+                echo "AppImage 解压失败" >> "$LOG"
+                rm -f "$TMP_APPIMAGE"
+                echo "100"; exit 1
+            fi
+
+            EXTRACTED=$(readlink -f /tmp/squashfs-root)
+
+            echo "70"
+            echo "# 正在安装..."
+
+            sudo /bin/mkdir -p "$INSTALL_DIR" 2>>"$LOG"
+            if ! sudo /bin/mv -f "$EXTRACTED" "$INSTALL_DIR/AppDir" 2>>"$LOG"; then
+                echo "移动失败" >> "$LOG"
+                rm -f "$TMP_APPIMAGE"
+                rm -rf /tmp/squashfs-root
+                echo "100"; exit 1
+            fi
+
+            # 查找实际的二进制文件
+            ACTUAL_BIN=$(find "$INSTALL_DIR/AppDir" -type f -executable -name "cursor" | head -1)
+            if [ -n "$ACTUAL_BIN" ]; then
+                cat > /tmp/${APP_ID}-wrapper.sh <<EOF
+#!/bin/bash
+exec "$ACTUAL_BIN" "\$@"
+EOF
+                sudo /bin/mv -f /tmp/${APP_ID}-wrapper.sh "$INSTALL_DIR/${APP_ID}" 2>>"$LOG"
+                sudo /bin/chmod +x "$INSTALL_DIR/${APP_ID}" 2>>"$LOG"
+            else
+                echo "未找到 cursor 可执行文件" >> "$LOG"
+                rm -f "$TMP_APPIMAGE"
+                rm -rf /tmp/squashfs-root
+                echo "100"; exit 1
+            fi
+
+            # 创建 desktop 快捷方式
+            cat > /tmp/${APP_ID}.desktop <<EOF
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=$NAME
+Comment=AI Code Editor
+Exec=$INSTALL_DIR/${APP_ID} %F
+Icon=$APP_ID
+Terminal=false
+Categories=IDE;Development;
+EOF
+            sudo /bin/mv -f /tmp/${APP_ID}.desktop /usr/share/applications/ 2>>"$LOG"
+
+            # 清理临时文件
+            rm -f "$TMP_APPIMAGE"
+            rm -rf /tmp/squashfs-root
+
+            echo "100"
+            echo "# 完成"
+        } | zenity --progress \
+            --title="安装 $NAME" \
+            --text="准备中..." \
+            --percentage=0 --auto-close --no-cancel --width=420
+        ;;
+
     *)
         zenity --error --title="$NAME" \
             --text="未知的 install_method: $INSTALL_METHOD" --width=380
@@ -435,7 +530,7 @@ EOF
 esac
 
 # 验证安装结果
-if [ "$INSTALL_METHOD" = "appimage" ] || [ "$INSTALL_METHOD" = "r2_download" ]; then
+if [ "$INSTALL_METHOD" = "appimage" ] || [ "$INSTALL_METHOD" = "r2_download" ] || [ "$INSTALL_METHOD" = "direct_download" ]; then
     # AppImage / r2_download: 检查文件是否存在且可执行
     if [ -x "$BIN" ]; then
         INSTALL_OK=1

@@ -1,0 +1,13 @@
+{
+  "id": "cursor",
+  "name": "Cursor",
+  "package": "cursor",
+  "binary": "/opt/cursor/cursor",
+  "install_method": "direct_download",
+  "download_url": "https://download.todesktop.com/230329lzmjlw3nu/linux/{arch}/latest",
+  "arch_map": {
+    "amd64": "x64",
+    "arm64": "arm64"
+  },
+  "version": "0.42.3"
+}
