@@ -1,0 +1,10 @@
+{
+  "id": "webclaw-launcher",
+  "name": "WebClaw Launcher",
+  "package": "webclaw-launcher",
+  "binary": "/opt/webclaw-launcher/webclaw-launcher",
+  "install_method": "r2_download",
+  "download_api": "https://webclaw.qhkly.com/api/download/latest",
+  "asset_key": "linux",
+  "version": "0.2.13"
+}

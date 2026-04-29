@@ -13,6 +13,8 @@
 #                              下载 .deb 到 /tmp/webclaw-ondemand-<id>.deb,sudo apt-get install
 #   - "apt":                   直接 sudo apt-get update && sudo apt-get install -y <apt_package>
 #                              (适合本来就在 apt 仓库的包,如 VS Code)
+#   - "appimage":              从 GitHub 下载 AppImage,解压到 /opt/ondemand-apps/<id>/AppDir
+#   - "r2_download":           从自定义 R2 API 下载 zip 包,解压安装到指定目录
 #
 # sudo 授权由 /etc/sudoers.d/webclaw-app-launcher 提供:
 #   - apt-get install -y /tmp/webclaw-ondemand-*.deb (固定路径前缀)
@@ -48,9 +50,8 @@ mapfile -t DEFAULT_ARGS < <(jq -r '.default_args // [] | .[]' "$MANIFEST")
 
 # 已装 -> 直接启动,setsid 脱离终端避免阻塞 dbus-launch 等
 # 根据安装方法使用不同的检查方式
-if [ "$INSTALL_METHOD" = "appimage" ]; then
-    # AppImage 解压安装: 检查解压目录是否存在且可执行
-    APPIMAGE_EXTRACT_DIR="/opt/ondemand-apps/${APP_ID}"
+if [ "$INSTALL_METHOD" = "appimage" ] || [ "$INSTALL_METHOD" = "r2_download" ]; then
+    # AppImage / r2_download: 检查二进制文件是否存在且可执行
     if [ -x "$BIN" ]; then
         setsid "$BIN" "${DEFAULT_ARGS[@]}" "$@" </dev/null >/dev/null 2>&1 &
         exit 0
@@ -268,6 +269,106 @@ case "$INSTALL_METHOD" in
             --percentage=0 --auto-close --no-cancel --width=420
         ;;
 
+    r2_download)
+        # ─── R2 自定义 API 下载安装(WebClaw Launcher) ───────────────────
+        DOWNLOAD_API=$(jq -r '.download_api' "$MANIFEST")
+        ASSET_KEY=$(jq -r '.asset_key' "$MANIFEST")
+        INSTALL_DIR="/opt/webclaw-launcher"
+
+        {
+            echo "5"
+            echo "# 正在查询最新版本..."
+            API_RESP=$(curl -fsSL "$DOWNLOAD_API" 2>>"$LOG")
+            if [ -z "$API_RESP" ]; then
+                echo "无法获取版本信息" >> "$LOG"
+                echo "100"; exit 1
+            fi
+
+            VERSION=$(echo "$API_RESP" | jq -r '.version // .latest // empty' 2>>"$LOG")
+            if [ -z "$VERSION" ]; then
+                echo "无法解析版本号" >> "$LOG"
+                echo "100"; exit 1
+            fi
+
+            DOWNLOAD_URL=$(echo "$API_RESP" | jq -r ".assets.${ASSET_KEY}.url // empty" 2>>"$LOG")
+            if [ -z "$DOWNLOAD_URL" ]; then
+                echo "无法获取下载链接" >> "$LOG"
+                echo "100"; exit 1
+            fi
+
+            TMP_ZIP="/tmp/webclaw-launcher-${VERSION}.zip"
+            TMP_EXTRACT="/tmp/webclaw-launcher-extract"
+
+            echo "15"
+            echo "# 正在下载 $NAME v$VERSION..."
+            rm -f "$TMP_ZIP"
+            rm -rf "$TMP_EXTRACT"
+            if ! curl -fsSL "$DOWNLOAD_URL" -o "$TMP_ZIP" 2>>"$LOG"; then
+                echo "下载失败: $DOWNLOAD_URL" >> "$LOG"
+                echo "100"; exit 1
+            fi
+
+            echo "50"
+            echo "# 正在解压..."
+            mkdir -p "$TMP_EXTRACT"
+            if ! unzip -q "$TMP_ZIP" -d "$TMP_EXTRACT" 2>>"$LOG"; then
+                echo "解压失败" >> "$LOG"
+                rm -f "$TMP_ZIP"
+                echo "100"; exit 1
+            fi
+
+            echo "70"
+            echo "# 正在安装..."
+
+            # 创建安装目录
+            sudo /bin/mkdir -p "$INSTALL_DIR" 2>>"$LOG"
+
+            # 查找解压后的可执行文件并移动到安装目录
+            # zip 包结构可能是: webclaw-launcher 或 webclaw-launcher/webclaw-launcher
+            if [ -f "$TMP_EXTRACT/webclaw-launcher" ]; then
+                sudo /bin/mv -f "$TMP_EXTRACT/webclaw-launcher" "$INSTALL_DIR/" 2>>"$LOG"
+            elif [ -f "$TMP_EXTRACT/webclaw-launcher/webclaw-launcher" ]; then
+                sudo /bin/mv -f "$TMP_EXTRACT/webclaw-launcher/webclaw-launcher" "$INSTALL_DIR/" 2>>"$LOG"
+                sudo /bin/mv -f "$TMP_EXTRACT/webclaw-launcher/"* "$INSTALL_DIR/" 2>>"$LOG" || true
+            else
+                # 找到第一个可执行文件
+                EXECUTABLE=$(find "$TMP_EXTRACT" -type f -executable -name "webclaw-launcher" | head -1)
+                if [ -n "$EXECUTABLE" ]; then
+                    sudo /bin/mv -f "$EXECUTABLE" "$INSTALL_DIR/" 2>>"$LOG"
+                else
+                    echo "未找到可执行文件" >> "$LOG"
+                    rm -rf "$TMP_EXTRACT" "$TMP_ZIP"
+                    echo "100"; exit 1
+                fi
+            fi
+
+            sudo /bin/chmod +x "$INSTALL_DIR/webclaw-launcher" 2>>"$LOG"
+
+            # 创建 desktop 快捷方式
+            cat > /tmp/webclaw-launcher.desktop <<EOF
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=WebClaw Launcher
+Comment=WebClaw Desktop Launcher
+Exec=$INSTALL_DIR/webclaw-launcher %F
+Icon=webclaw-launcher
+Terminal=false
+Categories=Utility;Application;
+EOF
+            sudo /bin/mv -f /tmp/webclaw-launcher.desktop /usr/share/applications/ 2>>"$LOG"
+
+            # 清理临时文件
+            rm -rf "$TMP_EXTRACT" "$TMP_ZIP"
+
+            echo "100"
+            echo "# 完成"
+        } | zenity --progress \
+            --title="安装 $NAME" \
+            --text="准备中..." \
+            --percentage=0 --auto-close --no-cancel --width=420
+        ;;
+
     *)
         zenity --error --title="$NAME" \
             --text="未知的 install_method: $INSTALL_METHOD" --width=380
@@ -276,8 +377,8 @@ case "$INSTALL_METHOD" in
 esac
 
 # 验证安装结果
-if [ "$INSTALL_METHOD" = "appimage" ]; then
-    # AppImage: 检查文件是否存在且可执行
+if [ "$INSTALL_METHOD" = "appimage" ] || [ "$INSTALL_METHOD" = "r2_download" ]; then
+    # AppImage / r2_download: 检查文件是否存在且可执行
     if [ -x "$BIN" ]; then
         INSTALL_OK=1
     else
