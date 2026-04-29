@@ -8,6 +8,7 @@
   "version": "v0.7.4",
   "asset_pattern": "dockyard_{version}_{arch}.deb",
   "arch_map": {
+    "amd64": "amd64",
     "arm64": "arm64"
   },
   "default_args": []
