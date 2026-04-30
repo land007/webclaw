@@ -347,6 +347,7 @@ COPY configs/sudoers/webclaw-app-launcher /etc/sudoers.d/webclaw-app-launcher
 RUN chmod +x /usr/local/bin/webclaw-app-launcher /usr/local/bin/webclaw-app-uninstaller /usr/local/bin/webclaw-log-prepare /usr/local/bin/update-desktop-icons /usr/local/bin/install-antigravity \
     && chmod +x /usr/local/bin/on-demand-helpers/*.sh \
     && ln -sf /usr/local/bin/on-demand-helpers/codex-version-api.sh /usr/local/bin/codex-version-api.sh \
+    && ln -sf /usr/local/bin/on-demand-helpers/get-android-studio-version.sh /usr/local/bin/get-android-studio-version \
     && chmod 0440 /etc/sudoers.d/webclaw-app-launcher \
     && visudo -c -f /etc/sudoers.d/webclaw-app-launcher
 

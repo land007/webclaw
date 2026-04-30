@@ -1,0 +1,14 @@
+{
+  "id": "android-studio",
+  "name": "Android Studio",
+  "package": "android-studio",
+  "binary": "/opt/android-studio/bin/studio.sh",
+  "install_method": "direct_download",
+  "download_url": "https://redirector.gvt1.com/edgedl/android/studio/ide-zips/{version}/android-studio-{version}-linux.tar.gz",
+  "version_api": "file:///usr/local/bin/get-android-studio-version",
+  "arch_map": {
+    "amd64": "x86_64"
+  },
+  "launch_script": "bin/studio.sh",
+  "unsupported_archs": ["arm64", "aarch64", "riscv64", "ppc64le", "s390x"]
+}
