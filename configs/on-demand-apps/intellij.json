@@ -1,8 +1,8 @@
 {
-  "id": "idea",
+  "id": "intellij",
   "name": "IntelliJ IDEA Community",
-  "package": "ideaic",
-  "binary": "/opt/idea/bin/idea.sh",
+  "package": "intellijidea-community-edition",
+  "binary": "/opt/intellij/bin/idea.sh",
   "install_method": "direct_download",
   "jetbrains_code": "IIC",
   "arch_map": {

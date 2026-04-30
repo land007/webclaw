@@ -2,11 +2,11 @@
   "id": "trae",
   "name": "Trae",
   "package": "trae",
-  "binary": "/opt/trae/trae",
+  "binary": "/opt/Trae/trae",
   "install_method": "direct_download",
-  "download_url": "https://lf-cdn.tobes.com/doc/trae/Trae-linux-x64-1.36.0.AppImage",
+  "download_url": "https://lf-cdn.trae.ai/obj/trae-ai-us/pkg/app/releases/stable/2.3.21083/linux/Trae-linux-{arch}.deb",
   "arch_map": {
-    "amd64": "x86_64"
-  },
-  "unsupported_archs": ["arm64"]
+    "amd64": "amd64",
+    "arm64": "arm64"
+  }
 }

@@ -4,10 +4,10 @@
   "package": "eclipse",
   "binary": "/opt/eclipse/eclipse",
   "install_method": "direct_download",
-  "download_url": "https://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/2024-03/R/eclipse-committers-2024-03-R-linux-gtk-x86_64.tar.gz&r=1",
+  "download_url": "https://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/2026-03/R/eclipse-committers-2026-03-R-linux-gtk-{arch}.tar.gz&r=1",
   "arch_map": {
-    "amd64": "x86_64"
+    "amd64": "x86_64",
+    "arm64": "aarch64"
   },
-  "unsupported_archs": ["arm64"],
   "launch_script": "eclipse"
 }
