@@ -179,3 +179,7 @@ for desktop in "$DESKTOP_DIR"/*.desktop; do
 done
 
 update-desktop-database /home/ubuntu/.local/share/applications >/dev/null 2>&1 || true
+
+# 清理 GNOME 桌面缓存，避免图标重复显示
+rm -rf /home/ubuntu/.cache/desktop 2>/dev/null || true
+rm -f /home/ubuntu/.local/share/applications/mimeinfo.cache 2>/dev/null || true
