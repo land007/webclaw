@@ -337,6 +337,7 @@ RUN chmod +x /usr/local/bin/browser
 # 桌面图标 .desktop 的 Exec 指向 webclaw-app-launcher,首次点击触发 zenity 询问 → 下载 .deb → apt-get install
 COPY scripts/webclaw-app-launcher.sh /usr/local/bin/webclaw-app-launcher
 COPY scripts/webclaw-app-uninstaller.sh /usr/local/bin/webclaw-app-uninstaller
+COPY scripts/webclaw-app-postinstall.sh /usr/local/bin/webclaw-app-postinstall
 COPY scripts/webclaw-log-prepare.sh /usr/local/bin/webclaw-log-prepare
 COPY scripts/update-desktop-icons.sh /usr/local/bin/update-desktop-icons
 COPY scripts/install-antigravity.sh /usr/local/bin/install-antigravity
@@ -344,7 +345,7 @@ COPY scripts/on-demand-helpers/ /usr/local/bin/on-demand-helpers/
 COPY configs/on-demand-apps/ /opt/on-demand-apps/
 COPY configs/on-demand-icons/ /opt/on-demand-icons/
 COPY configs/sudoers/webclaw-app-launcher /etc/sudoers.d/webclaw-app-launcher
-RUN chmod +x /usr/local/bin/webclaw-app-launcher /usr/local/bin/webclaw-app-uninstaller /usr/local/bin/webclaw-log-prepare /usr/local/bin/update-desktop-icons /usr/local/bin/install-antigravity \
+RUN chmod +x /usr/local/bin/webclaw-app-launcher /usr/local/bin/webclaw-app-uninstaller /usr/local/bin/webclaw-app-postinstall /usr/local/bin/webclaw-log-prepare /usr/local/bin/update-desktop-icons /usr/local/bin/install-antigravity \
     && chmod +x /usr/local/bin/on-demand-helpers/*.sh \
     && ln -sf /usr/local/bin/on-demand-helpers/codex-version-api.sh /usr/local/bin/codex-version-api.sh \
     && ln -sf /usr/local/bin/on-demand-helpers/get-android-studio-version.sh /usr/local/bin/get-android-studio-version \
