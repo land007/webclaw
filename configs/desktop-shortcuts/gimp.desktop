@@ -1,0 +1,13 @@
+[Desktop Entry]
+Name=GIMP
+Name[zh_CN]=GIMP 图片编辑器
+Comment=GNU Image Manipulation Program (click to install on first use)
+Comment[zh_CN]=GNU 图像处理程序（首次点击触发按需安装）
+Exec=/usr/local/bin/webclaw-app-launcher gimp %F
+Icon=/opt/on-demand-icons/gimp.png
+Type=Application
+Categories=Graphics;2DGraphics;RasterGraphics;GTK;
+StartupNotify=true
+StartupWMClass=gimp
+Keywords=Graphics;Photo;Image;Editor;Retouch;
+Keywords[zh_CN]=图形;照片;图像;编辑;修图;

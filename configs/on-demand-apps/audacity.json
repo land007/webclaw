@@ -1,0 +1,8 @@
+{
+  "id": "audacity",
+  "name": "Audacity",
+  "package": "audacity",
+  "binary": "/usr/bin/audacity",
+  "install_method": "apt",
+  "apt_package": "audacity"
+}

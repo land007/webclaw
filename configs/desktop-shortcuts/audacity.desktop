@@ -1,0 +1,13 @@
+[Desktop Entry]
+Name=Audacity
+Name[zh_CN]=Audacity 音频编辑
+Comment=Audio Editor and Recorder (click to install on first use)
+Comment[zh_CN]=音频编辑和录制工具（首次点击触发按需安装）
+Exec=/usr/local/bin/webclaw-app-launcher audacity %F
+Icon=/opt/on-demand-icons/audacity.png
+Type=Application
+Categories=AudioVideo;Audio;AudioEditing;
+StartupNotify=true
+StartupWMClass=audacity
+Keywords=Audio;Sound;Music;Editor;Recording;
+Keywords[zh_CN]=音频;声音;音乐;编辑;录制;

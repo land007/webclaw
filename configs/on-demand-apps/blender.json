@@ -1,0 +1,8 @@
+{
+  "id": "blender",
+  "name": "Blender",
+  "package": "blender",
+  "binary": "/usr/bin/blender",
+  "install_method": "apt",
+  "apt_package": "blender"
+}

@@ -1,0 +1,8 @@
+{
+  "id": "gimp",
+  "name": "GIMP",
+  "package": "gimp",
+  "binary": "/usr/bin/gimp",
+  "install_method": "apt",
+  "apt_package": "gimp"
+}

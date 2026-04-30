@@ -22,6 +22,9 @@ ubuntu ALL=(root) NOPASSWD: /usr/bin/apt-get install -y code
 ubuntu ALL=(root) NOPASSWD: /usr/bin/apt-get install -y wireshark
 ubuntu ALL=(root) NOPASSWD: /usr/bin/apt-get install -y flameshot
 ubuntu ALL=(root) NOPASSWD: /usr/bin/apt-get install -y antigravity
+ubuntu ALL=(root) NOPASSWD: /usr/bin/apt-get install -y gimp
+ubuntu ALL=(root) NOPASSWD: /usr/bin/apt-get install -y blender
+ubuntu ALL=(root) NOPASSWD: /usr/bin/apt-get install -y audacity
 
 # 预安装脚本权限（用于 Antigravity 等需要先配置仓库的应用）
 ubuntu ALL=(root) NOPASSWD: /usr/local/bin/install-antigravity
