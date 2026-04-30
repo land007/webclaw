@@ -29,6 +29,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && echo "ubuntu ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# ─── 1b. GitHub CLI (gh) ───────────────────────────────────────────────────
+RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+    && chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" > /etc/apt/sources.list.d/github-cli.list \
+    && apt-get update \
+    && apt-get install -y gh \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 ARG NODE_VERSION=22.22.1
 
 # ─── 2. Node.js 22.22.1 (pinned) ────────────────────────────────────
@@ -108,7 +116,9 @@ RUN npm config set fetch-retries 5 && \
     npm install -g @openai/codex && \
     npm install -g @google/gemini-cli && \
     npm install -g opencode-ai@latest && \
-    npm install -g oh-my-opencode
+    npm install -g oh-my-opencode && \
+    npm install -g vercel && \
+    npm install -g wrangler
 
 # ─── 5c. Pre-install OpenClaw globally (易变，放最后避免破坏缓存) ─────
 RUN npm install -g openclaw@2026.4.5
