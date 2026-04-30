@@ -2,11 +2,12 @@
   "id": "dbeaver",
   "name": "DBeaver Community",
   "package": "dbeaver-ce",
-  "binary": "/opt/dbeaver/dbeaver",
-  "install_method": "direct_download",
-  "download_url": "https://dbeaver.io/files/dbeaver-ce-latest-stable-x86_64.AppImage",
+  "binary": "/usr/share/dbeaver/dbeaver",
+  "install_method": "github_release",
+  "github_repo": "dbeaver/dbeaver",
+  "asset_pattern": "dbeaver-ce-{version}-linux-{arch}.deb",
   "arch_map": {
-    "amd64": "x86_64"
-  },
-  "unsupported_archs": ["arm64"]
+    "amd64": "x86_64",
+    "arm64": "aarch64"
+  }
 }

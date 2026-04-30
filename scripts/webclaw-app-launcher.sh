@@ -148,7 +148,7 @@ case "$INSTALL_METHOD" in
             echo "5"
             echo "# 正在查询最新版本..."
             VERSION=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" 2>>"$LOG" \
-                | grep '"tag_name"' | sed 's/.*"tag_name": *"v//;s/".*//')
+                | jq -r '.tag_name' 2>/dev/null)
             if [ -z "$VERSION" ]; then
                 echo "无法获取最新版本号" >> "$LOG"
                 echo "100"; exit 1
@@ -156,7 +156,7 @@ case "$INSTALL_METHOD" in
 
             ASSET=${ASSET_PATTERN//\{version\}/$VERSION}
             ASSET=${ASSET//\{arch\}/$ARCH_VAR}
-            URL="https://github.com/${REPO}/releases/download/v${VERSION}/${ASSET}"
+            URL="https://github.com/${REPO}/releases/download/${VERSION}/${ASSET}"
             DEB="/tmp/webclaw-ondemand-${APP_ID}.deb"
 
             echo "15"
@@ -453,6 +453,18 @@ EOF
         DOWNLOAD_URL=$(jq -r '.download_url' "$MANIFEST")
         VERSION_API=$(jq -r '.version_api // empty' "$MANIFEST")
         ARCH=$(dpkg --print-architecture)
+
+        # 检查不支持的架构列表
+        UNSUPPORTED_ARCHS=$(jq -r '.unsupported_archs // [] | .[]' "$MANIFEST" 2>/dev/null || echo "")
+        for UNSUP in $UNSUPPORTED_ARCHS; do
+            if [ "$ARCH" = "$UNSUP" ]; then
+                zenity --error --title="$NAME" \
+                    --text="$NAME 暂不支持 $ARCH 架构。\n\n目前仅支持 AMD64 (x86_64) 平台。" \
+                    --width=380
+                exit 1
+            fi
+        done
+
         ARCH_VAR=$(jq -r --arg a "$ARCH" '.arch_map[$a] // empty' "$MANIFEST")
         ARCH_SUFFIX=$(jq -r --arg a "$ARCH" --arg fallback "$ARCH_VAR" '.arch_suffix_map[$a] // $fallback // empty' "$MANIFEST")
         if [ -z "$ARCH_VAR" ]; then
