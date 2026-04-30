@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Eclipse IDE
+Name[zh_CN]=Eclipse IDE
+Comment=Java & Development IDE (click to install on first use)
+Comment[zh_CN]=Java 及通用开发环境（首次点击触发按需安装）
+Exec=/usr/local/bin/webclaw-app-launcher eclipse %F
+Icon=/opt/on-demand-icons/eclipse.png
+Type=Application
+Categories=IDE;Development;
+StartupNotify=true

@@ -482,8 +482,14 @@ EOF
             TMP_ZIP="/tmp/${APP_ID}.zip"
             rm -f "$TMP_APPIMAGE" "$TMP_ZIP"
 
-            # 检测文件类型（AppImage 或 zip）
-            if [[ "$DOWNLOAD_URL" == *.zip ]]; then
+            # 检测文件类型（AppImage、zip 或 tar.gz）
+            if [[ "$DOWNLOAD_URL" == *.tar.gz ]] || [[ "$DOWNLOAD_URL" == *.tgz ]]; then
+                TMP_TAR="/tmp/${APP_ID}.tar.gz"
+                if ! curl -fsSL "$DOWNLOAD_URL" -o "$TMP_TAR" 2>>"$LOG"; then
+                    echo "下载失败: $DOWNLOAD_URL" >> "$LOG"
+                    echo "100"; exit 1
+                fi
+            elif [[ "$DOWNLOAD_URL" == *.zip ]]; then
                 if ! curl -fsSL "$DOWNLOAD_URL" -o "$TMP_ZIP" 2>>"$LOG"; then
                     echo "下载失败: $DOWNLOAD_URL" >> "$LOG"
                     echo "100"; exit 1
@@ -502,7 +508,27 @@ EOF
             cd /tmp
             rm -rf /tmp/squashfs-root /tmp/AppDir
 
-            if [ -f "$TMP_ZIP" ]; then
+            if [ -f "${TMP_TAR:-}" ]; then
+                # 解压 tar.gz 包（用于 JetBrains 工具等）
+                TMP_EXTRACT="/tmp/${APP_ID}-extract"
+                rm -rf "$TMP_EXTRACT"
+                mkdir -p "$TMP_EXTRACT"
+                if ! tar -xzf "$TMP_TAR" -C "$TMP_EXTRACT" 2>>"$LOG"; then
+                    echo "解压 tar.gz 失败" >> "$LOG"
+                    rm -f "$TMP_TAR"
+                    echo "100"; exit 1
+                fi
+                rm -f "$TMP_TAR"
+
+                # 查找解压后的目录（通常只有一个顶级目录）
+                EXTRACTED_DIR=$(find "$TMP_EXTRACT" -mindepth 1 -maxdepth 1 -type d | head -1)
+                if [ -z "$EXTRACTED_DIR" ]; then
+                    echo "未找到解压目录" >> "$LOG"
+                    echo "100"; exit 1
+                fi
+                EXTRACTED="$EXTRACTED_DIR"
+
+            elif [ -f "$TMP_ZIP" ]; then
                 # 解压 zip 包
                 TMP_EXTRACT="/tmp/${APP_ID}-extract"
                 rm -rf "$TMP_EXTRACT"
@@ -544,15 +570,37 @@ EOF
             echo "# 正在安装..."
 
             sudo /bin/mkdir -p "$INSTALL_DIR" 2>>"$LOG"
-            if ! sudo /bin/mv -f "$EXTRACTED" "$INSTALL_DIR/AppDir" 2>>"$LOG"; then
-                echo "移动失败" >> "$LOG"
-                rm -f "$TMP_APPIMAGE" "$TMP_ZIP"
-                rm -rf /tmp/squashfs-root "$TMP_EXTRACT"
-                echo "100"; exit 1
+            # 判断是否是 tar.gz 解压的内容
+            if [ -d "$EXTRACTED" ] && [ ! -f "$TMP_APPIMAGE" ] && [ ! -f "$TMP_ZIP" ]; then
+                # tar.gz: 直接移动解压后的目录内容到安装目录
+                if ! sudo /bin/mv -f "$EXTRACTED"/* "$INSTALL_DIR/" 2>>"$LOG"; then
+                    echo "移动失败" >> "$LOG"
+                    rm -f "$TMP_APPIMAGE" "$TMP_ZIP"
+                    rm -rf /tmp/squashfs-root "$TMP_EXTRACT"
+                    echo "100"; exit 1
+                fi
+                # 清理空的提取目录
+                rm -rf "$(dirname "$EXTRACTED")"
+            else
+                # AppImage/zip: 移动到 AppDir 子目录
+                if ! sudo /bin/mv -f "$EXTRACTED" "$INSTALL_DIR/AppDir" 2>>"$LOG"; then
+                    echo "移动失败" >> "$LOG"
+                    rm -f "$TMP_APPIMAGE" "$TMP_ZIP"
+                    rm -rf /tmp/squashfs-root "$TMP_EXTRACT"
+                    echo "100"; exit 1
+                fi
             fi
 
             # 查找实际的二进制文件（按优先级尝试多个可能的名字）
-            ACTUAL_BIN=$(find "$INSTALL_DIR/AppDir" -type f -executable -name "${APP_ID}" | head -1)
+            # 对于 tar.gz 安装的工具，先检查 AppDir，再检查根目录
+            if [ -d "$INSTALL_DIR/AppDir" ]; then
+                ACTUAL_BIN=$(find "$INSTALL_DIR/AppDir" -type f -executable -name "${APP_ID}" | head -1)
+            fi
+            if [ -z "$ACTUAL_BIN" ]; then
+                ACTUAL_BIN=$(find "$INSTALL_DIR" -maxdepth 3 -type f -executable -name "${APP_ID}.sh" | head -1)
+            fi
+            if [ -z "$ACTUAL_BIN" ]; then
+                ACTUAL_BIN=$(find "$INSTALL_DIR/AppDir" -type f -executable -name "cursor" | head -1)
             if [ -z "$ACTUAL_BIN" ]; then
                 ACTUAL_BIN=$(find "$INSTALL_DIR/AppDir" -type f -executable -name "cursor" | head -1)
             fi
@@ -592,6 +640,7 @@ EOF
 
             # 清理临时文件
             rm -f "$TMP_APPIMAGE" "$TMP_ZIP"
+            rm -f "${TMP_TAR:-}"
             rm -rf /tmp/squashfs-root "$TMP_EXTRACT"
 
             echo "100"

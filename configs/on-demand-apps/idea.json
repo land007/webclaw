@@ -1,0 +1,13 @@
+{
+  "id": "idea",
+  "name": "IntelliJ IDEA Community",
+  "package": "ideaic",
+  "binary": "/opt/idea/bin/idea.sh",
+  "install_method": "direct_download",
+  "download_url": "https://download.jetbrains.com/idea/ideaIC-2024.1.4.tar.gz",
+  "arch_map": {
+    "amd64": "x86_64"
+  },
+  "unsupported_archs": ["arm64"],
+  "launch_script": "bin/idea.sh"
+}
