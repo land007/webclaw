@@ -29,11 +29,10 @@ ubuntu ALL=(root) NOPASSWD: /usr/bin/gpg --dearmor -o /etc/apt/keyrings/*
 ubuntu ALL=(root) NOPASSWD: /bin/tee /etc/apt/sources.list.d/*
 ubuntu ALL=(root) NOPASSWD: /bin/chmod +x /etc/apt/keyrings/*
 
-# Wireshark 权限配置
-ubuntu ALL=(root) NOPASSWD: /usr/sbin/usermod -a -G wireshark ubuntu
-# setcap 的 capabilities 参数含 = 号,sudoers 把它误解析为 env 赋值;
-# 用反斜杠转义 = 和 , 让 sudoers 把整段当成命令实参
-ubuntu ALL=(root) NOPASSWD: /usr/bin/setcap cap_net_raw\,cap_net_admin\=ep /usr/bin/dumpcap
+# 应用安装后置钩子: root-side 脚本按 app_id 分发执行预定义动作
+# (Wireshark 建组+setcap 等). 命令参数硬编码在脚本内,避免 sudoers 解析 setcap
+# 参数中的 = 时把它误判为 env 赋值导致规则不匹配。
+ubuntu ALL=(root) NOPASSWD: /usr/local/bin/webclaw-app-postinstall *
 
 # appimage 模式: 创建目录、嵌套移动解压内容 (Ghostty / Obsidian 等)
 # AppImage 解压后内容嵌套放进 /opt/ondemand-apps/<id>/AppDir/,
