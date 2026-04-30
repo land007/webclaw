@@ -1,0 +1,21 @@
+[Desktop Entry]
+Name=Code Server
+Name[zh_CN]=Code Server
+Name[ja_JP]=Code Server
+Name[es_ES]=Code Server
+Name[pt_BR]=Code Server
+Name[ko_KR]=Code Server
+Name[de_DE]=Code Server
+Comment=Browser-based VS Code IDE
+Comment[zh_CN]=基于浏览器的 VS Code IDE
+Comment[ja_JP]=ブラウザベースの VS Code IDE
+Comment[es_ES]=IDE VS Code basado en navegador
+Comment[pt_BR]=IDE VS Code baseado em navegador
+Comment[ko_KR]=브라우저 기반 VS Code IDE
+Comment[de_DE]=VS Code IDE im Browser
+Exec=sh -c 'xdg-open "http://127.0.0.1:10001"'
+Icon=/opt/desktop-icons/code-server.png
+Terminal=false
+Type=Application
+Categories=Development;IDE;
+StartupNotify=true
