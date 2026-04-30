@@ -5,6 +5,12 @@
 # github_release 模式: 固定路径前缀的 .deb (OpenTypeless / CC Switch 等)
 ubuntu ALL=(root) NOPASSWD: /usr/bin/apt-get install -y /tmp/webclaw-ondemand-*.deb
 
+# 卸载模式: 由受控脚本读取 manifest 并只删除对应应用的受管安装目录或包
+ubuntu ALL=(root) NOPASSWD: /usr/local/bin/webclaw-app-uninstaller *
+
+# 日志准备: 避免 /tmp 下残留 root-owned 日志导致桌面用户无法写入
+ubuntu ALL=(root) NOPASSWD: /usr/local/bin/webclaw-log-prepare *
+
 # apt 模式: 刷新索引(每个 apt 应用安装前都需要)
 ubuntu ALL=(root) NOPASSWD: /usr/bin/apt-get update
 
@@ -41,6 +47,7 @@ ubuntu ALL=(root) NOPASSWD: /bin/mv -f /tmp/squashfs-root /opt/ondemand-apps/*/A
 
 # r2_download / direct_download 模式: 安装到 /opt/<app-id> (WebClaw Launcher / Cursor 等)
 ubuntu ALL=(root) NOPASSWD: /bin/mkdir -p /opt/*
+ubuntu ALL=(root) NOPASSWD: /bin/cp -a /tmp/*-extract-*/*/. /opt/*/
 ubuntu ALL=(root) NOPASSWD: /bin/mv -f /tmp/squashfs-root /opt/*/AppDir
 ubuntu ALL=(root) NOPASSWD: /bin/mv -f /tmp/*-wrapper.sh /opt/*/*
 ubuntu ALL=(root) NOPASSWD: /bin/chmod +x /opt/*/*
