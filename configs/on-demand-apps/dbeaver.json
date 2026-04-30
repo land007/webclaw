@@ -2,7 +2,7 @@
   "id": "dbeaver",
   "name": "DBeaver Community",
   "package": "dbeaver-ce",
-  "binary": "/usr/share/dbeaver/dbeaver",
+  "binary": "/usr/bin/dbeaver",
   "install_method": "github_release",
   "github_repo": "dbeaver/dbeaver",
   "asset_pattern": "dbeaver-ce-{version}-linux-{arch}.deb",
