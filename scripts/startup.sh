@@ -310,20 +310,39 @@ AltTriggerKey=SHIFT_SHIFT
 IMSwitchKey=False
 FCITX_EOF
 
-    # fcitx 4 profile - pinyin as active IM (fcitx 4 format, NOT fcitx5)
+    # fcitx 4 profile - multi-language input methods (fcitx 4 format, NOT fcitx5)
     # IMName: the IM to activate on trigger; EnabledIM/IMOrder: IM list
     if [ ! -f "$FCITX_DIR/profile" ]; then
-        # Prefer googlepinyin if installed, fall back to pinyin
+        # Build input method list based on installed packages
+        ENABLED_IM="keyboard-us:1"
+        IM_ORDER="keyboard-us:1"
+
+        # Smart input engines (Chinese, Japanese, Korean)
+        for im in googlepinyin pinyin mozc hangul; do
+            if dpkg -l "fcitx-$im" 2>/dev/null | grep -q '^ii'; then
+                ENABLED_IM="$im,${ENABLED_IM}"
+                IM_ORDER="$im,${IM_ORDER}"
+            fi
+        done
+
+        # Default to googlepinyin if available, otherwise first available IM
         if dpkg -l fcitx-googlepinyin 2>/dev/null | grep -q '^ii'; then
-            PINYIN_IM=googlepinyin
+            DEFAULT_IM=googlepinyin
+        elif dpkg -l fcitx-pinyin 2>/dev/null | grep -q '^ii'; then
+            DEFAULT_IM=pinyin
+        elif dpkg -l fcitx-mozc 2>/dev/null | grep -q '^ii'; then
+            DEFAULT_IM=mozc
+        elif dpkg -l fcitx-hangul 2>/dev/null | grep -q '^ii'; then
+            DEFAULT_IM=hangul
         else
-            PINYIN_IM=pinyin
+            DEFAULT_IM=keyboard-us
         fi
+
         cat > "$FCITX_DIR/profile" <<FCITX_PROFILE_EOF
 [Profile]
-IMName=${PINYIN_IM}
-EnabledIM=${PINYIN_IM},keyboard-us:1
-IMOrder=${PINYIN_IM},keyboard-us:1
+IMName=${DEFAULT_IM}
+EnabledIM=${ENABLED_IM}
+IMOrder=${IM_ORDER}
 FCITX_PROFILE_EOF
     fi
 

@@ -107,12 +107,18 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         && apt-get clean && rm -rf /var/lib/apt/lists/*; \
     fi
 
-# ─── 8. Chinese input (fcitx 4 + pinyin engines) ───────────────────
+# ─── 8. Input methods (fcitx 4 + multi-language support) ────────────
 # Note: intentionally NO --no-install-recommends here so fcitx pulls
 # in all frontends (gtk2/gtk3/xim), UI (classic), and IM modules.
+#
+# Google 输入法系列：
+# - fcitx-googlepinyin: Google 拼音（中文）
+# - fcitx-mozc: Mozc（Google 日本开发的日语输入法）
+# - fcitx-hangul: 韩语输入法
 RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         apt-get update && apt-get install -y \
             fcitx fcitx-googlepinyin fcitx-pinyin fcitx-config-gtk \
+            fcitx-mozc fcitx-hangul \
             fonts-noto-cjk fonts-noto-cjk-extra \
         && apt-get clean && rm -rf /var/lib/apt/lists/*; \
     fi
@@ -334,10 +340,13 @@ COPY scripts/webclaw-app-uninstaller.sh /usr/local/bin/webclaw-app-uninstaller
 COPY scripts/webclaw-log-prepare.sh /usr/local/bin/webclaw-log-prepare
 COPY scripts/update-desktop-icons.sh /usr/local/bin/update-desktop-icons
 COPY scripts/install-antigravity.sh /usr/local/bin/install-antigravity
+COPY scripts/on-demand-helpers/ /usr/local/bin/on-demand-helpers/
 COPY configs/on-demand-apps/ /opt/on-demand-apps/
 COPY configs/on-demand-icons/ /opt/on-demand-icons/
 COPY configs/sudoers/webclaw-app-launcher /etc/sudoers.d/webclaw-app-launcher
 RUN chmod +x /usr/local/bin/webclaw-app-launcher /usr/local/bin/webclaw-app-uninstaller /usr/local/bin/webclaw-log-prepare /usr/local/bin/update-desktop-icons /usr/local/bin/install-antigravity \
+    && chmod +x /usr/local/bin/on-demand-helpers/*.sh \
+    && ln -sf /usr/local/bin/on-demand-helpers/codex-version-api.sh /usr/local/bin/codex-version-api.sh \
     && chmod 0440 /etc/sudoers.d/webclaw-app-launcher \
     && visudo -c -f /etc/sudoers.d/webclaw-app-launcher
 
