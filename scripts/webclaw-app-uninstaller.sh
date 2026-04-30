@@ -26,8 +26,14 @@ case "$INSTALL_METHOD" in
         rm -f "/usr/share/applications/${APP_ID}.desktop"
         ;;
     r2_download|direct_download|cursor_api)
-        rm -rf "/opt/${APP_ID}"
+        # 检查是否是通过 dpkg 安装的包（如 .deb 文件安装）
+        if dpkg -s "$PKG" >/dev/null 2>&1; then
+            apt-get remove -y "$PKG"
+        else
+            rm -rf "/opt/${APP_ID}"
+        fi
         rm -f "/usr/share/applications/${APP_ID}.desktop"
+        rm -f "/usr/share/applications/${PKG}.desktop"
         ;;
     apt|github_release)
         if dpkg -s "$PKG" >/dev/null 2>&1; then
