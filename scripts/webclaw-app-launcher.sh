@@ -68,6 +68,7 @@ PKG=$(jq -r '.package' "$MANIFEST")
 NAME=$(jq -r '.name' "$MANIFEST")
 BIN=$(jq -r '.binary' "$MANIFEST")
 INSTALL_METHOD=$(jq -r '.install_method // "github_release"' "$MANIFEST")
+REQUIRES_TERMINAL=$(jq -r '.requires_terminal // "false"' "$MANIFEST")
 
 prepare_log() {
     if [ -x /usr/local/bin/webclaw-log-prepare ]; then
@@ -238,6 +239,9 @@ fi
 # 已装 -> 直接启动,setsid 脱离终端避免阻塞 dbus-launch 等
 # 根据安装方法使用不同的检查方式
 if is_app_installed; then
+    if [ "$REQUIRES_TERMINAL" = "true" ]; then
+        exec gnome-terminal -- "$BIN" "${DEFAULT_ARGS[@]}" "$@"
+    fi
     setsid "$BIN" "${DEFAULT_ARGS[@]}" "$@" </dev/null >/dev/null 2>&1 &
     exit 0
 fi
@@ -294,15 +298,11 @@ case "$INSTALL_METHOD" in
                 echo "100"; exit 1
             fi
 
-            # Wireshark 特殊处理: 配置 dumpcap 权限
-            if [ "$APT_PKG" = "wireshark" ]; then
-                echo "70"
-                echo "# 正在配置网络捕获权限..."
-                # 将 ubuntu 用户添加到 wireshark 组
-                sudo usermod -a -G wireshark ubuntu >>"$LOG" 2>&1
-                # 设置 dumpcap 的 capabilities
-                sudo setcap cap_net_raw,cap_net_admin=ep /usr/bin/dumpcap >>"$LOG" 2>&1
-            fi
+            # 安装后置钩子: 委托给受控的 root-side 脚本, 按 app_id 分发
+            # (例如 Wireshark 需要 groupadd / usermod / setcap)
+            echo "70"
+            echo "# 正在配置..."
+            sudo /usr/local/bin/webclaw-app-postinstall "$APP_ID" >>"$LOG" 2>&1 || true
 
             echo "100"
             echo "# 完成"
@@ -663,7 +663,14 @@ EOF
         # ─── 获取版本号和下载链接 ─────────────────────────────────────────────
         # 方式1: 通过 version_api (自定义 JSON API)
         if [ -n "$VERSION_API" ]; then
-            VERSION=$(curl -fsSL "$VERSION_API" 2>>"$LOG" | jq -r '.version // .latest // empty' 2>>"$LOG")
+            if [[ "$VERSION_API" == file:///* ]]; then
+                # 本地脚本：file:///path/to/script.sh
+                SCRIPT_PATH="${VERSION_API#file://}"  # 注意：两个斜杠，不是三个
+                VERSION=$("$SCRIPT_PATH" 2>>"$LOG" | jq -r '.version // .latest // empty' 2>>"$LOG")
+            else
+                # HTTP API
+                VERSION=$(curl -fsSL "$VERSION_API" 2>>"$LOG" | jq -r '.version // .latest // empty' 2>>"$LOG")
+            fi
         fi
 
         # 方式2: JetBrains 产品 - 使用官方 API 获取最新版本和下载链接
@@ -749,7 +756,7 @@ EOF
         {
             TMP_APPIMAGE="/tmp/${APP_ID}.AppImage"
             TMP_ZIP="/tmp/${APP_ID}.zip"
-            rm -f "$TMP_APPIMAGE" "$TMP_ZIP"
+            rm -f "$TMP_APPIMAGE" "$TMP_ZIP" "/tmp/${APP_ID}.tar.gz"
 
             # 检测文件类型（AppImage、zip 或 tar.gz）
             if [[ "$DOWNLOAD_URL" == *".tar.gz"* ]] || [[ "$DOWNLOAD_URL" == *".tgz"* ]]; then
@@ -786,13 +793,32 @@ EOF
                 fi
                 rm -f "$TMP_TAR"
 
-                # 查找解压后的目录（通常只有一个顶级目录）
+                # 查找解压后的内容（可能是目录或直接是二进制文件）
                 EXTRACTED_DIR=$(find "$TMP_EXTRACT" -mindepth 1 -maxdepth 1 -type d | head -1)
-                if [ -z "$EXTRACTED_DIR" ]; then
-                    echo "未找到解压目录" >> "$LOG"
+                EXTRACTED_FILE=$(find "$TMP_EXTRACT" -mindepth 1 -maxdepth 1 -type f -executable | head -1)
+
+                if [ -n "$EXTRACTED_DIR" ]; then
+                    # 标准情况：解压后是目录
+                    EXTRACTED="$EXTRACTED_DIR"
+                elif [ -n "$EXTRACTED_FILE" ]; then
+                    # 特殊情况：直接是可执行文件（如 Codex CLI）
+                    # 将文件移动到安装目录
+                    sudo /bin/mkdir -p "$INSTALL_DIR" 2>>"$LOG"
+                    if ! sudo /bin/mv -f "$EXTRACTED_FILE" "$INSTALL_DIR/${APP_ID}" 2>>"$LOG"; then
+                        echo "移动二进制文件失败" >> "$LOG"
+                        rm -rf "$TMP_EXTRACT"
+                        echo "100"; exit 1
+                    fi
+                    sudo /bin/chmod +x "$INSTALL_DIR/${APP_ID}" 2>>"$LOG"
+                    rm -rf "$TMP_EXTRACT"
+                    # 设置 ACTUAL_BIN 以便后续代码跳过查找步骤
+                    ACTUAL_BIN="$INSTALL_DIR/${APP_ID}"
+                    # 设置 EXTRACTED 为空，跳过后续的复制逻辑
+                    EXTRACTED=""
+                else
+                    echo "未找到解压目录或可执行文件" >> "$LOG"
                     echo "100"; exit 1
                 fi
-                EXTRACTED="$EXTRACTED_DIR"
 
             elif [ -f "$TMP_ZIP" ]; then
                 # 解压 zip 包
@@ -859,29 +885,40 @@ EOF
 
             # 查找实际的二进制文件（按优先级尝试多个可能的名字）
             # 对于 tar.gz 安装的工具，先检查 AppDir，再检查根目录
-            if [ -d "$INSTALL_DIR/AppDir" ]; then
-                ACTUAL_BIN=$(find "$INSTALL_DIR/AppDir" -type f -executable -name "${APP_ID}" | head -1)
-            fi
+            # AppDir/AppRun 优先：linuxdeploy 打的 AppImage 必须经 AppRun 才能 source
+            # apprun-hooks/linuxdeploy-plugin-gtk.sh 设置 GTK_PATH/GIO_MODULE_DIR 等，
+            # 否则 GTK 应用启动时 init 失败（webclaw-launcher 这种 Tauri/GTK 应用）
             if [ -z "$ACTUAL_BIN" ]; then
-                ACTUAL_BIN=$(find "$INSTALL_DIR" -maxdepth 3 -type f -executable -name "${APP_ID}.sh" | head -1)
-            fi
-            if [ -z "$ACTUAL_BIN" ]; then
-                ACTUAL_BIN=$(find "$INSTALL_DIR/AppDir" -type f -executable -name "cursor" | head -1)
-            fi
-            if [ -z "$ACTUAL_BIN" ]; then
-                ACTUAL_BIN=$(find "$INSTALL_DIR/AppDir" -type f -executable -name "tauri-app" | head -1)
-            fi
-            # 最后尝试：找 usr/bin 下任何可执行文件
-            if [ -z "$ACTUAL_BIN" ] && [ -d "$INSTALL_DIR/AppDir/usr/bin" ]; then
-                ACTUAL_BIN=$(find "$INSTALL_DIR/AppDir/usr/bin" -type f -executable | head -1)
+                if [ -x "$INSTALL_DIR/AppDir/AppRun" ]; then
+                    ACTUAL_BIN="$INSTALL_DIR/AppDir/AppRun"
+                fi
+                if [ -z "$ACTUAL_BIN" ] && [ -d "$INSTALL_DIR/AppDir" ]; then
+                    ACTUAL_BIN=$(find "$INSTALL_DIR/AppDir" -type f -executable -name "${APP_ID}" | head -1)
+                fi
+                if [ -z "$ACTUAL_BIN" ]; then
+                    ACTUAL_BIN=$(find "$INSTALL_DIR" -maxdepth 3 -type f -executable -name "${APP_ID}.sh" | head -1)
+                fi
+                if [ -z "$ACTUAL_BIN" ]; then
+                    ACTUAL_BIN=$(find "$INSTALL_DIR/AppDir" -type f -executable -name "cursor" | head -1)
+                fi
+                if [ -z "$ACTUAL_BIN" ]; then
+                    ACTUAL_BIN=$(find "$INSTALL_DIR/AppDir" -type f -executable -name "tauri-app" | head -1)
+                fi
+                # 最后尝试：找 usr/bin 下任何可执行文件
+                if [ -z "$ACTUAL_BIN" ] && [ -d "$INSTALL_DIR/AppDir/usr/bin" ]; then
+                    ACTUAL_BIN=$(find "$INSTALL_DIR/AppDir/usr/bin" -type f -executable | head -1)
+                fi
             fi
             if [ -n "$ACTUAL_BIN" ]; then
-                cat > /tmp/${APP_ID}-wrapper.sh <<EOF
+                # 只在二进制文件不在正确位置时创建 wrapper
+                if [ "$ACTUAL_BIN" != "$INSTALL_DIR/${APP_ID}" ]; then
+                    cat > /tmp/${APP_ID}-wrapper.sh <<EOF
 #!/bin/bash
 exec "$ACTUAL_BIN" "\$@"
 EOF
-                sudo /bin/mv -f /tmp/${APP_ID}-wrapper.sh "$INSTALL_DIR/${APP_ID}" 2>>"$LOG"
-                sudo /bin/chmod +x "$INSTALL_DIR/${APP_ID}" 2>>"$LOG"
+                    sudo /bin/mv -f /tmp/${APP_ID}-wrapper.sh "$INSTALL_DIR/${APP_ID}" 2>>"$LOG"
+                    sudo /bin/chmod +x "$INSTALL_DIR/${APP_ID}" 2>>"$LOG"
+                fi
             else
                 echo "未找到可执行文件" >> "$LOG"
                 rm -f "$TMP_APPIMAGE" "$TMP_ZIP"

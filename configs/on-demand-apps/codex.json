@@ -1,0 +1,14 @@
+{
+  "id": "codex",
+  "name": "Codex",
+  "package": "codex",
+  "binary": "/opt/codex/codex",
+  "install_method": "direct_download",
+  "requires_terminal": true,
+  "version_api": "file:///usr/local/bin/codex-version-api.sh",
+  "download_url": "https://github.com/openai/codex/releases/download/rust-v{version}/codex-{arch}-unknown-linux-musl.tar.gz",
+  "arch_map": {
+    "amd64": "x86_64",
+    "arm64": "aarch64"
+  }
+}
