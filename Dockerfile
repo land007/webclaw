@@ -341,16 +341,25 @@ COPY scripts/webclaw-app-postinstall.sh /usr/local/bin/webclaw-app-postinstall
 COPY scripts/webclaw-log-prepare.sh /usr/local/bin/webclaw-log-prepare
 COPY scripts/update-desktop-icons.sh /usr/local/bin/update-desktop-icons
 COPY scripts/install-antigravity.sh /usr/local/bin/install-antigravity
+COPY scripts/preinstall-on-demand.sh /usr/local/bin/preinstall-on-demand.sh
 COPY scripts/on-demand-helpers/ /usr/local/bin/on-demand-helpers/
 COPY configs/on-demand-apps/ /opt/on-demand-apps/
 COPY configs/on-demand-icons/ /opt/on-demand-icons/
 COPY configs/sudoers/webclaw-app-launcher /etc/sudoers.d/webclaw-app-launcher
-RUN chmod +x /usr/local/bin/webclaw-app-launcher /usr/local/bin/webclaw-app-uninstaller /usr/local/bin/webclaw-app-postinstall /usr/local/bin/webclaw-log-prepare /usr/local/bin/update-desktop-icons /usr/local/bin/install-antigravity \
+RUN chmod +x /usr/local/bin/webclaw-app-launcher /usr/local/bin/webclaw-app-uninstaller /usr/local/bin/webclaw-app-postinstall /usr/local/bin/webclaw-log-prepare /usr/local/bin/update-desktop-icons /usr/local/bin/install-antigravity /usr/local/bin/preinstall-on-demand.sh \
     && chmod +x /usr/local/bin/on-demand-helpers/*.sh \
     && ln -sf /usr/local/bin/on-demand-helpers/codex-version-api.sh /usr/local/bin/codex-version-api.sh \
     && ln -sf /usr/local/bin/on-demand-helpers/get-android-studio-version.sh /usr/local/bin/get-android-studio-version \
     && chmod 0440 /etc/sudoers.d/webclaw-app-launcher \
     && visudo -c -f /etc/sudoers.d/webclaw-app-launcher
+
+# ─── Full 版本: 预装所有按需应用 ─────────────────────────────────────
+# 仅在 desktop 模式下预装，lite 版本跳过以保持镜像精简
+RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
+        echo "[preinstall] 开始预装所有按需应用..." \
+        && /usr/local/bin/preinstall-on-demand.sh \
+        || echo "[preinstall] 部分应用预装失败，运行时将按需安装"; \
+    fi
 
 COPY scripts/startup.sh /opt/startup.sh
 COPY scripts/init-skills.sh /opt/init-skills.sh
