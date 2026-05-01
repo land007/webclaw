@@ -36,6 +36,7 @@
       tipClickToolbar: '或点击工具栏的按键按钮',
       btnShowHints: '显示提示',
       btnShowHintsHint: '重新显示按键映射提示（F10）',
+      dontShowAgain: '不再显示',
       mappings: {
         'Pause': 'Pause → ESC',
         'ScrollLock': 'ScrollLock → Ctrl+Alt+Del',
@@ -58,6 +59,7 @@
       tipClickToolbar: 'or click toolbar buttons',
       btnShowHints: 'Show Hints',
       btnShowHintsHint: 'Show key mapping hints again (F10)',
+      dontShowAgain: "Don't show again",
       mappings: {
         'Pause': 'Pause → ESC',
         'ScrollLock': 'ScrollLock → Ctrl+Alt+Del',
@@ -235,6 +237,9 @@
 
   // ── 其他配置 ─────────────────────────────────────────────────────
 
+  // localStorage key for hiding hint
+  const HIDE_HINT_KEY = 'key-remap-hide-hint';
+
   const CONFIG = {
     // 是否启用映射功能
     enabled: true,
@@ -408,7 +413,11 @@
       e.stopImmediatePropagation();
 
       if (mapping.action === 'showHints') {
-        // 移除旧提示并显示新提示
+        // 清除"不再显示"设置，重新显示提示
+        if (typeof localStorage !== 'undefined') {
+          localStorage.removeItem(HIDE_HINT_KEY);
+          log('💡 Hint preference cleared');
+        }
         removeHint();
         showHint();
       }
@@ -437,6 +446,12 @@
   // ── 显示提示信息 ─────────────────────────────────────────────
   function showHint() {
     if (!CONFIG.showHint) return;
+
+    // 检查用户是否选择了"不再显示"
+    if (typeof localStorage !== 'undefined' && localStorage.getItem(HIDE_HINT_KEY) === 'true') {
+      log('💡 Hint hidden by user preference');
+      return;
+    }
 
     // 先移除旧提示
     removeHint();
@@ -504,6 +519,26 @@
                        hints.join('<br>') +
                        '<br><br><em style="color: #888; font-size: 12px;">' +
                        CONFIG.i18n.tipOr + ' F10 ' + CONFIG.i18n.btnShowHints + '</em>';
+
+    // 添加"不再显示"按钮行（底部居中）
+    var btnRow = document.createElement('div');
+    btnRow.style.cssText = 'margin-top: 16px; text-align: center;';
+
+    var dontShowBtn = document.createElement('button');
+    dontShowBtn.innerHTML = CONFIG.i18n.dontShowAgain;
+    dontShowBtn.style.cssText = 'background: #555; border: none; color: #ccc; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: background 0.2s;';
+    dontShowBtn.onmouseover = function() { this.style.background = '#666'; };
+    dontShowBtn.onmouseout = function() { this.style.background = '#555'; };
+    dontShowBtn.onclick = function() {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(HIDE_HINT_KEY, 'true');
+        log('💡 Hint hidden by user choice');
+      }
+      removeHint();
+    };
+
+    btnRow.appendChild(dontShowBtn);
+    content.appendChild(btnRow);
     hint.appendChild(content);
 
     document.body.appendChild(hint);
