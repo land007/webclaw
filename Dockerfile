@@ -204,8 +204,7 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
             && apt-get update && apt-get install -y ./google-chrome-stable_current_amd64.deb \
             && rm -f google-chrome-stable_current_amd64.deb; \
         else \
-            apt-get update \
-            && apt-get install -y --no-install-recommends chromium-browser; \
+            apt-get update && apt-get install -y --no-install-recommends chromium-browser; \
         fi \
         && apt-get clean && rm -rf /var/lib/apt/lists/*; \
     fi
