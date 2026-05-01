@@ -13,7 +13,7 @@ Comment[es_ES]=Panel de control de OpenClaw AI Gateway
 Comment[pt_BR]=Painel do OpenClaw AI Gateway
 Comment[ko_KR]=OpenClaw AI 게이트웨이 대시보드
 Comment[de_DE]=OpenClaw AI Gateway-Dashboard
-Exec=sh -c 'xdg-open "http://127.0.0.1:10003?token=${OPENCLAW_GATEWAY_TOKEN:-}"'
+Exec=openclaw-browser
 Icon=/opt/desktop-icons/openclaw.png
 Terminal=false
 Type=Application
