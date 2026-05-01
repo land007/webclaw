@@ -128,6 +128,14 @@ if [ -n "$GF_BIN" ]; then
     sleep 0.5
 fi
 
+# ─── 重跑桌面图标状态刷新（让 ⬇ 标记落进当前会话的 inotify）─────────
+# startup.sh 里那次 update-desktop-icons 发生在 supervisord 之前，
+# gnome-flashback 还没起来；首次启动后图标可能拿不到 ⬇ 前缀。
+# 这里在 gnome-flashback 起来 2s 后再写一次，inotify 事件会被正确捕获。
+if [ -x /usr/local/bin/update-desktop-icons ]; then
+    ( sleep 2 && /usr/local/bin/update-desktop-icons ) >/dev/null 2>&1 &
+fi
+
 # ─── Desktop panel (taskbar, system tray, clock) ────────────────────
 export XDG_MENU_PREFIX=gnome-flashback-
 # GTK_THEME must be passed inline: gsd-xsettings broadcasts dconf theme via

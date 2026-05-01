@@ -377,8 +377,10 @@ FCITX_PROFILE_EOF
     chown -R ubuntu:ubuntu /home/ubuntu/Desktop
 
     # 更新桌面图标状态（未安装应用显示下载标记）
+    # 必须以 ubuntu 身份跑：xsession 起来时 gnome-flashback 的 inotify 监听属于 ubuntu，
+    # 用 root 写文件时 owner/mtime 时序会让首次渲染拿到旧缓存（→ 启动后看不到 ⬇）。
     if [ -x /usr/local/bin/update-desktop-icons ]; then
-        /usr/local/bin/update-desktop-icons
+        sudo -u ubuntu /usr/local/bin/update-desktop-icons || true
     fi
 
     exec /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf

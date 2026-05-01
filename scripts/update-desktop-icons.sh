@@ -47,11 +47,16 @@ normalize_desktop_file() {
         { print }
     ' "$desktop" > "$tmp"
 
-    if cmp -s "$desktop" "$tmp"; then
+    # 使用删除后重建的方式，触发 gnome-flashback 正确刷新缓存
+    # 如果内容相同则跳过
+    if cmp -s "$desktop" "$tmp" 2>/dev/null; then
         rm -f "$tmp"
-    else
-        mv -f "$tmp" "$desktop"
+        return
     fi
+
+    # 先删除原文件，再移动新文件（避免 gnome-flashback 缓存累积）
+    rm -f "$desktop"
+    mv -f "$tmp" "$desktop"
     chown ubuntu:ubuntu "$desktop" 2>/dev/null || true
     chmod +x "$desktop" 2>/dev/null || true
 }
@@ -121,27 +126,6 @@ remove_uninstall_menu_entry() {
     rm -f "$UNINSTALL_APP_DIR/webclaw-uninstall-${app_id}.desktop"
 }
 
-hide_redundant_system_launcher() {
-    local manifest="$1"
-    local app_id="$2"
-    local pkg
-    local entry
-
-    pkg=$(jq -r '.package // empty' "$manifest")
-
-    for entry in "/usr/share/applications/${app_id}.desktop" "/usr/share/applications/${pkg}.desktop"; do
-        [ -f "$entry" ] || continue
-        if grep -q '^NoDisplay=true$' "$entry"; then
-            continue
-        fi
-        if grep -q '^NoDisplay=' "$entry"; then
-            sed -i 's/^NoDisplay=.*/NoDisplay=true/' "$entry"
-        else
-            printf '\nNoDisplay=true\n' >> "$entry"
-        fi
-    done
-}
-
 cleanup_desktop_temp_files
 write_uninstall_menu
 
@@ -170,16 +154,9 @@ for desktop in "$DESKTOP_DIR"/*.desktop; do
         # 已安装 - 移除"未安装"标记
         normalize_desktop_file "$desktop" "$name"
         ensure_uninstall_menu_entry "$app_id" "$name" "$manifest"
-        hide_redundant_system_launcher "$manifest" "$app_id"
     else
         # 未安装 - 添加"待安装"标记
         normalize_desktop_file "$desktop" "⬇ $name"
         remove_uninstall_menu_entry "$app_id"
     fi
 done
-
-update-desktop-database /home/ubuntu/.local/share/applications >/dev/null 2>&1 || true
-
-# 清理 GNOME 桌面缓存，避免图标重复显示
-rm -rf /home/ubuntu/.cache/desktop 2>/dev/null || true
-rm -f /home/ubuntu/.local/share/applications/mimeinfo.cache 2>/dev/null || true
