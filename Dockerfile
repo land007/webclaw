@@ -160,8 +160,10 @@ RUN install -m 0755 -d /etc/apt/keyrings \
     && chmod a+r /etc/apt/keyrings/docker.gpg \
     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu noble stable" \
        > /etc/apt/sources.list.d/docker.list \
-    && apt-get update && apt-get install -y --no-install-recommends \
-        docker-ce-cli docker-ce containerd.io docker-compose-plugin \
+    && for i in 1 2 3; do \
+        apt-get update && apt-get install -y --no-install-recommends \
+            docker-ce-cli docker-ce containerd.io docker-compose-plugin && break || sleep 15; \
+       done \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # ─── 9b. Cloudflare Tunnel client (best-effort; network can be flaky in CI) ───
