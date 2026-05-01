@@ -356,14 +356,6 @@ RUN chmod +x /usr/local/bin/webclaw-app-launcher /usr/local/bin/webclaw-app-unin
     && chmod 0440 /etc/sudoers.d/webclaw-app-launcher \
     && visudo -c -f /etc/sudoers.d/webclaw-app-launcher
 
-# ─── Full 版本: 预装所有按需应用 ─────────────────────────────────────
-# 仅在 desktop 模式下预装，lite 版本跳过以保持镜像精简
-RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
-        echo "[preinstall] 开始预装所有按需应用..." \
-        && /usr/local/bin/preinstall-on-demand.sh \
-        || echo "[preinstall] 部分应用预装失败，运行时将按需安装"; \
-    fi
-
 COPY scripts/startup.sh /opt/startup.sh
 COPY scripts/init-skills.sh /opt/init-skills.sh
 COPY scripts/run-cloudflared.sh /usr/local/bin/run-cloudflared.sh

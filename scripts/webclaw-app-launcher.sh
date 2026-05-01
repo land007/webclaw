@@ -458,6 +458,7 @@ case "$INSTALL_METHOD" in
                 rm -rf /tmp/squashfs-root "$EXTRACTED"
                 echo "100"; exit 1
             fi
+            sudo /bin/chmod -R a+rX "$APPIMAGE_EXTRACT_DIR/AppDir" 2>>"$LOG" || true
             if [ -x "$APPIMAGE_EXTRACT_DIR/AppDir/AppRun" ]; then
                 cat > /tmp/${APP_ID}-wrapper.sh <<EOF
 #!/bin/bash
@@ -1002,13 +1003,16 @@ EOF
                 rm -rf /tmp/squashfs-root
                 echo "100"; exit 1
             fi
+            sudo /bin/chmod -R a+rX "$INSTALL_DIR/AppDir" 2>>"$LOG" || true
+            if [ -x "$INSTALL_DIR/AppDir/cursor" ] && [ ! -x "$INSTALL_DIR/AppDir/usr/share/cursor/cursor" ]; then
+                sudo /bin/mv -f "$INSTALL_DIR/AppDir/cursor" "$INSTALL_DIR/AppDir/usr/share/cursor/cursor" 2>>"$LOG" || true
+                sudo /bin/chmod +x "$INSTALL_DIR/AppDir/usr/share/cursor/cursor" 2>>"$LOG" || true
+            fi
 
-            # 查找实际的二进制文件
-            ACTUAL_BIN=$(find "$INSTALL_DIR/AppDir" -type f -executable -name "cursor" | head -1)
-            if [ -n "$ACTUAL_BIN" ]; then
+            if [ -x "$INSTALL_DIR/AppDir/AppRun" ]; then
                 cat > /tmp/${APP_ID}-wrapper.sh <<EOF
 #!/bin/bash
-exec "$ACTUAL_BIN" "\$@"
+exec "$INSTALL_DIR/AppDir/AppRun" "\$@"
 EOF
                 sudo /bin/mv -f /tmp/${APP_ID}-wrapper.sh "$INSTALL_DIR/${APP_ID}" 2>>"$LOG"
                 sudo /bin/chmod +x "$INSTALL_DIR/${APP_ID}" 2>>"$LOG"

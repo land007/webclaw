@@ -19,11 +19,84 @@ set -u
 MANIFEST_DIR="/opt/on-demand-apps"
 ARCH=$(dpkg --print-architecture)
 
-# ── 集中刷一次 apt 索引 ──────────────────────────────────────────────
-apt-get update
-
 log()  { echo "[preinstall] $*"; }
 warn() { echo "[preinstall] WARN: $*" >&2; }
+
+# ── curl 包装函数（带超时和重试）──────────────────────────────────────
+curl_retry() {
+    curl -fsSL \
+        --connect-timeout 10 \
+        --max-time 900 \
+        --retry 3 \
+        --retry-delay 2 \
+        --retry-max-time 1800 \
+        --speed-limit 1024 \
+        --speed-time 30 \
+        "$@"
+}
+
+# ── 通用重试函数（指数退避）────────────────────────────────────────────
+retry_op() {
+    local max_attempts=$1
+    local initial_delay=$2
+    shift 2
+    local attempt=1
+    local delay=$initial_delay
+
+    while [ "$attempt" -le "$max_attempts" ]; do
+        if "$@"; then
+            return 0
+        fi
+        if [ "$attempt" -lt "$max_attempts" ]; then
+            warn "重试 $attempt/$max_attempts (等待 ${delay}s)..."
+            sleep "$delay"
+            delay=$((delay * 2))
+        fi
+        attempt=$((attempt + 1))
+    done
+    return 1
+}
+
+# ── 集中刷一次 apt 索引 ──────────────────────────────────────────────
+retry_op 3 5 apt-get update || warn "apt-get update 失败,后续 apt 安装可能失败"
+
+get_github_latest_tag() {
+    local repo="$1"
+    local tag
+
+    tag=$(retry_op 3 5 curl_retry "https://api.github.com/repos/${repo}/releases/latest" \
+        | jq -r '.tag_name // empty' 2>/dev/null)
+    if [ -z "$tag" ]; then
+        tag=$(retry_op 3 5 curl_retry -I "https://github.com/${repo}/releases/latest" \
+            | awk 'BEGIN{IGNORECASE=1} /^location:/ {gsub("\r","",$2); location=$2} END{sub(".*/tag/","",location); print location}')
+    fi
+
+    echo "$tag"
+}
+
+replace_release_tokens() {
+    local template="$1"
+    local version="$2"
+    local arch="$3"
+    local arch_suffix="${4:-$3}"
+    local version_no_v="${version#v}"
+
+    template=${template//\{version_no_v\}/$version_no_v}
+    template=${template//\{version\}/$version}
+    template=${template//\{arch_suffix\}/$arch_suffix}
+    template=${template//\{arch\}/$arch}
+    echo "$template"
+}
+
+get_version_from_api() {
+    local version_api="$1"
+    if [[ "$version_api" == file:///* ]]; then
+        local script_path="${version_api#file://}"
+        retry_op 3 5 "$script_path" | jq -r '.version // .latest // empty' 2>/dev/null
+    else
+        retry_op 3 5 curl_retry "$version_api" | jq -r '.version // .latest // empty' 2>/dev/null
+    fi
+}
 
 # ── apt 模式 ────────────────────────────────────────────────────────
 preinstall_apt() {
@@ -35,7 +108,7 @@ preinstall_apt() {
     # 如果有 install_script，先执行（用于添加仓库密钥等）
     if [ -n "$install_script" ] && [ -x "$install_script" ]; then
         log "$id: 执行安装脚本 $install_script"
-        "$install_script" || {
+        retry_op 3 5 "$install_script" || {
             warn "$id: 安装脚本执行失败"
             return 1
         }
@@ -48,7 +121,10 @@ preinstall_apt() {
         echo "wireshark-common wireshark-common/setuid boolean true" | debconf-set-selections
     fi
 
-    apt-get install -y "$apt_pkg"
+    retry_op 3 5 apt-get install -y "$apt_pkg" || {
+        warn "$id: apt install 失败"
+        return 1
+    }
 
     # Wireshark 装后给 dumpcap 抓包能力 + 把 ubuntu 加入 wireshark 组
     if [ "$apt_pkg" = "wireshark" ]; then
@@ -60,7 +136,7 @@ preinstall_apt() {
 # ── github_release(.deb) 模式 ──────────────────────────────────────
 preinstall_github_release() {
     local id="$1" manifest="$2"
-    local repo pattern arch_var version asset url deb
+    local repo pattern arch_var version tag asset url deb
 
     repo=$(jq -r '.github_repo' "$manifest")
     pattern=$(jq -r '.asset_pattern' "$manifest")
@@ -71,39 +147,47 @@ preinstall_github_release() {
         return 0
     fi
 
-    version=$(curl -fsSL "https://api.github.com/repos/${repo}/releases/latest" \
-        | grep '"tag_name"' | sed 's/.*"tag_name": *"v//;s/".*//')
-    if [ -z "$version" ]; then
+    if [ "$(jq -r '.use_fixed_version // false' "$manifest")" = "true" ]; then
+        tag=$(jq -r '.version // empty' "$manifest")
+    else
+        tag=$(get_github_latest_tag "$repo")
+    fi
+    if [ -z "$tag" ]; then
         warn "$id: 拿不到最新版本号,跳过"
         return 1
     fi
+    version="${tag#v}"
 
-    asset=${pattern//\{version\}/$version}
-    asset=${asset//\{arch\}/$arch_var}
-    url="https://github.com/${repo}/releases/download/v${version}/${asset}"
+    asset=$(replace_release_tokens "$pattern" "$tag" "$arch_var")
+    url="https://github.com/${repo}/releases/download/${tag}/${asset}"
     deb="/tmp/preinstall-${id}.deb"
 
     log "$id: 下载 $url"
     rm -f "$deb"
-    if ! curl -fsSL "$url" -o "$deb"; then
+    if ! retry_op 3 5 curl_retry "$url" -o "$deb"; then
         warn "$id: 下载失败"
         return 1
     fi
 
     log "$id: apt install .deb"
-    apt-get install -y "$deb"
+    retry_op 3 5 apt-get install -y "$deb" || {
+        warn "$id: apt install .deb 失败"
+        rm -f "$deb"
+        return 1
+    }
     rm -f "$deb"
 }
 
 # ── appimage 模式 ───────────────────────────────────────────────────
 preinstall_appimage() {
     local id="$1" manifest="$2"
-    local repo pattern arch_var version asset url tmp extract_dir extracted unbundle_gl
+    local repo pattern arch_var tag version asset url tmp extract_dir extracted unbundle_gl bin
 
     repo=$(jq -r '.github_repo' "$manifest")
     pattern=$(jq -r '.asset_pattern' "$manifest")
     arch_var=$(jq -r --arg a "$ARCH" '.arch_map[$a] // empty' "$manifest")
     unbundle_gl=$(jq -r '.unbundle_gl // false' "$manifest")
+    bin=$(jq -r '.binary' "$manifest")
 
     # arch_map 里登记了但 value 为空字符串(如 obsidian amd64="")也是合法的
     if ! jq -e --arg a "$ARCH" '.arch_map | has($a)' "$manifest" >/dev/null; then
@@ -111,16 +195,15 @@ preinstall_appimage() {
         return 0
     fi
 
-    version=$(curl -fsSL "https://api.github.com/repos/${repo}/releases/latest" \
-        | grep '"tag_name"' | sed 's/.*"tag_name": *"v//;s/".*//')
-    if [ -z "$version" ]; then
+    tag=$(get_github_latest_tag "$repo")
+    if [ -z "$tag" ]; then
         warn "$id: 拿不到最新版本号,跳过"
         return 1
     fi
+    version="${tag#v}"
 
-    asset=${pattern//\{version\}/$version}
-    asset=${asset//\{arch_suffix\}/$arch_var}
-    local download_url="https://github.com/${repo}/releases/download/v${version}/${asset}"
+    asset=$(replace_release_tokens "$pattern" "$version" "$arch_var" "$arch_var")
+    local download_url="https://github.com/${repo}/releases/download/${tag}/${asset}"
 
     extract_dir="/opt/ondemand-apps/${id}"
     tmp="/tmp/preinstall-${id}.AppImage"
@@ -133,7 +216,7 @@ preinstall_appimage() {
     if ! github_api_download "$repo" "$asset" "$tmp"; then
         # API 下载失败，尝试直接下载
         log "$id: API 下载失败，尝试直接下载 $download_url"
-        if ! curl -fsSL "$download_url" -o "$tmp"; then
+        if ! retry_op 3 5 curl_retry "$download_url" -o "$tmp"; then
             warn "$id: 下载失败"
             return 1
         fi
@@ -179,6 +262,11 @@ preinstall_appimage() {
 
     log "$id: 移动到 $extract_dir/AppDir"
     mv -f "$extracted" "$extract_dir/AppDir"
+    chmod -R a+rX "$extract_dir/AppDir"
+
+    if [ ! -x "$bin" ] && [ -x "$extract_dir/AppDir/$(basename "$bin")" ]; then
+        ln -sfn "$extract_dir/AppDir/$(basename "$bin")" "$bin"
+    fi
 
     rm -f "$tmp"
     rm -rf /tmp/squashfs-root
@@ -187,7 +275,7 @@ preinstall_appimage() {
 # ── cursor_api 模式 (Cursor 编辑器) ─────────────────────────────────────
 preinstall_cursor_api() {
     local id="$1" manifest="$2"
-    local api_base arch_var version api_url install_dir tmp
+    local api_base arch_var version api_url install_dir tmp app_dir
 
     api_base=$(jq -r '.api_base' "$manifest")
     arch_var=$(jq -r --arg a "$ARCH" '.arch_map[$a] // empty' "$manifest")
@@ -198,7 +286,7 @@ preinstall_cursor_api() {
     fi
 
     # 动态获取最新版本
-    version=$(curl -fsSL "https://api2.cursor.sh/updates/latest" 2>/dev/null | jq -r '.version // empty' 2>/dev/null)
+    version=$(retry_op 3 5 curl_retry "https://api2.cursor.sh/updates/latest" 2>/dev/null | jq -r '.version // empty' 2>/dev/null)
     if [ -z "$version" ]; then
         # 如果动态获取失败,使用 manifest 中硬编码的版本
         version=$(jq -r '.version' "$manifest")
@@ -216,7 +304,7 @@ preinstall_cursor_api() {
     rm -rf "$install_dir"
     mkdir -p "$install_dir"
 
-    if ! curl -fsSL "$api_url" -o "$tmp"; then
+    if ! retry_op 3 5 curl_retry "$api_url" -o "$tmp"; then
         warn "$id: 下载失败"
         return 1
     fi
@@ -235,14 +323,18 @@ preinstall_cursor_api() {
     extracted=$(readlink -f /tmp/squashfs-root)
 
     log "$id: 移动到 $install_dir"
-    mv -f "$extracted"/* "$install_dir/" 2>/dev/null || mv -f "$extracted" "$install_dir/cursor"
-
-    # 确保 cursor 可执行文件存在
-    if [ ! -e "$install_dir/cursor" ]; then
-        # 尝试查找可执行文件
-        find "$install_dir" -type f -name "cursor" -exec mv {} "$install_dir/cursor" \; 2>/dev/null
+    app_dir="$install_dir/AppDir"
+    mv -f "$extracted" "$app_dir"
+    chmod -R a+rX "$app_dir"
+    if [ -x "$app_dir/cursor" ] && [ ! -x "$app_dir/usr/share/cursor/cursor" ]; then
+        mv -f "$app_dir/cursor" "$app_dir/usr/share/cursor/cursor"
+        chmod +x "$app_dir/usr/share/cursor/cursor"
     fi
-    chmod +x "$install_dir/cursor" 2>/dev/null
+    cat > "$install_dir/cursor" <<EOF
+#!/bin/bash
+exec "$app_dir/AppRun" "\$@"
+EOF
+    chmod +x "$install_dir/cursor"
 
     rm -f "$tmp"
     rm -rf /tmp/squashfs-root /tmp/AppDir
@@ -251,12 +343,22 @@ preinstall_cursor_api() {
 # ── direct_download 模式 (webclaw-launcher 等) ─────────────────────────
 preinstall_direct_download() {
     local id="$1" manifest="$2"
-    local download_url version_api arch_var arch_suffix version install_dir tmp
+    local download_url version_api arch_var arch_suffix version install_dir tmp jetbrains_code unsupported_arch bin pkg candidate_name
 
+    pkg=$(jq -r '.package' "$manifest")
     download_url=$(jq -r '.download_url' "$manifest")
     version_api=$(jq -r '.version_api // empty' "$manifest")
+    bin=$(jq -r '.binary' "$manifest")
     arch_var=$(jq -r --arg a "$ARCH" '.arch_map[$a] // empty' "$manifest")
     arch_suffix=$(jq -r --arg a "$ARCH" --arg fallback "$arch_var" '.arch_suffix_map[$a] // $fallback // empty' "$manifest")
+    jetbrains_code=$(jq -r '.jetbrains_code // empty' "$manifest")
+
+    for unsupported_arch in $(jq -r '.unsupported_archs // [] | .[]' "$manifest" 2>/dev/null); do
+        if [ "$ARCH" = "$unsupported_arch" ]; then
+            log "$id: arch=$ARCH 不受支持,跳过"
+            return 0
+        fi
+    done
 
     if [ -z "$arch_var" ] && [ -z "$arch_suffix" ]; then
         log "$id: arch=$ARCH 不在 arch_map 中,跳过"
@@ -265,7 +367,7 @@ preinstall_direct_download() {
 
     # 如果提供了 version_api，先获取版本号
     if [ -n "$version_api" ]; then
-        version=$(curl -fsSL "$version_api" 2>/dev/null | jq -r '.version // .latest // empty' 2>/dev/null)
+        version=$(get_version_from_api "$version_api")
         if [ -z "$version" ]; then
             warn "$id: 无法获取版本号"
             return 1
@@ -275,10 +377,30 @@ preinstall_direct_download() {
         version=$(jq -r '.version // empty' "$manifest")
     fi
 
+    if [ -n "$jetbrains_code" ]; then
+        local jb_api_resp direct_url
+        jb_api_resp=$(retry_op 3 5 curl_retry "https://data.services.jetbrains.com/products/releases?code=${jetbrains_code}&latest=true&type=release")
+        if [ -z "$version" ]; then
+            version=$(echo "$jb_api_resp" | jq -r ".[\"${jetbrains_code}\"][0].version // empty" 2>/dev/null)
+        fi
+        if [ "$ARCH" = "arm64" ] || [ "$ARCH" = "aarch64" ]; then
+            direct_url=$(echo "$jb_api_resp" | jq -r ".[\"${jetbrains_code}\"][0].downloads.linuxARM64.link // empty" 2>/dev/null)
+        else
+            direct_url=$(echo "$jb_api_resp" | jq -r ".[\"${jetbrains_code}\"][0].downloads.linux.link // empty" 2>/dev/null)
+        fi
+        if [ -n "$direct_url" ] && [ "$direct_url" != "null" ]; then
+            download_url="$direct_url"
+        fi
+        log "$id: JetBrains ${jetbrains_code} version=${version}"
+    fi
+
+    if [ -z "$version" ] && [[ "$download_url" == *"{version}"* ]]; then
+        warn "$id: 无法获取版本号"
+        return 1
+    fi
+
     # 替换 URL 中的占位符
-    download_url=$(echo "$download_url" | sed "s/{version}/${version}/g")
-    download_url=$(echo "$download_url" | sed "s/{arch}/${arch_var}/g")
-    download_url=$(echo "$download_url" | sed "s/{arch_suffix}/${arch_suffix}/g")
+    download_url=$(replace_release_tokens "$download_url" "$version" "$arch_var" "$arch_suffix")
 
     install_dir="/opt/${id}"
     tmp="/tmp/preinstall-${id}"
@@ -288,12 +410,14 @@ preinstall_direct_download() {
 
     # 检测文件类型
     local file_type="unknown"
-    if [[ "$download_url" == *".AppImage" ]] || [[ "$download_url" == *"appimage" ]]; then
+    if [[ "$download_url" == *".AppImage"* ]] || [[ "$download_url" == *"appimage"* ]]; then
         file_type="appimage"
-    elif [[ "$download_url" == *".zip" ]]; then
+    elif [[ "$download_url" == *".zip"* ]]; then
         file_type="zip"
-    elif [[ "$download_url" == *".tar.gz" ]]; then
+    elif [[ "$download_url" == *".tar.gz"* ]]; then
         file_type="tar.gz"
+    elif [[ "$download_url" == *".deb"* ]]; then
+        file_type="deb"
     fi
 
     # GitHub URL 使用 API 下载
@@ -303,20 +427,23 @@ preinstall_direct_download() {
         if ! github_api_download "$(echo "$download_url" | sed 's|.*github.com/\([^/]*\)/\([^/]*\)/releases/download/.*|\1/\2|')" "$asset_name" "${tmp}.${file_type}"
         then
             # API 下载失败,尝试直接下载
-            if ! curl -fsSL "$download_url" -o "${tmp}.${file_type}"; then
+            if ! retry_op 3 5 curl_retry "$download_url" -o "${tmp}.${file_type}"; then
                 warn "$id: 下载失败"
                 return 1
             fi
         fi
     else
         # 非 GitHub URL,直接下载
-        if ! curl -fsSL -L "$download_url" -o "${tmp}.${file_type}"; then
+        if ! retry_op 3 5 curl_retry -L "$download_url" -o "${tmp}.${file_type}"; then
             warn "$id: 下载失败"
             return 1
         fi
     fi
 
-    mkdir -p "$install_dir"
+    if [ "$file_type" != "deb" ]; then
+        rm -rf "$install_dir"
+        mkdir -p "$install_dir"
+    fi
 
     case "$file_type" in
         appimage)
@@ -330,37 +457,84 @@ preinstall_direct_download() {
             }
             local extracted
             extracted=$(readlink -f /tmp/squashfs-root)
-            mv -f "$extracted"/* "$install_dir/" 2>/dev/null || mv -f "$extracted" "$install_dir/${id}"
+            mv -f "$extracted" "$install_dir/AppDir"
+            chmod -R a+rX "$install_dir/AppDir"
             rm -rf /tmp/squashfs-root /tmp/AppDir
             ;;
         zip)
             log "$id: 解压 zip"
-            if ! unzip -q "${tmp}.zip" -d "$install_dir"; then
+            local extract_tmp appimage_file extracted
+            extract_tmp="/tmp/preinstall-${id}-extract"
+            rm -rf "$extract_tmp"
+            mkdir -p "$extract_tmp"
+            if ! unzip -q "${tmp}.zip" -d "$extract_tmp"; then
                 warn "$id: zip 解压失败"
                 rm -f "${tmp}.zip"
+                rm -rf "$extract_tmp"
                 return 1
             fi
+
+            appimage_file=$(find "$extract_tmp" -maxdepth 2 -type f -name "*.AppImage" | head -1)
+            if [ -n "$appimage_file" ]; then
+                chmod +x "$appimage_file"
+                rm -rf /tmp/squashfs-root /tmp/AppDir
+                ( cd /tmp && "$appimage_file" --appimage-extract >/dev/null 2>&1 ) || {
+                    warn "$id: AppImage 解压失败"
+                    rm -f "${tmp}.zip"
+                    rm -rf "$extract_tmp"
+                    return 1
+                }
+                extracted=$(readlink -f /tmp/squashfs-root)
+                mv -f "$extracted" "$install_dir/AppDir"
+                chmod -R a+rX "$install_dir/AppDir"
+                rm -rf /tmp/squashfs-root /tmp/AppDir
+            else
+                mv "$extract_tmp"/* "$install_dir/"
+            fi
+
             # 如果 zip 里有单层目录,把内容提出来
             local files
             files=("$install_dir"/*)
-            if [ "${#files[@]}" -eq 1 ] && [ -d "${files[0]}" ]; then
+            if [ "${#files[@]}" -eq 1 ] && [ -d "${files[0]}" ] && [ "$(basename "${files[0]}")" != "AppDir" ]; then
                 mv "${files[0]}"/* "$install_dir/"
                 rmdir "${files[0]}"
             fi
+            rm -rf "$extract_tmp"
             ;;
         tar.gz)
             log "$id: 解压 tar.gz"
-            if ! tar -xzf "${tmp}.tar.gz" -C "$install_dir"; then
+            local extract_tmp extracted_dir extracted_file
+            extract_tmp="/tmp/preinstall-${id}-extract"
+            rm -rf "$extract_tmp"
+            mkdir -p "$extract_tmp"
+            if ! tar -xzf "${tmp}.tar.gz" -C "$extract_tmp"; then
                 warn "$id: tar.gz 解压失败"
                 rm -f "${tmp}.tar.gz"
+                rm -rf "$extract_tmp"
                 return 1
             fi
-            # 同样处理单层目录
-            local files
-            files=("$install_dir"/*)
-            if [ "${#files[@]}" -eq 1 ] && [ -d "${files[0]}" ]; then
-                mv "${files[0]}"/* "$install_dir/"
-                rmdir "${files[0]}"
+
+            extracted_dir=$(find "$extract_tmp" -mindepth 1 -maxdepth 1 -type d | head -1)
+            extracted_file=$(find "$extract_tmp" -mindepth 1 -maxdepth 1 -type f -perm -111 | head -1)
+            if [ -n "$extracted_dir" ]; then
+                mv "$extracted_dir"/* "$install_dir/"
+            elif [ -n "$extracted_file" ]; then
+                mv -f "$extracted_file" "$install_dir/${id}"
+                chmod +x "$install_dir/${id}"
+            else
+                warn "$id: tar.gz 中未找到目录或可执行文件"
+                rm -f "${tmp}.tar.gz"
+                rm -rf "$extract_tmp"
+                return 1
+            fi
+            rm -rf "$extract_tmp"
+            ;;
+        deb)
+            log "$id: apt install .deb"
+            if ! retry_op 3 5 apt-get install -y "${tmp}.deb"; then
+                warn "$id: apt install .deb 失败"
+                rm -f "${tmp}.deb"
+                return 1
             fi
             ;;
         *)
@@ -369,6 +543,35 @@ preinstall_direct_download() {
             return 1
             ;;
     esac
+
+    if [ ! -x "$bin" ] && [ -x "$install_dir/AppDir/AppRun" ]; then
+        mkdir -p "$(dirname "$bin")"
+        cat > "$bin" <<EOF
+#!/bin/bash
+exec "$install_dir/AppDir/AppRun" "\$@"
+EOF
+        chmod +x "$bin"
+    elif [ ! -x "$bin" ] && [ -x "$install_dir/${id}" ]; then
+        mkdir -p "$(dirname "$bin")"
+        ln -sfn "$install_dir/${id}" "$bin"
+    elif [ ! -x "$bin" ] && [ "$file_type" = "deb" ]; then
+        local actual_bin
+        actual_bin=$(dpkg -L "$pkg" 2>/dev/null | while IFS= read -r candidate; do
+            [ -f "$candidate" ] && [ -x "$candidate" ] || continue
+            candidate_name=$(basename "$candidate")
+            if [ "$candidate_name" = "$id" ] || [ "$candidate_name" = "$pkg" ] || [[ "$candidate_name" == *.sh ]]; then
+                echo "$candidate"
+                break
+            fi
+        done)
+        if [ -z "$actual_bin" ]; then
+            actual_bin=$(find /usr/bin /usr/share /opt -type f -perm -111 -path "*${id}*" 2>/dev/null | head -1)
+        fi
+        if [ -n "$actual_bin" ]; then
+            mkdir -p "$(dirname "$bin")"
+            ln -sfn "$actual_bin" "$bin"
+        fi
+    fi
 
     rm -f "${tmp}".*
 }
@@ -384,7 +587,7 @@ github_api_download() {
 
     # 获取 asset 的 API URL
     local asset_url
-    asset_url=$(curl -fsSL "https://api.github.com/repos/${repo}/releases/latest" \
+    asset_url=$(retry_op 3 5 curl_retry "https://api.github.com/repos/${repo}/releases/latest" \
         | jq -r --arg name "$asset_name" '.assets[] | select(.name == $name) | .url')
 
     if [ -z "$asset_url" ]; then
@@ -393,7 +596,7 @@ github_api_download() {
     fi
 
     # 使用 API 下载（需要 Accept: application/octet-stream header）
-    if ! curl -fsSL -H "Accept: application/octet-stream" "$asset_url" -o "$output"; then
+    if ! retry_op 3 5 curl_retry -H "Accept: application/octet-stream" "$asset_url" -o "$output"; then
         warn "GitHub API 下载失败: $asset_name"
         return 1
     fi
