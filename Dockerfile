@@ -202,7 +202,9 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
             && apt-get update && apt-get install -y ./google-chrome-stable_current_amd64.deb \
             && rm -f google-chrome-stable_current_amd64.deb; \
         else \
-            add-apt-repository -y ppa:xtradeb/apps \
+            for i in 1 2 3; do \
+                add-apt-repository -y ppa:xtradeb/apps && break || sleep 10; \
+            done \
             && apt-get update && apt-get install -y chromium; \
         fi \
         && apt-get clean && rm -rf /var/lib/apt/lists/*; \
