@@ -11,5 +11,5 @@ fi
 
 URL="http://127.0.0.1:10003?token=${TOKEN}"
 
-# 使用 --app 模式打开，隐藏菜单栏和地址栏
-exec chromium --app="$URL" "$@"
+# 使用 --app 模式打开，隐藏菜单栏和地址栏，并最大化窗口
+exec chromium --app="$URL" --start-maximized "$@"
