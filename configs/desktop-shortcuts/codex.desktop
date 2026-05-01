@@ -6,6 +6,6 @@ Comment[zh_CN]=OpenAI Codex CLI（首次点击触发按需安装）
 Exec=/usr/local/bin/webclaw-app-launcher codex
 Icon=/opt/on-demand-icons/codex.png
 Type=Application
-Terminal=true
+Terminal=false
 Categories=Development;Utility;
 StartupNotify=true

@@ -49,6 +49,7 @@ ubuntu ALL=(root) NOPASSWD: /bin/mv -f /tmp/squashfs-root /opt/ondemand-apps/*/A
 
 # r2_download / direct_download 模式: 安装到 /opt/<app-id> (WebClaw Launcher / Cursor 等)
 ubuntu ALL=(root) NOPASSWD: /bin/mkdir -p /opt/*
+ubuntu ALL=(root) NOPASSWD: /bin/mv -f /tmp/*-extract-*/* /opt/*/*
 ubuntu ALL=(root) NOPASSWD: /bin/cp -a /tmp/*-extract-*/*/. /opt/*/
 ubuntu ALL=(root) NOPASSWD: /bin/mv -f /tmp/squashfs-root /opt/*/AppDir
 ubuntu ALL=(root) NOPASSWD: /bin/mv -f /tmp/*-wrapper.sh /opt/*/*
