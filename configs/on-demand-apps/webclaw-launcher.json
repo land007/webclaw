@@ -2,7 +2,7 @@
   "id": "webclaw-launcher",
   "name": "WebClaw Launcher",
   "package": "webclaw-launcher",
-  "binary": "/opt/webclaw-launcher/webclaw-launcher",
+  "binary": "/opt/webclaw-launcher/AppDir/AppRun",
   "install_method": "direct_download",
   "version_api": "https://webclaw.qhkly.com/api/download/latest",
   "download_url": "https://launcher.qhkly.com/launcher/versions/v{version}/webclaw-launcher-linux-{arch}.zip",
