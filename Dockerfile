@@ -290,6 +290,7 @@ COPY scripts/start-dashboard.sh /opt/start-dashboard.sh
 COPY scripts/start-webtty.sh /opt/start-webtty.sh
 COPY scripts/start-openclaw.sh /opt/start-openclaw.sh
 COPY scripts/openclaw-browser.sh /usr/local/bin/openclaw-browser
+COPY scripts/code-server-browser.sh /usr/local/bin/code-server-browser
 COPY configs/desktop-shortcuts/ /tmp/desktop-shortcuts/
 COPY configs/desktop-icons/ /tmp/desktop-icons/
 COPY scripts/patch-novnc.sh /tmp/patch-novnc.sh
