@@ -74,8 +74,10 @@ RUN ARCH=$(dpkg --print-architecture) \
     && chown -R ubuntu:ubuntu /opt/code-server
 
 # ─── 4b. code-server language pack extensions ────────────────
+# 使用重试机制安装语言包，VS Code 扩展市场可能返回 502
 RUN mkdir -p /opt/code-server-extensions \
     && for i in 1 2 3 4 5; do \
+         success=true; \
          for ext in \
              MS-CEINTL.vscode-language-pack-zh-hans \
              MS-CEINTL.vscode-language-pack-ja \
@@ -83,9 +85,16 @@ RUN mkdir -p /opt/code-server-extensions \
              MS-CEINTL.vscode-language-pack-pt-BR \
              MS-CEINTL.vscode-language-pack-ko \
              MS-CEINTL.vscode-language-pack-de; do \
-           code-server --extensions-dir /opt/code-server-extensions --install-extension "$ext" || exit 1; \
-         done \
-         && break || (echo "Retry $i/5..." && sleep 10); \
+           if ! code-server --extensions-dir /opt/code-server-extensions --install-extension "$ext" 2>/dev/null; then \
+               success=false; \
+               echo "[Extension] Failed to install $ext (attempt $i/5)"; \
+           fi; \
+         done; \
+         if [ "$success" = true ]; then \
+             break; \
+         fi; \
+         echo "[Extension] Retrying in 10s..."; \
+         sleep 10; \
        done \
     && chown -R ubuntu:ubuntu /opt/code-server-extensions
 
