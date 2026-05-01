@@ -12,6 +12,10 @@
 #   - 单个应用失败软兜底,不拖垮整个 docker build;运行时 launcher 仍是 fallback
 #   - 构建期以 root 运行,跳过 sudo
 #
+# 环境变量:
+#   - PREINSTALL_SKIP: 逗号分隔的应用 ID 列表,这些应用将被跳过不预装
+#                       示例: PREINSTALL_SKIP=android-studio,blender,eclipse
+#
 # 注意: 此脚本只负责装,不修改 .desktop 文件、不动 /usr/local/bin/webclaw-app-launcher。
 
 set -u
@@ -21,6 +25,26 @@ ARCH=$(dpkg --print-architecture)
 
 log()  { echo "[preinstall] $*"; }
 warn() { echo "[preinstall] WARN: $*" >&2; }
+
+# ── 检查应用是否在跳过列表中 ────────────────────────────────────────
+is_skipped() {
+    local id="$1"
+    local skip_list="${PREINSTALL_SKIP:-}"
+    if [ -z "$skip_list" ]; then
+        return 1  # 不跳过
+    fi
+    # 将逗号分隔的列表转为空格分隔,然后检查
+    local skipped_ids
+    IFS=',' read -ra skipped_ids <<< "$skip_list"
+    for skipped_id in "${skipped_ids[@]}"; do
+        # 去除空格
+        skipped_id=$(echo "$skipped_id" | xargs)
+        if [ "$id" = "$skipped_id" ]; then
+            return 0  # 跳过
+        fi
+    done
+    return 1  # 不跳过
+}
 
 # ── curl 包装函数（带超时和重试）──────────────────────────────────────
 curl_retry() {
@@ -128,6 +152,8 @@ preinstall_apt() {
 
     # Wireshark 装后给 dumpcap 抓包能力 + 把 ubuntu 加入 wireshark 组
     if [ "$apt_pkg" = "wireshark" ]; then
+        # 先确保 wireshark 组存在（某些情况下 apt 安装不会自动创建）
+        groupadd -f wireshark
         usermod -a -G wireshark ubuntu || warn "$id: usermod failed"
         setcap cap_net_raw,cap_net_admin=ep /usr/bin/dumpcap || warn "$id: setcap failed"
     fi
@@ -622,6 +648,12 @@ for manifest in "$MANIFEST_DIR"/*.json; do
     pkg=$(jq -r '.package' "$manifest")
     bin=$(jq -r '.binary' "$manifest")
     install_method=$(jq -r '.install_method // "github_release"' "$manifest")
+
+    # 检查是否在跳过列表中
+    if is_skipped "$id"; then
+        log "$id: 在跳过列表中,跳过预装 (运行时仍可按需安装)"
+        continue
+    fi
 
     if already_installed "$install_method" "$pkg" "$bin"; then
         log "$id: 已安装,跳过"

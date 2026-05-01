@@ -57,7 +57,17 @@ RUN chmod +x /opt/enable-claudecodeui-platform-mode.sh && \
 # 把 configs/on-demand-apps/*.json 声明的应用按 manifest 装到与 webclaw-app-launcher
 # 期望一致的路径上,桌面图标首次点击就直接 exec,不再弹 zenity 安装框。
 # 单个应用预装失败会软兜底,运行时 launcher 仍是 fallback。
+#
+# 跳过超大软件包以减少构建时间和镜像大小:
+# - android-studio: ~1GB+
+# - intellij: ~600-800MB (JetBrains IDE)
+# - pycharm: ~600-800MB (JetBrains IDE)
+# - blender: ~500MB (3D建模)
+# - eclipse: ~200-300MB (IDE)
+# - trae: ~200MB (AI编程工具)
+# 这些应用运行时仍可通过桌面图标按需安装。
 COPY scripts/preinstall-on-demand.sh /opt/preinstall-on-demand.sh
-RUN chmod +x /opt/preinstall-on-demand.sh && /opt/preinstall-on-demand.sh
+RUN chmod +x /opt/preinstall-on-demand.sh && \
+    PREINSTALL_SKIP=android-studio,intellij,pycharm,blender,eclipse,trae /opt/preinstall-on-demand.sh
 
 #docker build -t land007/webclaw_full:latest .
