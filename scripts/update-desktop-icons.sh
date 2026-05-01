@@ -25,7 +25,7 @@ is_installed() {
     if [ "$install_method" = "appimage" ] || [ "$install_method" = "r2_download" ] || [ "$install_method" = "direct_download" ] || [ "$install_method" = "cursor_api" ]; then
         [ -x "$bin" ]
     else
-        dpkg -s "$pkg" >/dev/null 2>&1 && [ -x "$bin" ]
+        dpkg -s "$pkg" 2>/dev/null | grep -q "Status: install ok installed" && [ -x "$bin" ]
     fi
 }
 

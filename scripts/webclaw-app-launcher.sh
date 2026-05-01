@@ -89,7 +89,7 @@ is_app_installed() {
     if [ "$INSTALL_METHOD" = "appimage" ] || [ "$INSTALL_METHOD" = "r2_download" ] || [ "$INSTALL_METHOD" = "direct_download" ] || [ "$INSTALL_METHOD" = "cursor_api" ]; then
         [ -x "$BIN" ]
     else
-        dpkg -s "$PKG" >/dev/null 2>&1 && [ -x "$BIN" ]
+        dpkg -s "$PKG" 2>/dev/null | grep -q "Status: install ok installed" && [ -x "$BIN" ]
     fi
 }
 
@@ -103,7 +103,7 @@ is_app_present() {
     elif [ "$INSTALL_METHOD" = "r2_download" ] || [ "$INSTALL_METHOD" = "direct_download" ] || [ "$INSTALL_METHOD" = "cursor_api" ]; then
         [ -d "/opt/${APP_ID}" ]
     else
-        dpkg -s "$PKG" >/dev/null 2>&1
+        dpkg -s "$PKG" 2>/dev/null | grep -q "Status: install ok installed"
     fi
 }
 
@@ -737,7 +737,7 @@ EOF
                 --percentage=0 --auto-close --no-cancel --width=420
 
             # 验证安装结果（dpkg 包检查）
-            if dpkg -s "$PKG" >/dev/null 2>&1; then
+            if dpkg -s "$PKG" 2>/dev/null | grep -q "Status: install ok installed"; then
                 [ -x /usr/local/bin/update-desktop-icons ] && /usr/local/bin/update-desktop-icons
                 zenity --info \
                     --title="$NAME" \
@@ -1062,7 +1062,7 @@ if [ "$INSTALL_METHOD" = "appimage" ] || [ "$INSTALL_METHOD" = "r2_download" ] |
     fi
 else
     # apt/github_release: 检查 dpkg 包
-    if dpkg -s "$PKG" >/dev/null 2>&1; then
+    if dpkg -s "$PKG" 2>/dev/null | grep -q "Status: install ok installed"; then
         INSTALL_OK=1
     else
         INSTALL_OK=0
