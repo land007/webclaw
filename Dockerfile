@@ -207,7 +207,27 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
             && apt-get update && apt-get install -y ./google-chrome-stable_current_amd64.deb \
             && rm -f google-chrome-stable_current_amd64.deb; \
         else \
-            apt-get update && apt-get install -y --no-install-recommends chromium-browser; \
+            apt-get update \
+            && apt-get install -y --no-install-recommends debian-archive-keyring \
+            && printf '%s\n' \
+                'deb [arch=arm64 signed-by=/usr/share/keyrings/debian-archive-bookworm-stable.gpg] http://deb.debian.org/debian bookworm main' \
+                'deb [arch=arm64 signed-by=/usr/share/keyrings/debian-archive-bookworm-security-automatic.gpg] http://security.debian.org/debian-security bookworm-security main' \
+                > /etc/apt/sources.list.d/debian-bookworm-chromium.list \
+            && printf '%s\n' \
+                'Package: *' \
+                'Pin: release n=bookworm' \
+                'Pin-Priority: 100' \
+                '' \
+                'Package: *' \
+                'Pin: release n=bookworm-security' \
+                'Pin-Priority: 100' \
+                '' \
+                'Package: chromium chromium-common chromium-sandbox' \
+                'Pin: release n=bookworm-security' \
+                'Pin-Priority: 990' \
+                > /etc/apt/preferences.d/debian-chromium \
+            && apt-get update \
+            && apt-get install -y --no-install-recommends chromium chromium-common chromium-sandbox; \
         fi \
         && apt-get clean && rm -rf /var/lib/apt/lists/*; \
     fi
