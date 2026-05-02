@@ -127,6 +127,12 @@ download_with_progress() {
     total=$(curl -fsIL "$url" 2>>"$LOG" \
         | awk 'BEGIN{IGNORECASE=1} /^content-length:/ {gsub("\r","",$2); value=$2} END{print value}')
 
+    # 如果获取不到 Content-Length（可能是重定向 URL），尝试用 -L
+    if [ -z "$total" ] || [ "$total" -le 0 ] 2>/dev/null; then
+        total=$(curl -fsILL "$url" 2>>"$LOG" \
+            | awk 'BEGIN{IGNORECASE=1} /^content-length:/ {gsub("\r","",$2); value=$2} END{print value}')
+    fi
+
     rm -f "$output"
     curl -fsSL "$url" -o "$output" 2>>"$LOG" &
     curl_pid=$!
@@ -240,7 +246,8 @@ fi
 # 根据安装方法使用不同的检查方式
 if is_app_installed; then
     if [ "$REQUIRES_TERMINAL" = "true" ]; then
-        exec gnome-terminal -- "$BIN" "${DEFAULT_ARGS[@]}" "$@"
+        sudo -u ubuntu DISPLAY="$DISPLAY" gnome-terminal -- "$BIN" "${DEFAULT_ARGS[@]}" "$@" &
+        exit 0
     fi
     setsid "$BIN" "${DEFAULT_ARGS[@]}" "$@" </dev/null >/dev/null 2>&1 &
     exit 0
