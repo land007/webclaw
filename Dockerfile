@@ -209,6 +209,20 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         else \
             apt-get update \
             && apt-get install -y --no-install-recommends debian-archive-keyring libgtk-3-0 \
+            && mkdir -p /tmp/libgtk-3-0-dummy/DEBIAN \
+            && printf '%s\n' \
+                'Package: libgtk-3-0' \
+                'Version: 3.24.41-1.1' \
+                'Section: libs' \
+                'Priority: optional' \
+                'Architecture: arm64' \
+                'Depends: libgtk-3-0t64' \
+                'Maintainer: webclaw <noreply@example.com>' \
+                'Description: Compatibility package for Debian Chromium on Ubuntu noble' \
+                > /tmp/libgtk-3-0-dummy/DEBIAN/control \
+            && dpkg-deb --build /tmp/libgtk-3-0-dummy /tmp/libgtk-3-0-dummy.deb \
+            && dpkg -i /tmp/libgtk-3-0-dummy.deb \
+            && rm -rf /tmp/libgtk-3-0-dummy /tmp/libgtk-3-0-dummy.deb \
             && printf '%s\n' \
                 'deb [arch=arm64 signed-by=/usr/share/keyrings/debian-archive-bookworm-stable.gpg] http://deb.debian.org/debian bookworm main' \
                 'deb [arch=arm64 signed-by=/usr/share/keyrings/debian-archive-bookworm-security-automatic.gpg] http://security.debian.org/debian-security bookworm-security main' \
@@ -227,7 +241,8 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
                 'Pin-Priority: 990' \
                 > /etc/apt/preferences.d/debian-chromium \
             && apt-get update \
-            && apt-get install -y --no-install-recommends chromium chromium-common chromium-sandbox; \
+            && apt-get install -y --no-install-recommends chromium chromium-common chromium-sandbox \
+            && rm -f /etc/apt/sources.list.d/debian-bookworm-chromium.list /etc/apt/preferences.d/debian-chromium; \
         fi \
         && apt-get clean && rm -rf /var/lib/apt/lists/*; \
     fi
