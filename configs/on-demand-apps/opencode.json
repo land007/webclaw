@@ -1,0 +1,14 @@
+{
+  "id": "opencode",
+  "name": "OpenCode",
+  "package": "opencode",
+  "binary": "/usr/local/bin/opencode",
+  "install_method": "github_release",
+  "github_repo": "opencode-ai/opencode",
+  "asset_pattern": "opencode-linux-{arch}.deb",
+  "arch_map": {
+    "amd64": "amd64",
+    "arm64": "arm64"
+  },
+  "requires_terminal": true
+}
