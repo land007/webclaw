@@ -15,12 +15,16 @@
 # 环境变量:
 #   - PREINSTALL_SKIP: 逗号分隔的应用 ID 列表,这些应用将被跳过不预装
 #                       示例: PREINSTALL_SKIP=android-studio,blender,eclipse
+#   - PREINSTALL_MANIFEST_DIR: manifest 目录,默认 /opt/on-demand-apps
+#   - PREINSTALL_POSTINSTALL_BIN: 安装后置钩子,默认 /usr/local/bin/webclaw-app-postinstall
+#   - PREINSTALL_APT_UPDATE: 是否先 apt-get update,默认 true
 #
 # 注意: 此脚本只负责装,不修改 .desktop 文件、不动 /usr/local/bin/webclaw-app-launcher。
 
 set -u
 
-MANIFEST_DIR="/opt/on-demand-apps"
+MANIFEST_DIR="${PREINSTALL_MANIFEST_DIR:-/opt/on-demand-apps}"
+POSTINSTALL_BIN="${PREINSTALL_POSTINSTALL_BIN:-/usr/local/bin/webclaw-app-postinstall}"
 ARCH=$(dpkg --print-architecture)
 
 log()  { echo "[preinstall] $*"; }
@@ -82,7 +86,9 @@ retry_op() {
 }
 
 # ── 集中刷一次 apt 索引 ──────────────────────────────────────────────
-retry_op 3 5 apt-get update || warn "apt-get update 失败,后续 apt 安装可能失败"
+if [ "${PREINSTALL_APT_UPDATE:-true}" != "false" ]; then
+    retry_op 3 5 apt-get update || warn "apt-get update 失败,后续 apt 安装可能失败"
+fi
 
 get_github_latest_tag() {
     local repo="$1"
@@ -660,14 +666,19 @@ for manifest in "$MANIFEST_DIR"/*.json; do
         continue
     fi
 
+    installed=false
     case "$install_method" in
-        apt)            preinstall_apt            "$id" "$manifest" || warn "$id: 预装失败,运行时按需安装可兜底" ;;
-        github_release) preinstall_github_release "$id" "$manifest" || warn "$id: 预装失败,运行时按需安装可兜底" ;;
-        appimage)       preinstall_appimage       "$id" "$manifest" || warn "$id: 预装失败,运行时按需安装可兜底" ;;
-        cursor_api)     preinstall_cursor_api     "$id" "$manifest" || warn "$id: 预装失败,运行时按需安装可兜底" ;;
-        direct_download) preinstall_direct_download "$id" "$manifest" || warn "$id: 预装失败,运行时按需安装可兜底" ;;
-        *)              warn "$id: 未知 install_method=$install_method,跳过" ;;
+        apt)             preinstall_apt             "$id" "$manifest" && installed=true || warn "$id: 预装失败,运行时按需安装可兜底" ;;
+        github_release)  preinstall_github_release  "$id" "$manifest" && installed=true || warn "$id: 预装失败,运行时按需安装可兜底" ;;
+        appimage)        preinstall_appimage        "$id" "$manifest" && installed=true || warn "$id: 预装失败,运行时按需安装可兜底" ;;
+        cursor_api)      preinstall_cursor_api      "$id" "$manifest" && installed=true || warn "$id: 预装失败,运行时按需安装可兜底" ;;
+        direct_download) preinstall_direct_download "$id" "$manifest" && installed=true || warn "$id: 预装失败,运行时按需安装可兜底" ;;
+        *)               warn "$id: 未知 install_method=$install_method,跳过" ;;
     esac
+
+    if [ "$installed" = "true" ] && [ -x "$POSTINSTALL_BIN" ]; then
+        "$POSTINSTALL_BIN" "$id" || true
+    fi
 done
 
 log "完成,清理 apt 缓存"

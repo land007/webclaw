@@ -107,19 +107,22 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         && apt-get clean && rm -rf /var/lib/apt/lists/*; \
     fi
 
-# ─── 8. Input methods (fcitx 4 + multi-language support) ────────────
-# Note: intentionally NO --no-install-recommends here so fcitx pulls
-# in all frontends (gtk2/gtk3/xim), UI (classic), and IM modules.
+# ─── 8. Input methods (fcitx5 + multi-language support) ────────────
+# Include GTK4 frontend for modern apps such as Ghostty, plus XIM/GTK/Qt
+# frontends through fcitx5-frontend-all.
 #
-# Google 输入法系列：
-# - fcitx-googlepinyin: Google 拼音（中文）
-# - fcitx-mozc: Mozc（Google 日本开发的日语输入法）
-# - fcitx-hangul: 韩语输入法
+# 输入法：
+# - fcitx5-chinese-addons: 拼音等中文输入
+# - fcitx5-mozc: Mozc（日语）
+# - fcitx5-hangul: 韩语输入法
 RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         apt-get update && apt-get install -y \
-            fcitx fcitx-googlepinyin fcitx-pinyin fcitx-config-gtk \
-            fcitx-mozc fcitx-hangul \
+            fcitx5 fcitx5-frontend-all fcitx5-frontend-gtk4 fcitx5-config-qt \
+            fcitx5-chinese-addons fcitx5-mozc fcitx5-hangul \
             fonts-noto-cjk fonts-noto-cjk-extra \
+        && mkdir -p /usr/lib/gtk-4.0/4.0.0/immodules \
+        && ln -sfn /usr/lib/$(gcc -print-multiarch)/gtk-4.0/4.0.0/immodules/libim-fcitx5.so \
+            /usr/lib/gtk-4.0/4.0.0/immodules/libim-fcitx5.so \
         && apt-get clean && rm -rf /var/lib/apt/lists/*; \
     fi
 

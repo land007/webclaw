@@ -11,6 +11,7 @@ cleanup_desktop() {
     pkill -TERM -u "$(id -u)" -x gsd-xsettings 2>/dev/null || true
     pkill -TERM -u "$(id -u)" -x gsd-keyboard 2>/dev/null || true
     pkill -TERM -u "$(id -u)" -x fcitx 2>/dev/null || true
+    pkill -TERM -u "$(id -u)" -x fcitx5 2>/dev/null || true
     pkill -TERM -u "$(id -u)" -x at-spi-bus-launcher 2>/dev/null || true
     pkill -TERM -u "$(id -u)" -x at-spi2-registryd 2>/dev/null || true
     pkill -TERM -P "$current_pid" 2>/dev/null || true
@@ -33,7 +34,7 @@ else
     export LANGUAGE=zh_CN:zh
 fi
 
-# ─── XDG runtime dir (required by fcitx, dbus, etc.) ───────────────
+# ─── XDG runtime dir (required by fcitx5, dbus, etc.) ───────────────
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 mkdir -p "$XDG_RUNTIME_DIR"
 chmod 700 "$XDG_RUNTIME_DIR"
@@ -42,7 +43,7 @@ chmod 700 "$XDG_RUNTIME_DIR"
 export XCURSOR_THEME=Adwaita
 export XCURSOR_SIZE=24
 
-# ─── Input method (fcitx) ───────────────────────────────────────────
+# ─── Input method (fcitx5) ──────────────────────────────────────────
 export GTK_IM_MODULE=fcitx
 export QT_IM_MODULE=fcitx
 export XMODIFIERS=@im=fcitx
@@ -155,8 +156,8 @@ if [ -f "$THEME_FILE" ]; then
     /usr/local/bin/theme-switch "$INITIAL_THEME" >/dev/null 2>&1 &
 fi
 
-# ─── fcitx input method (start after panel so tray icon appears) ────
-fcitx -r 2>/dev/null &
+# ─── fcitx5 input method (start after panel so tray icon appears) ───
+fcitx5 -d --replace 2>/dev/null &
 
 # Keep session alive
 wait

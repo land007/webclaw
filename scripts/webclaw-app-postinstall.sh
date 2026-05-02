@@ -16,6 +16,24 @@ if [[ ! "$APP_ID" =~ ^[a-zA-Z0-9._-]+$ ]]; then
 fi
 
 case "$APP_ID" in
+    ghostty)
+        # Ghostty's bundled GTK4 scans /usr/lib/gtk-4.0 instead of the
+        # distro multiarch path, so expose the fcitx5 GTK4 module there.
+        MODULE=$(find /usr/lib -path '*/gtk-4.0/4.0.0/immodules/libim-fcitx5.so' ! -path '/usr/lib/gtk-4.0/*' -print -quit 2>/dev/null || true)
+        if [ -n "$MODULE" ]; then
+            mkdir -p /usr/lib/gtk-4.0/4.0.0/immodules
+            ln -sfn "$MODULE" /usr/lib/gtk-4.0/4.0.0/immodules/libim-fcitx5.so
+        fi
+
+        # Keep an AppDir-local link as a fallback for AppImages that do
+        # include their own module search path.
+        APPDIR=/opt/ondemand-apps/ghostty/AppDir
+        if [ -n "$MODULE" ] && [ -d "$APPDIR" ]; then
+            TARGET_DIR="$APPDIR/shared/lib/gtk-4.0/4.0.0/immodules"
+            mkdir -p "$TARGET_DIR"
+            ln -sfn "$MODULE" "$TARGET_DIR/libim-fcitx5.so"
+        fi
+        ;;
     wireshark)
         # wireshark-common 包安装时本应通过 dpkg-reconfigure 自动创建 wireshark 组并
         # setcap dumpcap；但 apt -y 在容器环境下 debconf 时序不稳定，常常没生效。

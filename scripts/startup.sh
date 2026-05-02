@@ -298,51 +298,68 @@ else
         echo "[startup] D-Bus system bus started"
     fi
 
-    # fcitx 4 configuration
-    FCITX_DIR=/home/ubuntu/.config/fcitx
+    # fcitx5 configuration
+    FCITX_DIR=/home/ubuntu/.config/fcitx5
     mkdir -p "$FCITX_DIR"
 
-    # fcitx 4 global config - hotkey to toggle Chinese input
+    # fcitx5 global config - hotkey to toggle input methods.
     cat > "$FCITX_DIR/config" <<'FCITX_EOF'
 [Hotkey]
-TriggerKey=CTRL_SPACE
-AltTriggerKey=SHIFT_SHIFT
-IMSwitchKey=False
+TriggerKeys=Control+space
+AltTriggerKeys=Shift_L+Shift_R
+EnumerateWithTriggerKeys=True
+EnumerateSkipFirst=False
+EnumerateGroupForwardKeys=
+EnumerateGroupBackwardKeys=
+ActivateKeys=
+DeactivateKeys=
+PrevPage=
+NextPage=
+PrevCandidate=
+NextCandidate=
+TogglePreedit=
 FCITX_EOF
 
-    # fcitx 4 profile - multi-language input methods (fcitx 4 format, NOT fcitx5)
-    # IMName: the IM to activate on trigger; EnabledIM/IMOrder: IM list
+    # fcitx5 profile - multi-language input methods.
     if [ ! -f "$FCITX_DIR/profile" ]; then
-        # Build input method list based on installed packages
-        ENABLED_IM="keyboard-us:1"
-        IM_ORDER="keyboard-us:1"
+        ITEMS='[Groups/0/Items/0]
+Name=keyboard-us
+Layout=
+'
+        ITEM_INDEX=1
 
-        # Smart input engines (Chinese, Japanese, Korean)
-        for im in googlepinyin pinyin mozc hangul; do
-            if dpkg -l "fcitx-$im" 2>/dev/null | grep -q '^ii'; then
-                ENABLED_IM="$im,${ENABLED_IM}"
-                IM_ORDER="$im,${IM_ORDER}"
+        # Smart input engines (Chinese, Japanese, Korean). Keep Chinese first.
+        for im in pinyin mozc hangul; do
+            if dpkg -l "fcitx5-$im" 2>/dev/null | grep -q '^ii' || \
+               { [ "$im" = "pinyin" ] && dpkg -l fcitx5-chinese-addons 2>/dev/null | grep -q '^ii'; }; then
+                ITEMS="${ITEMS}
+[Groups/0/Items/${ITEM_INDEX}]
+Name=${im}
+Layout=
+"
+                ITEM_INDEX=$((ITEM_INDEX + 1))
             fi
         done
 
-        # Default to googlepinyin if available, otherwise first available IM
-        if dpkg -l fcitx-googlepinyin 2>/dev/null | grep -q '^ii'; then
-            DEFAULT_IM=googlepinyin
-        elif dpkg -l fcitx-pinyin 2>/dev/null | grep -q '^ii'; then
+        if dpkg -l fcitx5-chinese-addons 2>/dev/null | grep -q '^ii'; then
             DEFAULT_IM=pinyin
-        elif dpkg -l fcitx-mozc 2>/dev/null | grep -q '^ii'; then
+        elif dpkg -l fcitx5-mozc 2>/dev/null | grep -q '^ii'; then
             DEFAULT_IM=mozc
-        elif dpkg -l fcitx-hangul 2>/dev/null | grep -q '^ii'; then
+        elif dpkg -l fcitx5-hangul 2>/dev/null | grep -q '^ii'; then
             DEFAULT_IM=hangul
         else
             DEFAULT_IM=keyboard-us
         fi
 
         cat > "$FCITX_DIR/profile" <<FCITX_PROFILE_EOF
-[Profile]
-IMName=${DEFAULT_IM}
-EnabledIM=${ENABLED_IM}
-IMOrder=${IM_ORDER}
+[Groups/0]
+Name=Default
+Default Layout=us
+DefaultIM=${DEFAULT_IM}
+
+${ITEMS}
+[GroupOrder]
+0=Default
 FCITX_PROFILE_EOF
     fi
 

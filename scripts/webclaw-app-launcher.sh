@@ -245,11 +245,24 @@ fi
 # 已装 -> 直接启动,setsid 脱离终端避免阻塞 dbus-launch 等
 # 根据安装方法使用不同的检查方式
 if is_app_installed; then
+    # 确保输入法环境变量被传递（fcitx5 前端模块仍使用 fcitx 这个值）
+    export GTK_IM_MODULE=${GTK_IM_MODULE:-fcitx}
+    export QT_IM_MODULE=${QT_IM_MODULE:-fcitx}
+    export XMODIFIERS=${XMODIFIERS:-@im=fcitx}
+
     if [ "$REQUIRES_TERMINAL" = "true" ]; then
-        sudo -u ubuntu DISPLAY="$DISPLAY" gnome-terminal -- "$BIN" "${DEFAULT_ARGS[@]}" "$@" &
+        sudo -u ubuntu DISPLAY="$DISPLAY" \
+            GTK_IM_MODULE="$GTK_IM_MODULE" \
+            QT_IM_MODULE="$QT_IM_MODULE" \
+            XMODIFIERS="$XMODIFIERS" \
+            gnome-terminal -- "$BIN" "${DEFAULT_ARGS[@]}" "$@" &
         exit 0
     fi
-    setsid "$BIN" "${DEFAULT_ARGS[@]}" "$@" </dev/null >/dev/null 2>&1 &
+    setsid env \
+        GTK_IM_MODULE="$GTK_IM_MODULE" \
+        QT_IM_MODULE="$QT_IM_MODULE" \
+        XMODIFIERS="$XMODIFIERS" \
+        "$BIN" "${DEFAULT_ARGS[@]}" "$@" </dev/null >/dev/null 2>&1 &
     exit 0
 fi
 
@@ -478,6 +491,10 @@ EOF
             # 清理临时文件
             rm -f "$APPIMAGE_TMP"
             rm -rf /tmp/squashfs-root
+
+            echo "90"
+            echo "# 正在配置..."
+            sudo /usr/local/bin/webclaw-app-postinstall "$APP_ID" >>"$LOG" 2>&1 || true
 
             echo "100"
             echo "# 完成"
