@@ -208,7 +208,7 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
             && rm -f google-chrome-stable_current_amd64.deb; \
         else \
             apt-get update \
-            && apt-get install -y --no-install-recommends debian-archive-keyring \
+            && apt-get install -y --no-install-recommends debian-archive-keyring libgtk-3-0 \
             && printf '%s\n' \
                 'deb [arch=arm64 signed-by=/usr/share/keyrings/debian-archive-bookworm-stable.gpg] http://deb.debian.org/debian bookworm main' \
                 'deb [arch=arm64 signed-by=/usr/share/keyrings/debian-archive-bookworm-security-automatic.gpg] http://security.debian.org/debian-security bookworm-security main' \
