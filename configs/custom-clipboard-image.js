@@ -267,12 +267,13 @@
     document.__webclawTextClipboardPasteBridge = true;
     document.addEventListener('paste', handleBrowserPaste, true);
 
-    // 监听 Cmd+V / Ctrl+V，从 Mac 剪贴板同步到容器
+    // 监听 Ctrl+V / Ctrl+Shift+V，都从 Mac 剪贴板同步到容器
     let lastCtrlVTime = 0;
     document.addEventListener('keydown', async (e) => {
       const isCmdOrCtrl = e.metaKey || e.ctrlKey;
       const isVKey = e.key === 'v' || e.key === 'V';
 
+      // Ctrl+V 或 Ctrl+Shift+V，都处理
       if (isCmdOrCtrl && isVKey) {
         const now = Date.now();
         if (now - lastCtrlVTime < 500) {
@@ -282,27 +283,45 @@
         }
         lastCtrlVTime = now;
 
-        // 阻止原始按键，等我们同步完成后再发送
+        // 阻止原始按键，等我们同步完成后再发送对应的按键
         e.preventDefault();
         e.stopPropagation();
 
         try {
           const text = await navigator.clipboard.readText();
           if (text && text.trim()) {
-            console.log('[clipboard] Ctrl+V detected, syncing Mac clipboard: ' + text.substring(0, 30));
-            
+            const keyName = e.shiftKey ? 'Ctrl+Shift+V' : 'Ctrl+V';
+            console.log('[clipboard] ' + keyName + ' detected, syncing Mac clipboard: ' + text.substring(0, 30));
+
             // 同步到容器剪贴板
             await fetch(getClipboardTextApiUrl(), {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ text })
             });
-            
-            console.log('[clipboard] ✓ Synced, sending Ctrl+V to container');
-            
-            // 等待 xclip 完成，然后手动发送 Ctrl+V 到容器
+
+            console.log('[clipboard] ✓ Synced, sending ' + keyName + ' to container');
+
+            // 等待 xclip 完成，然后手动发送对应的按键到容器
             setTimeout(() => {
-              sendCtrlVToContainer();
+              if (e.shiftKey) {
+                // 发送 Ctrl+Shift+V
+                const rfb = getRfb();
+                if (rfb && typeof rfb.sendKey === 'function') {
+                  const XK_Control_L = 0xffe3;
+                  const XK_Shift_L = 0xffe1;
+                  const XK_V = 0x0076;
+                  rfb.sendKey(XK_Control_L, 'ControlLeft', true);
+                  rfb.sendKey(XK_Shift_L, 'ShiftLeft', true);
+                  rfb.sendKey(XK_V, 'KeyV', true);
+                  rfb.sendKey(XK_V, 'KeyV', false);
+                  rfb.sendKey(XK_Shift_L, 'ShiftLeft', false);
+                  rfb.sendKey(XK_Control_L, 'ControlLeft', false);
+                }
+              } else {
+                // 发送 Ctrl+V
+                sendCtrlVToContainer();
+              }
             }, 100);
           }
         } catch (err) {
