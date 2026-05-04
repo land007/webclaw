@@ -53,9 +53,8 @@ eval $(dbus-launch --sh-syntax)
 export DBUS_SESSION_BUS_ADDRESS
 
 # ─── Terminal clipboard shortcuts ───────────────────────────────────
-# Keep Ctrl+C as terminal interrupt, but make Ctrl+V paste work for the
-# noVNC clipboard bridge and Mac-style paste muscle memory.
-gsettings set org.gnome.Terminal.Legacy.Keybindings:/org/gnome/terminal/legacy/keybindings/ copy '<Control><Shift>c' 2>/dev/null || true
+# Make Ctrl+V paste work for the noVNC clipboard bridge and Mac-style paste.
+# (Ctrl+Shift+C copy is already the default, no need to set it)
 gsettings set org.gnome.Terminal.Legacy.Keybindings:/org/gnome/terminal/legacy/keybindings/ paste '<Control>v' 2>/dev/null || true
 
 # ─── GNOME Keyring (empty password for Chrome) ────────────────────────
