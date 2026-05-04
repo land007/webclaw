@@ -497,11 +497,9 @@
       return { supported: false };
     }
 
-    // 尝试读取剪贴板测试权限
-    try {
-      await navigator.clipboard.readText();
-    } catch (err) {
-      // 任何错误都视为不可用
+    // 检查基本 API 方法是否存在
+    if (typeof navigator.clipboard.readText !== 'function' ||
+        typeof navigator.clipboard.writeText !== 'function') {
       return { supported: false };
     }
 
