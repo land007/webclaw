@@ -275,6 +275,11 @@
 
       // Ctrl+V 或 Ctrl+Shift+V，都处理
       if (isCmdOrCtrl && isVKey) {
+        // 如果焦点在输入元素内，让浏览器正常处理
+        if (isEditableElement(e.target)) {
+          return; // 不拦截，让浏览器原生粘贴
+        }
+
         const now = Date.now();
         if (now - lastCtrlVTime < 500) {
           e.preventDefault();
