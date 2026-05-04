@@ -484,13 +484,45 @@
     return true;
   }
 
-  function init() {
-    console.log('[clipboard] 初始化 Mac↔容器 图片按钮');
-    initTextClipboardBridge();
-    if (!navigator.clipboard || !navigator.clipboard.read || !navigator.clipboard.write) {
-      console.warn('[clipboard] 浏览器不支持剪贴板 API，按钮未注入');
-      return;
+  async function checkClipboardSupport() {
+    // 检查剪贴板 API 是否真的可用
+    if (!navigator.clipboard) {
+      return { supported: false };
     }
+
+    const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    const isHttps = location.protocol === 'https:';
+
+    if (!isLocalhost && !isHttps) {
+      return { supported: false };
+    }
+
+    // 尝试读取剪贴板测试权限
+    try {
+      await navigator.clipboard.readText();
+    } catch (err) {
+      // 任何错误都视为不可用
+      return { supported: false };
+    }
+
+    return { supported: true };
+  }
+
+  async function init() {
+    console.log('[clipboard] 初始化 Mac↔容器 剪贴板同步');
+
+    // 先检测剪贴板 API 是否可用
+    const check = await checkClipboardSupport();
+    if (!check.supported) {
+      const protocol = location.protocol;
+      const host = location.hostname;
+      console.warn('[clipboard] ⚠️ 剪贴板 API 不可用，需要 HTTPS 或 localhost 访问', `当前访问: ${protocol}//${host}`);
+      return; // 静默失败，不初始化功能
+    }
+
+    console.log('[clipboard] ✓ 剪贴板 API 可用');
+    initTextClipboardBridge();
+
     // noVNC 的 #noVNC_clipboard 是 vnc.html 静态 DOM，DOMContentLoaded 后即可拿到。
     // 但脚本以 defer/end-of-body 形式加载，部分时序下 panel 可能晚到，做一次小重试。
     if (injectButtons()) {
