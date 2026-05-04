@@ -52,6 +52,12 @@ export XMODIFIERS=@im=fcitx
 eval $(dbus-launch --sh-syntax)
 export DBUS_SESSION_BUS_ADDRESS
 
+# ─── Terminal clipboard shortcuts ───────────────────────────────────
+# Keep Ctrl+C as terminal interrupt, but make Ctrl+V paste work for the
+# noVNC clipboard bridge and Mac-style paste muscle memory.
+gsettings set org.gnome.Terminal.Legacy.Keybindings:/org/gnome/terminal/legacy/keybindings/ copy '<Control><Shift>c' 2>/dev/null || true
+gsettings set org.gnome.Terminal.Legacy.Keybindings:/org/gnome/terminal/legacy/keybindings/ paste '<Control>v' 2>/dev/null || true
+
 # ─── GNOME Keyring (empty password for Chrome) ────────────────────────
 # Auto-unlock keyring with empty password so Chrome doesn't prompt
 if ! pgrep -x gnome-keyring-daemon >/dev/null; then

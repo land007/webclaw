@@ -16,6 +16,8 @@ const path = require('path');
 const app = express();
 const PORT = 10009;
 
+app.use(express.json({ limit: '2mb' }));
+
 // 配置 multer 处理文件上传
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -36,6 +38,62 @@ const upload = multer({
 // 健康检查端点
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'clipboard-server' });
+});
+
+// 文本剪贴板 API：作为 noVNC 原生 clipboard 通道的兜底。
+// GET 只读取 X11 CLIPBOARD，不修改容器剪贴板。
+app.get('/api/clipboard-text', (req, res) => {
+  const child = spawn('xclip', ['-selection', 'clipboard', '-target', 'UTF8_STRING', '-o']);
+  const chunks = [];
+  child.stdout.on('data', (b) => chunks.push(b));
+  child.stderr.on('data', () => {});
+  child.on('error', () => res.status(500).json({ error: '读取文本剪贴板失败' }));
+  child.on('close', (code) => {
+    if (code !== 0 || chunks.length === 0) return res.status(404).json({ error: '没有文本剪贴板内容' });
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ text: Buffer.concat(chunks).toString('utf8') });
+  });
+});
+
+// POST 写入容器 X11 文本剪贴板。图片接口仍独立使用 image/png，避免格式互相误判。
+app.post('/api/clipboard-text', async (req, res) => {
+  const text = typeof req.body?.text === 'string' ? req.body.text : '';
+  if (!text) {
+    return res.status(400).json({
+      error: '没有文本内容',
+      code: 'NO_TEXT'
+    });
+  }
+  if (Buffer.byteLength(text, 'utf8') > 1024 * 1024) {
+    return res.status(400).json({
+      error: '文本过大（最大 1MB）',
+      code: 'TEXT_TOO_LARGE'
+    });
+  }
+
+  const tempFileName = `clipboard-text-${Date.now()}.txt`;
+  const tempPath = path.join('/tmp', tempFileName);
+
+  try {
+    await fs.writeFile(tempPath, text, 'utf8');
+    const child = spawn('xclip',
+      ['-selection', 'clipboard', '-target', 'UTF8_STRING', '-i', tempPath],
+      { detached: true, stdio: 'ignore' });
+    child.unref();
+
+    setTimeout(() => {
+      fs.unlink(tempPath).catch(err => {
+        if (err.code !== 'ENOENT') {
+          console.warn(`[clipboard] 清理文本临时文件失败: ${err.message}`);
+        }
+      });
+    }, 5000);
+
+    res.json({ success: true, message: '文本已同步到剪贴板', size: Buffer.byteLength(text, 'utf8') });
+  } catch (error) {
+    console.error('[clipboard] 文本剪贴板写入失败:', error);
+    res.status(500).json({ error: '写入文本剪贴板失败', code: 'XCLIP_ERROR' });
+  }
 });
 
 // 反向：读取容器当前 X11 剪贴板里的 image/png

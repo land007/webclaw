@@ -2,13 +2,15 @@
  * custom-clipboard-image.js
  *
  * Mac↔容器 图片同步：双按钮注入到 noVNC 自带 Clipboard 面板。
- * 不监听 Ctrl+V / Ctrl+C —— 全部按键交给 noVNC 原生，
- * 容器内复制粘贴和终端 Ctrl+C 中断永不被脚本污染。
+ * Mac↔容器 文本同步：复用 noVNC 原生 RFB clipboard 文本通道。
+ * 不监听 Ctrl+C —— 容器内 Ctrl+C 和终端中断永不被脚本污染。
  *
  * 按钮 A：把 Mac 剪贴板里的图片粘到容器
  * 按钮 B：把容器剪贴板里的图片拷到 Mac
  *
- * Mac↔容器 文本同步：用 noVNC 原生 textarea。
+ * Mac↔容器 文本同步：
+ * - 容器复制文本后，自动尝试写入 Mac 系统剪贴板。
+ * - Mac 在 noVNC 页面粘贴文本时，写入容器剪贴板并主动粘贴到当前焦点。
  */
 
 (function() {
@@ -31,7 +33,10 @@
       no_image_in_container: '容器剪贴板没有图片',
       copied_to_mac: '✓ 已拷到 Mac 剪贴板',
       copy_failed: '✗ 拷贝失败：',
-      api_unsupported: '浏览器不支持剪贴板 API'
+      api_unsupported: '浏览器不支持剪贴板 API',
+      text_copied_to_mac: '✓ 文本已同步到 Mac 剪贴板',
+      text_clipboard_blocked: '文本已到 noVNC 剪贴板面板，浏览器未授权写入 Mac 剪贴板',
+      text_pasted_to_container: '✓ 文本已粘到容器'
     },
     'en': {
       btn_mac_to_container: '📋 Paste Mac image into container',
@@ -48,10 +53,16 @@
       no_image_in_container: 'No image in container clipboard',
       copied_to_mac: '✓ Copied to Mac clipboard',
       copy_failed: '✗ Copy failed: ',
-      api_unsupported: 'Browser does not support Clipboard API'
+      api_unsupported: 'Browser does not support Clipboard API',
+      text_copied_to_mac: '✓ Text synced to Mac clipboard',
+      text_clipboard_blocked: 'Text is in the noVNC clipboard panel. Browser permission blocked Mac clipboard write',
+      text_pasted_to_container: '✓ Text pasted to container'
     }
   };
   const T = (navigator.language || 'en').toLowerCase().startsWith('zh') ? I18N.zh : I18N.en;
+  let lastTextSentToContainer = '';
+  let lastTextCopiedToMac = '';
+  let lastTextSeenFromContainer = '';
 
   const loading = document.getElementById('clipboard-loading') || createLoadingElement();
 
@@ -95,6 +106,11 @@
     return location.protocol + '//' + location.host + basePath + 'api/clipboard-image';
   }
 
+  function getClipboardTextApiUrl() {
+    const basePath = location.pathname.match(/\/proxy\/10004\//) ? '/proxy/10009/' : '/';
+    return location.protocol + '//' + location.host + basePath + 'api/clipboard-text';
+  }
+
   async function uploadImageToServer(blob) {
     const formData = new FormData();
     formData.append('image', blob, 'pasted-image.png');
@@ -121,6 +137,194 @@
     rfb.sendKey(XK_V, 'KeyV', true);
     rfb.sendKey(XK_V, 'KeyV', false);
     rfb.sendKey(XK_Control_L, 'ControlLeft', false);
+  }
+
+  function getRfb() {
+    return (window.UI && window.UI.rfb) || window.rfb || null;
+  }
+
+  function isEditableElement(el) {
+    if (!el) return false;
+    const tag = (el.tagName || '').toLowerCase();
+    return tag === 'textarea' || tag === 'input' || el.isContentEditable;
+  }
+
+  function setNoVncClipboardText(text) {
+    const textarea = document.getElementById('noVNC_clipboard_text');
+    if (textarea) {
+      textarea.value = text;
+    }
+  }
+
+  async function writeTextToMacClipboard(text) {
+    if (!text || !navigator.clipboard || !navigator.clipboard.writeText) {
+      return false;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      lastTextCopiedToMac = text;
+      return true;
+    } catch (err) {
+      console.warn('[clipboard] text write to Mac clipboard blocked:', err && err.message);
+      return false;
+    }
+  }
+
+  function sendTextToContainerClipboard(text) {
+    const rfb = getRfb();
+    if (!rfb || typeof rfb.clipboardPasteFrom !== 'function') {
+      throw new Error('noVNC RFB 剪贴板不可用');
+    }
+    lastTextSentToContainer = text;
+    setNoVncClipboardText(text);
+    rfb.clipboardPasteFrom(text);
+  }
+
+  async function writeTextToContainerClipboard(text) {
+    const response = await fetch(getClipboardTextApiUrl(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: '写入文本剪贴板失败' }));
+      throw new Error(error.error || '写入文本剪贴板失败');
+    }
+  }
+
+  async function syncTextToContainer(text) {
+    try {
+      sendTextToContainerClipboard(text);
+    } catch (err) {
+      console.warn('[clipboard] noVNC text clipboard failed, falling back to xclip:', err && err.message);
+      await writeTextToContainerClipboard(text);
+      lastTextSentToContainer = text;
+      setNoVncClipboardText(text);
+    }
+  }
+
+  async function handleRfbClipboardText(e) {
+    const text = e && e.detail && typeof e.detail.text === 'string' ? e.detail.text : '';
+    if (!text || text === lastTextSentToContainer || text === lastTextCopiedToMac) {
+      return;
+    }
+
+    lastTextSeenFromContainer = text;
+    await syncTextFromContainerToMac(text);
+  }
+
+  async function syncTextFromContainerToMac(text) {
+    setNoVncClipboardText(text);
+    const ok = await writeTextToMacClipboard(text);
+    if (!ok) {
+      showLoading(T.text_clipboard_blocked, 'error');
+      hideLoading();
+    }
+  }
+
+  async function handleBrowserPaste(e) {
+    if (isEditableElement(e.target) && e.target.id !== 'noVNC_canvas') {
+      return;
+    }
+    const text = e.clipboardData && e.clipboardData.getData('text/plain');
+    if (!text) {
+      return;
+    }
+
+    try {
+      e.preventDefault();
+      e.stopPropagation();
+      await syncTextToContainer(text);
+      setTimeout(sendCtrlVToContainer, 80);
+      showLoading(T.text_pasted_to_container, 'success');
+      hideLoading();
+    } catch (err) {
+      console.warn('[clipboard] Mac text paste to container failed:', err && err.message);
+    }
+  }
+
+  async function pollContainerTextClipboard() {
+    try {
+      const resp = await fetch(getClipboardTextApiUrl(), { method: 'GET', cache: 'no-store' });
+      if (resp.status === 404) return;
+      if (!resp.ok) throw new Error('GET ' + resp.status);
+      const data = await resp.json();
+      const text = typeof data.text === 'string' ? data.text : '';
+      if (!text || text === lastTextSeenFromContainer || text === lastTextSentToContainer || text === lastTextCopiedToMac) {
+        return;
+      }
+      lastTextSeenFromContainer = text;
+      await syncTextFromContainerToMac(text);
+    } catch (err) {
+      console.warn('[clipboard] text clipboard polling failed:', err && err.message);
+    }
+  }
+
+  function initTextClipboardBridge() {
+    if (document.__webclawTextClipboardPasteBridge) {
+      return;
+    }
+    document.__webclawTextClipboardPasteBridge = true;
+    document.addEventListener('paste', handleBrowserPaste, true);
+
+    // 监听 Cmd+V / Ctrl+V，从 Mac 剪贴板同步到容器
+    let lastCtrlVTime = 0;
+    document.addEventListener('keydown', async (e) => {
+      const isCmdOrCtrl = e.metaKey || e.ctrlKey;
+      const isVKey = e.key === 'v' || e.key === 'V';
+
+      if (isCmdOrCtrl && isVKey) {
+        const now = Date.now();
+        if (now - lastCtrlVTime < 500) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        lastCtrlVTime = now;
+
+        // 阻止原始按键，等我们同步完成后再发送
+        e.preventDefault();
+        e.stopPropagation();
+
+        try {
+          const text = await navigator.clipboard.readText();
+          if (text && text.trim()) {
+            console.log('[clipboard] Ctrl+V detected, syncing Mac clipboard: ' + text.substring(0, 30));
+            
+            // 同步到容器剪贴板
+            await fetch(getClipboardTextApiUrl(), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ text })
+            });
+            
+            console.log('[clipboard] ✓ Synced, sending Ctrl+V to container');
+            
+            // 等待 xclip 完成，然后手动发送 Ctrl+V 到容器
+            setTimeout(() => {
+              sendCtrlVToContainer();
+            }, 100);
+          }
+        } catch (err) {
+          console.warn('[clipboard] Sync failed:', err && err.message);
+        }
+      }
+    }, true);
+    let tries = 0;
+    const timer = setInterval(() => {
+      const rfb = getRfb();
+      if (rfb && typeof rfb.addEventListener === 'function') {
+        if (!rfb.__webclawTextClipboardBridge) {
+          rfb.addEventListener('clipboard', handleRfbClipboardText);
+          rfb.__webclawTextClipboardBridge = true;
+          console.log('[clipboard] 文本剪贴板桥已启用');
+        }
+        clearInterval(timer);
+      } else if (++tries >= 50) {
+        clearInterval(timer);
+        console.warn('[clipboard] RFB 未就绪，文本剪贴板桥未启用');
+      }
+    }, 200);
   }
 
   async function readImageFromMacClipboard() {
@@ -263,6 +467,7 @@
 
   function init() {
     console.log('[clipboard] 初始化 Mac↔容器 图片按钮');
+    initTextClipboardBridge();
     if (!navigator.clipboard || !navigator.clipboard.read || !navigator.clipboard.write) {
       console.warn('[clipboard] 浏览器不支持剪贴板 API，按钮未注入');
       return;
