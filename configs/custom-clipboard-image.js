@@ -19,9 +19,9 @@
   // 轻量 i18n：按浏览器语言选中/英文。zh 系列走中文，其余走英文。
   const I18N = {
     'zh': {
-      btn_mac_to_container: '📋 把本地内容粘到容器',
+      btn_mac_to_container: '粘贴',
       btn_mac_to_container_title: '自动检测图片或文字，一键粘贴到容器当前焦点',
-      btn_container_to_mac: '📥 把容器内容拷到本地',
+      btn_container_to_mac: '拷贝',
       btn_container_to_mac_title: '自动检测图片或文字，一键拷贝到本地剪贴板',
       read_mac_failed: '✗ 读取本地剪贴板失败：',
       no_image_in_mac: '本地剪贴板没有图片',
@@ -41,9 +41,9 @@
       no_content_container: '容器剪贴板没有内容'
     },
     'en': {
-      btn_mac_to_container: '📋 Paste local content to container',
+      btn_mac_to_container: 'Paste',
       btn_mac_to_container_title: 'Auto-detect image or text, paste to container focus in one click',
-      btn_container_to_mac: '📥 Copy container content to local',
+      btn_container_to_mac: 'Copy',
       btn_container_to_mac_title: 'Auto-detect image or text, copy to local clipboard in one click',
       read_mac_failed: '✗ Failed to read local clipboard: ',
       no_image_in_mac: 'No image in local clipboard',
@@ -214,7 +214,8 @@
 
     try {
       await syncTextToContainer(text);
-      setTimeout(sendCtrlVToContainer, 80);
+      await new Promise(resolve => setTimeout(resolve, 200));
+      sendCtrlVToContainer();
       showLoading(T.text_pasted_to_container, 'success');
       hideLoading();
       return true;
@@ -226,13 +227,6 @@
     }
   }
 
-  function hideImagePreview() {
-    const preview = document.querySelector('.clipboard-image-preview');
-    if (preview) {
-      preview.style.display = 'none';
-    }
-  }
-
   function clearTextarea() {
     const textarea = document.getElementById('noVNC_clipboard_text');
     if (textarea) {
@@ -240,85 +234,11 @@
     }
   }
 
-  function injectImagePreview() {
-    const panel = document.getElementById('noVNC_clipboard');
-    if (!panel) return false;
-    if (panel.querySelector('.clipboard-image-preview')) return true;
-
-    const textarea = document.getElementById('noVNC_clipboard_text');
-    if (!textarea) return false;
-
-    const preview = document.createElement('div');
-    preview.className = 'clipboard-image-preview';
-    preview.style.cssText = `
-      margin-bottom: 10px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      background: #f5f5f5;
-      display: none;
-    `;
-
-    const img = document.createElement('img');
-    img.id = 'noVNC_clipboard_image_preview';
-    img.style.cssText = `
-      max-width: 100%;
-      max-height: 200px;
-      display: block;
-      margin: 0 auto;
-      border-radius: 4px;
-    `;
-
-    preview.appendChild(img);
-    textarea.parentNode.insertBefore(preview, textarea);
-    return true;
-  }
-
-  let lastImagePreviewUrl = null;
-
-  async function updateImagePreview() {
-    try {
-      const resp = await fetch(getClipboardApiUrl(), { method: 'GET' });
-      if (resp.ok) {
-        const blob = await resp.blob();
-        if (blob && blob.size > 0) {
-          const img = document.getElementById('noVNC_clipboard_image_preview');
-          if (img) {
-            if (lastImagePreviewUrl) {
-              URL.revokeObjectURL(lastImagePreviewUrl);
-            }
-            lastImagePreviewUrl = URL.createObjectURL(blob);
-            img.src = lastImagePreviewUrl;
-            img.parentNode.style.display = 'block';
-            console.log('[clipboard] 图片预览已更新');
-            return true;
-          }
-        }
-      }
-      return false;
-    } catch (err) {
-      console.warn('[clipboard] 图片预览更新失败:', err && err.message);
-      return false;
-    }
-  }
-
-  async function handleRfbClipboardOrImage(e) {
-    // 1. 处理文字
+  async function handleRfbClipboard(e) {
     const text = e && e.detail && typeof e.detail.text === 'string' ? e.detail.text : '';
     if (text && text !== lastTextSentToContainer && text !== lastTextCopiedToMac) {
       lastTextSeenFromContainer = text;
-
-      // 文字出现：隐藏图片预览
-      hideImagePreview();
-
       await syncTextFromContainerToMac(text);
-    }
-
-    // 2. 检测图片
-    const hasImage = await updateImagePreview();
-    if (hasImage) {
-      // 图片出现：清空文字输入框
-      clearTextarea();
     }
   }
 
@@ -445,9 +365,9 @@
       const rfb = getRfb();
       if (rfb && typeof rfb.addEventListener === 'function') {
         if (!rfb.__webclawTextClipboardBridge) {
-          rfb.addEventListener('clipboard', handleRfbClipboardOrImage);
+          rfb.addEventListener('clipboard', handleRfbClipboard);
           rfb.__webclawTextClipboardBridge = true;
-          console.log('[clipboard] 剪贴板监听已启用（文字+图片）');
+          console.log('[clipboard] 剪贴板监听已启用（文字）');
         }
         clearInterval(timer);
       } else if (++tries >= 50) {
@@ -496,6 +416,7 @@
         sendCtrlVToContainer();
         showLoading(T.pasted_to_container, 'success');
         hideLoading();
+        clearTextarea();
       } catch (err) {
         console.warn('[clipboard] Local→container image sync failed:', err && err.message);
         showLoading(T.sync_failed + (err.message || ''), 'error');
@@ -577,32 +498,69 @@
     hideLoading();
   }
 
-  function makeButton(text, title, onClick) {
+  function makeButton(text, title, onClick, isClose = false) {
     const btn = document.createElement('button');
-    btn.textContent = text;
     btn.title = title;
+
+    // 创建文字
+    const textSpan = document.createElement('span');
+    textSpan.textContent = text;
+
+    btn.appendChild(textSpan);
+
     btn.style.cssText = `
-      display: block;
-      width: 100%;
-      margin-top: 8px;
-      padding: 8px 12px;
-      background: rgba(0, 120, 215, 0.85);
-      color: white;
-      border: none;
+      ${isClose ? `
+        flex-shrink: 0;
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        font-size: 18px;
+        line-height: 24px;
+      ` : `
+        flex: 1;
+        min-width: 0;
+      `}
+      margin-top: 0;
+      padding: ${isClose ? '0' : '8px 12px'};
+      background: ${isClose ? 'transparent' : 'rgba(0, 120, 215, 0.85)'};
+      color: ${isClose ? '#999' : 'white'};
+      border: ${isClose ? 'none' : 'none'};
       border-radius: 4px;
-      font-size: 13px;
+      font-size: ${isClose ? '18px' : '13px'};
       cursor: pointer;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     `;
-    btn.addEventListener('mouseenter', () => {
-      btn.style.background = 'rgba(0, 120, 215, 1)';
-    });
-    btn.addEventListener('mouseleave', () => {
-      btn.style.background = 'rgba(0, 120, 215, 0.85)';
-    });
+
+    if (!isClose) {
+      btn.addEventListener('mouseenter', () => {
+        btn.style.background = 'rgba(0, 120, 215, 1)';
+      });
+      btn.addEventListener('mouseleave', () => {
+        btn.style.background = 'rgba(0, 120, 215, 0.85)';
+      });
+    } else {
+      btn.addEventListener('mouseenter', () => {
+        btn.style.color = '#666';
+      });
+      btn.addEventListener('mouseleave', () => {
+        btn.style.color = '#999';
+      });
+    }
+
     btn.addEventListener('click', onClick);
     return btn;
+  }
+
+  function toggleClipboardContent() {
+    // 找到左侧的剪贴板按钮并触发点击
+    const clipboardButton = document.getElementById('noVNC_clipboard_button');
+    if (clipboardButton) {
+      clipboardButton.click();
+    }
   }
 
   function injectButtons() {
@@ -617,17 +575,30 @@
 
     const wrap = document.createElement('div');
     wrap.className = 'custom-clipboard-buttons';
-    wrap.style.cssText = 'margin-top: 6px;';
+    wrap.style.cssText = 'display: flex; gap: 6px; align-items: center; margin-top: 6px;';
 
-    wrap.appendChild(makeButton(
+    // 粘贴按钮
+    const pasteBtn = makeButton(
       T.btn_mac_to_container,
       T.btn_mac_to_container_title,
       handleMacToContainer
-    ));
-    wrap.appendChild(makeButton(
+    );
+    wrap.appendChild(pasteBtn);
+
+    // 拷贝按钮
+    const copyBtn = makeButton(
       T.btn_container_to_mac,
       T.btn_container_to_mac_title,
       handleContainerToMac
+    );
+    wrap.appendChild(copyBtn);
+
+    // 收起/展开按钮
+    wrap.appendChild(makeButton(
+      '◀',
+      '收起/展开面板内容',
+      toggleClipboardContent,
+      true  // isClose = true
     ));
 
     panel.appendChild(wrap);
@@ -670,16 +641,10 @@
 
     console.log('[clipboard] ✓ 剪贴板 API 可用');
 
-    // 1. 注入图片预览区
-    injectImagePreview();
-
-    // 2. 初始化剪贴板监听（包含 clipboard 事件监听）
+    // 1. 初始化剪贴板监听（包含 clipboard 事件监听）
     initTextClipboardBridge();
 
-    // 3. 初始检查一次图片预览
-    await updateImagePreview();
-
-    // 4. 注入按钮
+    // 2. 注入按钮
     // noVNC 的 #noVNC_clipboard 是 vnc.html 静态 DOM，DOMContentLoaded 后即可拿到。
     // 但脚本以 defer/end-of-body 形式加载，部分时序下 panel 可能晚到，做一次小重试。
     if (injectButtons()) {
