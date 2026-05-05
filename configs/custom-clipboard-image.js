@@ -19,44 +19,48 @@
   // 轻量 i18n：按浏览器语言选中/英文。zh 系列走中文，其余走英文。
   const I18N = {
     'zh': {
-      btn_mac_to_container: '📋 把 Mac 图片粘到容器',
-      btn_mac_to_container_title: '读取 Mac 剪贴板里的图片，上传到容器并粘贴到当前焦点',
-      btn_container_to_mac: '📥 把容器图片拷到 Mac',
-      btn_container_to_mac_title: '读取容器剪贴板里的图片，写入 Mac 系统剪贴板',
-      read_mac_failed: '✗ 读取 Mac 剪贴板失败：',
-      no_image_in_mac: 'Mac 剪贴板没有图片',
+      btn_mac_to_container: '📋 把本地内容粘到容器',
+      btn_mac_to_container_title: '自动检测图片或文字，一键粘贴到容器当前焦点',
+      btn_container_to_mac: '📥 把容器内容拷到本地',
+      btn_container_to_mac_title: '自动检测图片或文字，一键拷贝到本地剪贴板',
+      read_mac_failed: '✗ 读取本地剪贴板失败：',
+      no_image_in_mac: '本地剪贴板没有图片',
       image_too_large: '图片过大（>10MB）',
       syncing_to_container: '正在同步图片到容器...',
       pasted_to_container: '✓ 已粘到容器',
       sync_failed: '✗ 同步失败：',
       reading_from_container: '正在从容器读取图片...',
       no_image_in_container: '容器剪贴板没有图片',
-      copied_to_mac: '✓ 已拷到 Mac 剪贴板',
+      copied_to_mac: '✓ 已拷到本地',
       copy_failed: '✗ 拷贝失败：',
       api_unsupported: '浏览器不支持剪贴板 API',
-      text_copied_to_mac: '✓ 文本已同步到 Mac 剪贴板',
-      text_clipboard_blocked: '文本已到 noVNC 剪贴板面板，浏览器未授权写入 Mac 剪贴板',
-      text_pasted_to_container: '✓ 文本已粘到容器'
+      text_copied_to_mac: '✓ 文字已拷到本地',
+      text_clipboard_blocked: '文本已到 noVNC 剪贴板面板，浏览器未授权写入本地剪贴板',
+      text_pasted_to_container: '✓ 文字已粘到容器',
+      no_content_local: '本地剪贴板没有内容',
+      no_content_container: '容器剪贴板没有内容'
     },
     'en': {
-      btn_mac_to_container: '📋 Paste Mac image into container',
-      btn_mac_to_container_title: 'Read image from Mac clipboard, upload to container and paste at focus',
-      btn_container_to_mac: '📥 Copy container image to Mac',
-      btn_container_to_mac_title: 'Read image from container clipboard, write to Mac system clipboard',
-      read_mac_failed: '✗ Failed to read Mac clipboard: ',
-      no_image_in_mac: 'No image in Mac clipboard',
+      btn_mac_to_container: '📋 Paste local content to container',
+      btn_mac_to_container_title: 'Auto-detect image or text, paste to container focus in one click',
+      btn_container_to_mac: '📥 Copy container content to local',
+      btn_container_to_mac_title: 'Auto-detect image or text, copy to local clipboard in one click',
+      read_mac_failed: '✗ Failed to read local clipboard: ',
+      no_image_in_mac: 'No image in local clipboard',
       image_too_large: 'Image too large (>10MB)',
       syncing_to_container: 'Syncing image to container...',
       pasted_to_container: '✓ Pasted to container',
       sync_failed: '✗ Sync failed: ',
       reading_from_container: 'Reading image from container...',
       no_image_in_container: 'No image in container clipboard',
-      copied_to_mac: '✓ Copied to Mac clipboard',
+      copied_to_mac: '✓ Copied to local',
       copy_failed: '✗ Copy failed: ',
       api_unsupported: 'Browser does not support Clipboard API',
-      text_copied_to_mac: '✓ Text synced to Mac clipboard',
-      text_clipboard_blocked: 'Text is in the noVNC clipboard panel. Browser permission blocked Mac clipboard write',
-      text_pasted_to_container: '✓ Text pasted to container'
+      text_copied_to_mac: '✓ Text copied to local',
+      text_clipboard_blocked: 'Text is in the noVNC clipboard panel. Browser permission blocked local clipboard write',
+      text_pasted_to_container: '✓ Text pasted to container',
+      no_content_local: 'No content in local clipboard',
+      no_content_container: 'No content in container clipboard'
     }
   };
   const T = (navigator.language || 'en').toLowerCase().startsWith('zh') ? I18N.zh : I18N.en;
@@ -203,6 +207,25 @@
     }
   }
 
+  async function pasteTextToContainer(text, source = 'unknown') {
+    if (!text || !text.trim()) {
+      return false;
+    }
+
+    try {
+      await syncTextToContainer(text);
+      setTimeout(sendCtrlVToContainer, 80);
+      showLoading(T.text_pasted_to_container, 'success');
+      hideLoading();
+      return true;
+    } catch (err) {
+      console.warn('[clipboard] Text paste to container failed:', err && err.message);
+      showLoading(T.sync_failed + (err.message || ''), 'error');
+      hideLoading();
+      return false;
+    }
+  }
+
   async function handleRfbClipboardText(e) {
     const text = e && e.detail && typeof e.detail.text === 'string' ? e.detail.text : '';
     if (!text || text === lastTextSentToContainer || text === lastTextCopiedToMac) {
@@ -234,12 +257,9 @@
     try {
       e.preventDefault();
       e.stopPropagation();
-      await syncTextToContainer(text);
-      setTimeout(sendCtrlVToContainer, 80);
-      showLoading(T.text_pasted_to_container, 'success');
-      hideLoading();
+      await pasteTextToContainer(text, 'keyboard');
     } catch (err) {
-      console.warn('[clipboard] Mac text paste to container failed:', err && err.message);
+      console.warn('[clipboard] Local text paste to container failed:', err && err.message);
     }
   }
 
@@ -365,71 +385,98 @@
     return null;
   }
 
-  // 按钮 A：Mac → 容器
+  // 按钮 A：本地 → 容器
   async function handleMacToContainer() {
+    // 1. 先尝试读取图片
     let imageBlob;
     try {
       imageBlob = await readImageFromMacClipboard();
     } catch (err) {
-      showLoading(T.read_mac_failed + (err.message || ''), 'error');
-      hideLoading();
+      console.warn('[clipboard] Image read failed:', err && err.message);
+    }
+
+    if (imageBlob) {
+      // 现有图片处理流程
+      if (imageBlob.size > 10 * 1024 * 1024) {
+        showLoading(T.image_too_large, 'error');
+        hideLoading();
+        return;
+      }
+
+      try {
+        showLoading(T.syncing_to_container);
+        await uploadImageToServer(imageBlob);
+        await new Promise(resolve => setTimeout(resolve, 300));
+        sendCtrlVToContainer();
+        showLoading(T.pasted_to_container, 'success');
+        hideLoading();
+      } catch (err) {
+        console.warn('[clipboard] Local→container image sync failed:', err && err.message);
+        showLoading(T.sync_failed + (err.message || ''), 'error');
+        hideLoading();
+      }
       return;
     }
 
-    if (!imageBlob) {
-      showLoading(T.no_image_in_mac, 'error');
-      hideLoading();
-      return;
-    }
-
-    if (imageBlob.size > 10 * 1024 * 1024) {
-      showLoading(T.image_too_large, 'error');
-      hideLoading();
-      return;
-    }
-
+    // 2. 没有图片，尝试读取文字
     try {
-      showLoading(T.syncing_to_container);
-      await uploadImageToServer(imageBlob);
-      // 等服务端 xclip 把图片塞进 X11 CLIPBOARD
-      await new Promise(resolve => setTimeout(resolve, 300));
-      sendCtrlVToContainer();
-      showLoading(T.pasted_to_container, 'success');
-      hideLoading();
+      const text = await navigator.clipboard.readText();
+      if (text && text.trim()) {
+        const ok = await pasteTextToContainer(text, 'button');
+        if (!ok) {
+          showLoading(T.sync_failed, 'error');
+          hideLoading();
+        }
+        return;
+      }
     } catch (err) {
-      console.warn('[clipboard] Mac→container sync failed:', err && err.message);
-      showLoading(T.sync_failed + (err.message || ''), 'error');
-      hideLoading();
+      console.warn('[clipboard] Text read failed:', err && err.message);
     }
+
+    // 3. 既没有图片也没有文字
+    showLoading(T.no_content_local, 'error');
+    hideLoading();
   }
 
-  // 按钮 B：容器 → Mac
+  // 按钮 B：容器 → 本地
   async function handleContainerToMac() {
+    // 1. 先尝试读取图片
     try {
       showLoading(T.reading_from_container);
       const resp = await fetch(getClipboardApiUrl(), { method: 'GET' });
-      if (resp.status === 404) {
-        showLoading(T.no_image_in_container, 'error');
-        hideLoading();
-        return;
+      if (resp.ok) {
+        const blob = await resp.blob();
+        if (blob && blob.size > 0) {
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+          showLoading(T.copied_to_mac, 'success');
+          hideLoading();
+          return;
+        }
       }
-      if (!resp.ok) {
-        throw new Error('GET ' + resp.status);
-      }
-      const blob = await resp.blob();
-      if (!blob || !blob.size) {
-        showLoading(T.no_image_in_container, 'error');
-        hideLoading();
-        return;
-      }
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-      showLoading(T.copied_to_mac, 'success');
-      hideLoading();
     } catch (err) {
-      console.warn('[clipboard] container→Mac sync failed:', err && err.message);
-      showLoading(T.copy_failed + (err.message || ''), 'error');
-      hideLoading();
+      console.warn('[clipboard] Image read from container failed:', err && err.message);
     }
+
+    // 2. 没有图片，尝试读取文字
+    try {
+      const textResp = await fetch(getClipboardTextApiUrl(), { method: 'GET' });
+      if (textResp.ok) {
+        const data = await textResp.json();
+        const text = data.text;
+        if (text && text.trim()) {
+          await navigator.clipboard.writeText(text);
+          showLoading(T.text_copied_to_mac, 'success');
+          hideLoading();
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('[clipboard] Text read from container failed:', err && err.message);
+    }
+
+    // 3. 既没有图片也没有文字
+    showLoading(T.no_content_container, 'error');
+    hideLoading();
   }
 
   function makeButton(text, title, onClick) {
