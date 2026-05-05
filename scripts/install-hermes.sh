@@ -8,7 +8,7 @@ mkdir -p "$XDG_RUNTIME_DIR"
 chmod 700 "$XDG_RUNTIME_DIR" || true
 
 # 检查是否已安装
-if [ -d "/opt/hermes-agent" ] && [ -f "/opt/hermes-agent/venv/bin/hermes" ]; then
+if [ -d "/opt/hermes-agent" ] && [ -f "/opt/hermes-agent/venv/bin/hermes" ] && [ -f "/opt/hermes-browser.sh" ]; then
     # 已安装，直接启动 Dashboard
     /opt/hermes-browser.sh
     exit 0
