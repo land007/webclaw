@@ -331,9 +331,9 @@ main() {
             "scripts/install-hermes.sh" \
             "/opt/install-hermes.sh" \
             "install-hermes.sh"; then
-            ((deploy_count++))
+            deploy_count=$((deploy_count + 1))
         else
-            ((deploy_failed++))
+            deploy_failed=$((deploy_failed + 1))
         fi
     fi
 
@@ -342,9 +342,9 @@ main() {
             "scripts/webclaw-app-launcher.sh" \
             "/usr/local/bin/webclaw-app-launcher" \
             "webclaw-app-launcher.sh"; then
-            ((deploy_count++))
+            deploy_count=$((deploy_count + 1))
         else
-            ((deploy_failed++))
+            deploy_failed=$((deploy_failed + 1))
         fi
     fi
 
@@ -353,9 +353,9 @@ main() {
             "scripts/startup.sh" \
             "/opt/startup.sh" \
             "startup.sh"; then
-            ((deploy_count++))
+            deploy_count=$((deploy_count + 1))
         else
-            ((deploy_failed++))
+            deploy_failed=$((deploy_failed + 1))
         fi
     fi
 
