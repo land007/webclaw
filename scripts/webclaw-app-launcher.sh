@@ -1091,7 +1091,8 @@ EOF
             echo "# 正在安装 $NAME..."
 
             # 执行自定义安装脚本
-            if ! sudo "$INSTALL_SCRIPT" >>"$LOG" 2>&1; then
+            # 设置环境变量告诉脚本这是由 webclaw-app-launcher 调用的
+            if ! WEBCLAW_APP_LAUNCHER=1 sudo "$INSTALL_SCRIPT" >>"$LOG" 2>&1; then
                 echo "安装脚本执行失败" >> "$LOG"
                 echo "100"; exit 1
             fi

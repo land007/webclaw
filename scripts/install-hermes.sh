@@ -14,14 +14,20 @@ if [ -d "/opt/hermes-agent" ] && [ -f "/opt/hermes-agent/venv/bin/hermes" ]; the
     exit 0
 fi
 
-# 显示安装确认对话框
-zenity --question \
-  --title="安装 Hermes Agent" \
-  --text="<b>确定要安装 Hermes Agent 吗？</b>\n\n这是一个自进化的 AI 代理，具有学习能力。\n\n安装过程可能需要几分钟，请确保网络连接正常。" \
-  --ok-label="确定安装" \
-  --cancel-label="取消" \
-  --width=400 \
-  --no-wrap || exit 0
+# 检查是否由 webclaw-app-launcher 调用（跳过重复的确认对话框）
+# webclaw-app-launcher 会先显示确认对话框，所以这里不需要再问一次
+if [ "${WEBCLAW_APP_LAUNCHER:-}" = "1" ]; then
+    echo "[INFO] 由 webclaw-app-launcher 调用，跳过确认对话框"
+else
+    # 显示安装确认对话框（仅在手动直接运行脚本时）
+    zenity --question \
+      --title="安装 Hermes Agent" \
+      --text="<b>确定要安装 Hermes Agent 吗？</b>\n\n这是一个自进化的 AI 代理，具有学习能力。\n\n安装过程可能需要几分钟，请确保网络连接正常。" \
+      --ok-label="确定安装" \
+      --cancel-label="取消" \
+      --width=400 \
+      --no-wrap || exit 0
+fi
 
 # 更新桌面图标显示为"安装中..."
 cat > /home/ubuntu/Desktop/hermes.desktop << 'EOF'
