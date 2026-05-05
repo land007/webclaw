@@ -359,7 +359,8 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         && cp /tmp/clipboard-server.js /opt/clipboard-server.js \
         && cp /tmp/custom-clipboard-image.js /opt/noVNC/custom-clipboard-image.js \
         && chmod +x /opt/clipboard-server.js \
-        && sed -i 's|</body>|<script type="module">import UI from "./app/ui.js";window.UI=UI;</script><script src="custom-clipboard-image.js"></script></body>|' /opt/noVNC/vnc.html; \
+        && sed -i 's|</body>|<script type="module">import UI from "./app/ui.js";window.UI=UI;</script><script src="custom-clipboard-image.js"></script></body>|' /opt/noVNC/vnc.html \
+        && cp /opt/desktop-shortcuts/hermes-uninstall.desktop /usr/share/applications/; \
     fi \
     && mkdir -p /opt/dashboard-override \
     && chown -R ubuntu:ubuntu /opt/dashboard-override \
@@ -373,7 +374,6 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
     && chmod +x /opt/start-dashboard.sh /opt/start-webtty.sh /opt/start-openclaw.sh /opt/install-hermes.sh /opt/uninstall-hermes.sh /usr/local/bin/hermes-launcher /opt/start-hermes-dashboard.sh /opt/hermes-browser.sh \
     && chown root:root /opt/install-hermes.sh /opt/uninstall-hermes.sh /opt/start-hermes-dashboard.sh /opt/hermes-browser.sh \
     && chmod 755 /opt/install-hermes.sh /opt/uninstall-hermes.sh /opt/start-hermes-dashboard.sh /opt/hermes-browser.sh \
-    && cp /opt/desktop-shortcuts/hermes-uninstall.desktop /usr/share/applications/ \
     && rm -rf /tmp/supervisor-audio.conf /tmp/audio-player.html /tmp/audio-bar.js \
            /tmp/touch-handler.js /tmp/key-remap.js /tmp/xsession /tmp/desktop-shortcuts/ /tmp/desktop-icons/ \
            /tmp/audio-ws-server.py /tmp/audio-ws-wrapper.sh \
