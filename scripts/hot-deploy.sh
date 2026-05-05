@@ -350,10 +350,60 @@ main() {
         # 部署 Hermes sudoers 配置
         print_info "部署 Hermes sudoers 配置..."
         if [ -f "${PROJECT_ROOT}/configs/sudoers/webclaw-app-launcher" ]; then
+            # 先复制到临时位置（避免直接写入 /etc/sudoers.d/ 导致权限问题）
             docker cp "${PROJECT_ROOT}/configs/sudoers/webclaw-app-launcher" \
-                "${container}:/etc/sudoers.d/webclaw-app-launcher" 2>/dev/null || true
-            docker exec "$container" bash -c "chmod 0440 /etc/sudoers.d/webclaw-app-launcher" 2>/dev/null || true
-            print_success "sudoers 配置已部署"
+                "${container}:/tmp/webclaw-app-launcher.sudoers" 2>/dev/null || true
+
+            # 使用 root 权限移动到目标位置并设置正确的权限
+            docker exec "$container" bash -c "
+                # 验证临时文件内容
+                if [ -f /tmp/webclaw-app-launcher.sudoers ]; then
+                    # 使用 visudo 语法检查
+                    visudo -c -f /tmp/webclaw-app-launcher.sudoers >/dev/null 2>&1 || exit 1
+
+                    # 删除旧文件（如果存在）
+                    rm -f /etc/sudoers.d/webclaw-app-launcher 2>/dev/null || true
+
+                    # 移动到目标位置（需要 root 权限，通过现有 sudo 配置或容器 root 用户）
+                    if [ -w /etc/sudoers.d/ ]; then
+                        # 直接复制（如果当前是 root 或有写权限）
+                        cp /tmp/webclaw-app-launcher.sudoers /etc/sudoers.d/webclaw-app-launcher
+                        chmod 0440 /etc/sudoers.d/webclaw-app-launcher
+                        chown root:root /etc/sudoers.d/webclaw-app-launcher 2>/dev/null || true
+                    else
+                        # 尝试通过 sudo
+                        if sudo -n true 2>/dev/null; then
+                            sudo cp /tmp/webclaw-app-launcher.sudoers /etc/sudoers.d/webclaw-app-launcher
+                            sudo chmod 0440 /etc/sudoers.d/webclaw-app-launcher
+                            sudo chown root:root /etc/sudoers.d/webclaw-app-launcher
+                        else
+                            # 最后尝试：从宿主机直接操作
+                            exit 1
+                        fi
+                    fi
+
+                    # 清理临时文件
+                    rm -f /tmp/webclaw-app-launcher.sudoers
+                    exit 0
+                else
+                    exit 1
+                fi
+            " 2>/dev/null
+
+            if [ $? -eq 0 ]; then
+                print_success "sudoers 配置已部署"
+            else
+                # 如果容器内操作失败，从宿主机直接操作（通过 docker exec 以 root 用户）
+                docker exec "$container" bash -c "cat > /etc/sudoers.d/webclaw-app-launcher" < "${PROJECT_ROOT}/configs/sudoers/webclaw-app-launcher" 2>/dev/null || true
+                docker exec "$container" bash -c "chmod 0440 /etc/sudoers.d/webclaw-app-launcher && chown root:root /etc/sudoers.d/webclaw-app-launcher" 2>/dev/null || true
+
+                # 验证部署
+                if docker exec "$container" bash -c "[ -f /etc/sudoers.d/webclaw-app-launcher ] && [ \$(stat -c %U:%G /etc/sudoers.d/webclaw-app-launcher 2>/dev/null || stat -f %Su:%Sg /etc/sudoers.d/webclaw-app-launcher) = 'root:root' ] && [ \$(stat -c %a /etc/sudoers.d/webclaw-app-launcher 2>/dev/null || stat -f %Op /etc/sudoers.d/webclaw-app-launcher | sed 's/.*\(....\)/\1/') = '0440' ]" 2>/dev/null; then
+                    print_success "sudoers 配置已部署"
+                else
+                    print_warning "sudoers 配置可能未正确部署（权限问题）"
+                fi
+            fi
         else
             print_warning "本地 sudoers 配置不存在"
         fi
