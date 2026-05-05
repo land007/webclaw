@@ -1,0 +1,22 @@
+[Desktop Entry]
+Name=Hermes Agent
+Name[zh_CN]=Hermes 智能代理
+Name[ja_JP]=Hermes エージェント
+Name[es_ES]=Agente Hermes
+Name[pt_BR]=Agente Hermes
+Name[ko_KR]=Hermes 에이전트
+Name[de_DE]=Hermes-Agent
+Comment=Self-improving AI Agent with Learning Loop
+Comment[zh_CN]=具有学习能力的自进化 AI 代理
+Comment[ja_JP]=自己改善型 AI エージェント
+Comment[es_ES]=Agente IA con bucle de aprendizaje
+Comment[pt_BR]=Agente IA com loop de aprendizado
+Comment[ko_KR]=학습 루프가 있는 자가 개선 AI 에이전트
+Comment[de_DE]=Selbstverbessernder KI-Agent
+Exec=/usr/local/bin/hermes-launcher
+Icon=/opt/on-demand-icons/hermes.png
+Terminal=false
+Type=Application
+Categories=Development;AI;Utility;
+StartupNotify=true
+StartupWMClass=hermes

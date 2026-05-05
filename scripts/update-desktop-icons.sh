@@ -22,7 +22,7 @@ is_installed() {
     local pkg=$(jq -r '.package' "$manifest")
     local bin=$(jq -r '.binary' "$manifest")
 
-    if [ "$install_method" = "appimage" ] || [ "$install_method" = "r2_download" ] || [ "$install_method" = "direct_download" ] || [ "$install_method" = "cursor_api" ]; then
+    if [ "$install_method" = "appimage" ] || [ "$install_method" = "r2_download" ] || [ "$install_method" = "direct_download" ] || [ "$install_method" = "cursor_api" ] || [ "$install_method" = "hermes_custom" ]; then
         [ -x "$bin" ]
     else
         dpkg -s "$pkg" 2>/dev/null | grep -q "Status: install ok installed" && [ -x "$bin" ]
@@ -96,6 +96,7 @@ ensure_uninstall_menu_entry() {
     local manifest="$3"
     local icon
     local entry="$UNINSTALL_APP_DIR/webclaw-uninstall-${app_id}.desktop"
+    local uninstall_cmd
 
     icon="/opt/on-demand-icons/${app_id}.png"
     if [ ! -e "$icon" ]; then
@@ -103,13 +104,20 @@ ensure_uninstall_menu_entry() {
     fi
     [ -n "$icon" ] && [ "$icon" != "null" ] || icon="$app_id"
 
+    # Hermes 使用自定义卸载脚本
+    if [ "$app_id" = "hermes" ]; then
+        uninstall_cmd="/opt/uninstall-hermes.sh"
+    else
+        uninstall_cmd="/usr/local/bin/webclaw-app-launcher --uninstall $app_id"
+    fi
+
     cat > "$entry" <<EOF
 [Desktop Entry]
 Name=Uninstall $name
 Name[zh_CN]=卸载 $name
 Comment=Uninstall $name
 Comment[zh_CN]=卸载 $name
-Exec=/usr/local/bin/webclaw-app-launcher --uninstall $app_id
+Exec=$uninstall_cmd
 Icon=$icon
 Type=Application
 Categories=${UNINSTALL_CATEGORY};
@@ -137,12 +145,16 @@ for desktop in "$DESKTOP_DIR"/*.desktop; do
     esac
 
     # 检查是否是按需安装的应用
-    if ! grep -q "webclaw-app-launcher" "$desktop"; then
+    if ! grep -q "webclaw-app-launcher\|hermes-launcher" "$desktop"; then
         continue
     fi
 
     # 获取 app-id
-    app_id=$(grep -m1 "^Exec=/usr/local/bin/webclaw-app-launcher " "$desktop" | sed 's/.*webclaw-app-launcher //' | sed 's/ .*//')
+    if grep -q "hermes-launcher" "$desktop"; then
+        app_id="hermes"
+    else
+        app_id=$(grep -m1 "^Exec=/usr/local/bin/webclaw-app-launcher " "$desktop" | sed 's/.*webclaw-app-launcher //' | sed 's/ .*//')
+    fi
     [ -n "$app_id" ] || continue
 
     manifest="$MANIFEST_DIR/${app_id}.json"

@@ -1,0 +1,14 @@
+{
+  "id": "hermes",
+  "name": "Hermes Agent",
+  "name_zh_CN": "Hermes 智能代理",
+  "package": "hermes-agent",
+  "binary": "/opt/hermes-agent/venv/bin/hermes",
+  "install_method": "hermes_custom",
+  "launch_binary": "/opt/hermes-browser.sh",
+  "install_script": "/opt/install-hermes.sh",
+  "uninstall_script": "/opt/uninstall-hermes.sh",
+  "requires_terminal": false,
+  "description": "Self-improving AI Agent with Learning Loop",
+  "description_zh_CN": "具有学习能力的自进化 AI 代理"
+}
