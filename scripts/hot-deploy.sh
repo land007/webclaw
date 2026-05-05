@@ -343,6 +343,17 @@ main() {
             deploy_failed=$((deploy_failed + 1))
         fi
 
+        # 部署 Hermes wrapper 脚本
+        print_info "部署 Hermes wrapper 脚本..."
+        if [ -f "${PROJECT_ROOT}/scripts/hermes-install-wrapper.sh" ]; then
+            docker cp "${PROJECT_ROOT}/scripts/hermes-install-wrapper.sh" \
+                "${container}:/opt/hermes-install-wrapper.sh" 2>/dev/null || true
+            docker exec "$container" chmod +x /opt/hermes-install-wrapper.sh 2>/dev/null || true
+            print_success "wrapper 脚本已部署"
+        else
+            print_warning "wrapper 脚本不存在"
+        fi
+
         # 部署 Hermes 配置文件
         print_info "部署 Hermes 配置文件..."
         if [ -f "${PROJECT_ROOT}/configs/on-demand-apps/hermes.json" ]; then
