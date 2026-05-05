@@ -49,7 +49,25 @@ zenity --question \
     rm -rf /home/ubuntu/.cache/uv/*hermes* 2>/dev/null || true
     rm -rf /home/ubuntu/.local/lib/python*/site-packages/hermes* 2>/dev/null || true
 
-    echo "60"
+    echo "50"
+    echo "# 清理配置和缓存..."
+
+    # 清理 supervisord.conf 中的 hermes 引用
+    if [ -f /etc/supervisor/supervisord.conf ]; then
+        sed -i 's/\/etc\/supervisor\/conf.d\/supervisor-hermes\.conf[^ ]* *//g' /etc/supervisor/supervisord.conf
+        sed -i 's/  *$//' /etc/supervisor/supervisord.conf  # 清理末尾空格
+    fi
+
+    # 清理临时日志文件
+    rm -f /tmp/hermes*.log
+    rm -f /tmp/hermes_progress
+    rm -f /tmp/hermes_stdout.log
+    rm -f /tmp/hermes_stderr.log
+
+    # 清理 Git clone 临时目录
+    rm -rf /tmp/hermes-agent 2>/dev/null || true
+
+    echo "70"
     echo "# 更新桌面图标..."
 
     # 调用桌面图标更新系统（会自动添加"待安装"标记并移除卸载菜单）
