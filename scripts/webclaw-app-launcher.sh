@@ -67,6 +67,9 @@ fi
 PKG=$(jq -r '.package' "$MANIFEST")
 NAME=$(jq -r '.name' "$MANIFEST")
 BIN=$(jq -r '.binary' "$MANIFEST")
+LAUNCH_BIN=$(jq -r '.launch_binary // empty' "$MANIFEST")
+# 如果存在 launch_binary，使用它来启动应用（用于启动 web dashboard 而非 CLI）
+[ -n "$LAUNCH_BIN" ] && BIN="$LAUNCH_BIN"
 INSTALL_METHOD=$(jq -r '.install_method // "github_release"' "$MANIFEST")
 REQUIRES_TERMINAL=$(jq -r '.requires_terminal // "false"' "$MANIFEST")
 
