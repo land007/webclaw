@@ -171,7 +171,7 @@ Name=Hermes Agent
 Name[zh_CN]=Hermes 智能体
 Comment=自进化 AI 代理
 Comment[zh_CN]=具有学习能力的自进化 AI 代理
-Exec=bash -c "WEBCLAW_APP_LAUNCHER=1 /usr/local/bin/webclaw-app-launcher install hermes"
+Exec=bash -c "WEBCLAW_APP_LAUNCHER=1 /usr/local/bin/webclaw-app-launcher hermes"
 Icon=/opt/desktop-icons/hermes.png
 Terminal=false
 Categories=Application;Network;
