@@ -44,58 +44,55 @@ EOF
 # 短暂延迟确保 zenity 对话框显示
 sleep 0.5
 
-# 安装进度函数
-install_progress() {
-    {
-        echo "10"
-        echo "# 安装 Python 依赖..."
+# 安装步骤函数
+install_step_1_dependencies() {
+    echo "[10%] 安装 Python 依赖..."
+    # 检查并安装必要的包
+    sudo apt-get update
 
-        # 检查并安装必要的包
-        sudo apt-get update
+    # 安装通用的Python依赖
+    sudo apt-get install -y python3-venv python3-pip git curl software-properties-common
 
-        # 安装通用的Python依赖
-        sudo apt-get install -y python3-venv python3-pip git curl software-properties-common
+    # 尝试安装 Python 3.11（如果可用）
+    if ! command -v python3.11 &> /dev/null; then
+        sudo apt-get install -y python3.11 python3.11-venv 2>/dev/null || echo "Python 3.11 不可用，将使用系统默认Python"
+    fi
+}
 
-        # 尝试安装 Python 3.11（如果可用）
-        if ! command -v python3.11 &> /dev/null; then
-            sudo apt-get install -y python3.11 python3.11-venv 2>/dev/null || echo "Python 3.11 不可用，将使用系统默认Python"
-        fi
+install_step_2_clone() {
+    echo "[30%] 克隆 Hermes 仓库..."
+    # 克隆 Hermes 仓库到用户目录，然后移动到 /opt
+    if [ ! -d "/opt/hermes-agent" ]; then
+        cd /tmp
+        git clone https://github.com/NousResearch/hermes-agent.git
+        sudo mv hermes-agent /opt/
+        sudo chown -R ubuntu:ubuntu /opt/hermes-agent
+    fi
 
-        echo "30"
-        echo "# 克隆 Hermes 仓库..."
+    cd /opt/hermes-agent
+    chmod +x setup-hermes.sh
+    chmod +x hermes
+}
 
-        # 克隆 Hermes 仓库到用户目录，然后移动到 /opt
-        if [ ! -d "/opt/hermes-agent" ]; then
-            cd /tmp
-            git clone https://github.com/NousResearch/hermes-agent.git
-            sudo mv hermes-agent /opt/
-            sudo chown -R ubuntu:ubuntu /opt/hermes-agent
-        fi
+install_step_3_setup() {
+    echo "[50%] 运行安装脚本（这需要几分钟）..."
+    # 运行 Hermes 安装脚本（删除旧的 venv，用 ubuntu 用户运行）
+    rm -rf venv
+    sudo -u ubuntu bash -c './setup-hermes.sh'
+}
 
-        cd /opt/hermes-agent
-        chmod +x setup-hermes.sh
-        chmod +x hermes
-
-        echo "50"
-        echo "# 运行安装脚本（这需要几分钟）..."
-
-        # 运行 Hermes 安装脚本（删除旧的 venv，用 ubuntu 用户运行）
-        rm -rf venv
-        sudo -u ubuntu bash -c './setup-hermes.sh'
-
-        echo "80"
-        echo "# 创建启动脚本和配置..."
-
-        # 创建浏览器启动脚本
-        cat > /opt/hermes-browser.sh << 'HERMES_EOF'
+install_step_4_config() {
+    echo "[70%] 创建启动脚本和配置..."
+    # 创建浏览器启动脚本
+    cat > /opt/hermes-browser.sh << 'HERMES_EOF'
 #!/usr/bin/env bash
 xdg-open "http://127.0.0.1:10011" >/dev/null 2>&1 &
 HERMES_EOF
 
-        chmod +x /opt/hermes-browser.sh
+    chmod +x /opt/hermes-browser.sh
 
-        # 创建 Dashboard 启动脚本
-        cat > /opt/start-hermes-dashboard.sh << 'HERMES_EOF'
+    # 创建 Dashboard 启动脚本
+    cat > /opt/start-hermes-dashboard.sh << 'HERMES_EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -106,13 +103,17 @@ chmod 700 "$XDG_RUNTIME_DIR" || true
 
 cd /opt/hermes-agent
 
+# 确保 PATH 包含必要命令
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/hermes-agent"
 
+# Hermes 配置目录
 HERMES_HOME="/home/ubuntu/.hermes"
 mkdir -p "$HERMES_HOME"
 
+# 初始化配置（如果首次运行）
 if [ ! -f "$HERMES_HOME/config.yaml" ]; then
     echo "Initializing Hermes..."
+    # 创建最小配置
     cat > "$HERMES_HOME/config.yaml" << 'CONFIGEOF'
 model:
   default: "claude-opus-4"
@@ -120,14 +121,15 @@ model:
 CONFIGEOF
 fi
 
+# 启动 Hermes Dashboard
 source venv/bin/activate
 exec hermes dashboard --host 0.0.0.0 --port 10011 --insecure --no-open
 HERMES_EOF
 
-        chmod +x /opt/start-hermes-dashboard.sh
+    chmod +x /opt/start-hermes-dashboard.sh
 
-        # 创建 Supervisor 配置
-        cat > /etc/supervisor/conf.d/supervisor-hermes.conf << 'HERMES_EOF'
+    # 创建 Supervisor 配置
+    cat > /etc/supervisor/conf.d/supervisor-hermes.conf << 'HERMES_EOF'
 [program:hermes]
 command=/usr/bin/bash /opt/start-hermes-dashboard.sh
 directory=/home/ubuntu
@@ -146,29 +148,66 @@ stdout_logfile_maxbytes=10MB
 stderr_logfile_maxbytes=10MB
 HERMES_EOF
 
-        # 更新 Supervisor 配置
-        supervisorctl reread
-        supervisorctl update
+    # 更新 Supervisor 配置
+    supervisorctl reread
+    supervisorctl update
+}
+
+install_step_5_start() {
+    echo "[90%] 启动 Hermes 服务..."
+    # 创建配置目录
+    mkdir -p /home/ubuntu/.hermes
+    chown -R ubuntu:ubuntu /home/ubuntu/.hermes /opt/hermes-agent
+
+    # 修复 venv 权限（确保 python3 可执行）
+    if [ -d "/opt/hermes-agent/venv" ]; then
+        chmod +x /opt/hermes-agent/venv/bin/python3 2>/dev/null || true
+        chmod +x /opt/hermes-agent/venv/bin/hermes 2>/dev/null || true
+        find /opt/hermes-agent/venv/bin -type f -name "*.py" -exec chmod +x {} \; 2>/dev/null || true
+    fi
+
+    # 启动 Hermes 服务
+    supervisorctl start hermes
+
+    # 等待服务启动
+    sleep 5
+
+    echo "[100%] 安装完成！"
+}
+
+# 安装进度函数
+install_progress() {
+    # 检查是否禁用 zenity（由 webclaw-app-launcher 调用时）
+    if [ "${DISABLE_ZENITY:-}" = "1" ]; then
+        # 直接运行安装步骤，不使用 zenity 进度条
+        install_step_1_dependencies
+        install_step_2_clone
+        install_step_3_setup
+        install_step_4_config
+        install_step_5_start
+        return 0
+    fi
+
+    {
+        echo "10"
+        echo "# 安装 Python 依赖..."
+        install_step_1_dependencies
+
+        echo "30"
+        echo "# 克隆 Hermes 仓库..."
+        install_step_2_clone
+
+        echo "50"
+        echo "# 运行安装脚本（这需要几分钟）..."
+        install_step_3_setup
+
+        echo "80"
+        echo "# 创建启动脚本和配置..."
+        install_step_4_config
 
         echo "90"
         echo "# 启动 Hermes 服务..."
-
-        # 创建配置目录
-        mkdir -p /home/ubuntu/.hermes
-        chown -R ubuntu:ubuntu /home/ubuntu/.hermes /opt/hermes-agent
-
-        # 修复 venv 权限（确保 python3 可执行）
-        if [ -d "/opt/hermes-agent/venv" ]; then
-            chmod +x /opt/hermes-agent/venv/bin/python3 2>/dev/null || true
-            chmod +x /opt/hermes-agent/venv/bin/hermes 2>/dev/null || true
-            find /opt/hermes-agent/venv/bin -type f -name "*.py" -exec chmod +x {} \; 2>/dev/null || true
-        fi
-
-        # 启动 Hermes 服务
-        supervisorctl start hermes
-
-        # 等待服务启动
-        sleep 5
+        install_step_5_start
 
         echo "100"
         echo "# 安装完成！"
@@ -192,6 +231,8 @@ if [ -f "/opt/hermes-agent/venv/bin/hermes" ] && [ -x "/opt/hermes-agent/venv/bi
     # 更新桌面图标为正常状态（带卸载菜单）
     cat > /home/ubuntu/Desktop/hermes.desktop << 'EOF'
 [Desktop Entry]
+Version=1.0
+Type=Application
 Name=Hermes Agent
 Name[zh_CN]=Hermes 智能代理
 Name[ja_JP]=Hermes エージェント
@@ -234,18 +275,22 @@ EOF
     update-desktop-icons
 
     # 显示成功消息
-    zenity --info \
-      --title="安装成功" \
-      --text="Hermes Agent 安装成功！\n\n点击桌面图标即可打开 Web Dashboard。\n\n访问地址: http://127.0.0.1:10011\n\n右键点击图标可选择「卸载」" \
-      --no-wrap
+    if [ "${DISABLE_ZENITY:-}" != "1" ]; then
+        zenity --info \
+          --title="安装成功" \
+          --text="Hermes Agent 安装成功！\n\n点击桌面图标即可打开 Web Dashboard。\n\n访问地址: http://127.0.0.1:10011\n\n右键点击图标可选择「卸载」" \
+          --no-wrap
+    fi
 
     # 自动打开 Dashboard
     /opt/hermes-browser.sh
 else
     # 显示失败消息
-    zenity --error \
-      --title="安装失败" \
-      --text="Hermes Agent 安装失败。\n\n请查看日志：\n/tmp/hermes_stderr.log" \
-      --no-wrap
+    if [ "${DISABLE_ZENITY:-}" != "1" ]; then
+        zenity --error \
+          --title="安装失败" \
+          --text="Hermes Agent 安装失败。\n\n请查看日志：\n/tmp/hermes_stderr.log" \
+          --no-wrap
+    fi
     exit 1
 fi
