@@ -390,6 +390,8 @@ FCITX_PROFILE_EOF
     # Desktop shortcuts
     rm -f /home/ubuntu/Desktop/lang-chinese.desktop /home/ubuntu/Desktop/lang-english.desktop
     cp /opt/desktop-shortcuts/*.desktop /home/ubuntu/Desktop/ 2>/dev/null || true
+    # 删除卸载图标（应该只在应用菜单中，不在桌面上）
+    rm -f /home/ubuntu/Desktop/*uninstall.desktop
     chmod +x /home/ubuntu/Desktop/*.desktop 2>/dev/null || true
     chown -R ubuntu:ubuntu /home/ubuntu/Desktop
 
