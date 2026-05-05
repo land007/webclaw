@@ -86,7 +86,7 @@ prepare_log() {
 }
 
 is_app_installed() {
-    if [ "$INSTALL_METHOD" = "appimage" ] || [ "$INSTALL_METHOD" = "r2_download" ] || [ "$INSTALL_METHOD" = "direct_download" ] || [ "$INSTALL_METHOD" = "cursor_api" ]; then
+    if [ "$INSTALL_METHOD" = "appimage" ] || [ "$INSTALL_METHOD" = "r2_download" ] || [ "$INSTALL_METHOD" = "direct_download" ] || [ "$INSTALL_METHOD" = "cursor_api" ] || [ "$INSTALL_METHOD" = "custom_script" ]; then
         [ -x "$BIN" ]
     else
         dpkg -s "$PKG" 2>/dev/null | grep -q "Status: install ok installed" && [ -x "$BIN" ]
@@ -102,6 +102,8 @@ is_app_present() {
         [ -d "/opt/ondemand-apps/${APP_ID}" ]
     elif [ "$INSTALL_METHOD" = "r2_download" ] || [ "$INSTALL_METHOD" = "direct_download" ] || [ "$INSTALL_METHOD" = "cursor_api" ]; then
         [ -d "/opt/${APP_ID}" ]
+    elif [ "$INSTALL_METHOD" = "custom_script" ]; then
+        [ -d "$(dirname "$BIN")" ]
     else
         dpkg -s "$PKG" 2>/dev/null | grep -q "Status: install ok installed"
     fi
@@ -1073,6 +1075,47 @@ EOF
             --percentage=0 --auto-close --no-cancel --width=420
         ;;
 
+    custom_script)
+        # ─── 自定义脚本安装(Hermes 等) ────────────────────────────────────────
+        INSTALL_SCRIPT=$(jq -r '.install_script // empty' "$MANIFEST")
+
+        if [ -z "$INSTALL_SCRIPT" ] || [ ! -x "$INSTALL_SCRIPT" ]; then
+            zenity --error --title="$NAME" \
+                --text="未找到安装脚本或脚本不可执行:\n$INSTALL_SCRIPT" \
+                --width=420
+            exit 1
+        fi
+
+        {
+            echo "10"
+            echo "# 正在安装 $NAME..."
+
+            # 执行自定义安装脚本
+            if ! sudo "$INSTALL_SCRIPT" >>"$LOG" 2>&1; then
+                echo "安装脚本执行失败" >> "$LOG"
+                echo "100"; exit 1
+            fi
+
+            echo "90"
+            echo "# 正在配置..."
+
+            # 添加到 Supervisor 配置（如果需要）
+            if [ -f "/etc/supervisor/conf.d/supervisor-hermes.conf" ] && [ -f "/etc/supervisor/supervisord.conf" ]; then
+                if ! grep -q "supervisor-hermes.conf" /etc/supervisor/supervisord.conf; then
+                    sed -i "s|/etc/supervisor/conf.d/supervisor-clipboard.conf|/etc/supervisor/conf.d/supervisor-clipboard.conf /etc/supervisor/conf.d/supervisor-hermes.conf|" /etc/supervisor/supervisord.conf
+                    supervisorctl reread > /dev/null 2>&1
+                    supervisorctl update > /dev/null 2>&1
+                fi
+            fi
+
+            echo "100"
+            echo "# 完成"
+        } | zenity --progress \
+            --title="安装 $NAME" \
+            --text="准备中..." \
+            --percentage=0 --auto-close --no-cancel --width=420
+        ;;
+
     *)
         zenity --error --title="$NAME" \
             --text="未知的 install_method: $INSTALL_METHOD" --width=380
@@ -1081,8 +1124,8 @@ EOF
 esac
 
 # 验证安装结果
-if [ "$INSTALL_METHOD" = "appimage" ] || [ "$INSTALL_METHOD" = "r2_download" ] || [ "$INSTALL_METHOD" = "direct_download" ] || [ "$INSTALL_METHOD" = "cursor_api" ]; then
-    # AppImage / r2_download: 检查文件是否存在且可执行
+if [ "$INSTALL_METHOD" = "appimage" ] || [ "$INSTALL_METHOD" = "r2_download" ] || [ "$INSTALL_METHOD" = "direct_download" ] || [ "$INSTALL_METHOD" = "cursor_api" ] || [ "$INSTALL_METHOD" = "custom_script" ]; then
+    # AppImage / r2_download / custom_script: 检查文件是否存在且可执行
     if [ -x "$BIN" ]; then
         INSTALL_OK=1
     else
