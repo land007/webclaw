@@ -110,7 +110,7 @@ verify_container() {
     print_success "容器验证通过: $container"
 }
 
-# 部署单个脚本
+# 部署单个脚本（使用 docker cp 复制文件）
 deploy_script() {
     local container="$1"
     local local_path="$2"
@@ -127,14 +127,14 @@ deploy_script() {
         return 1
     fi
 
-    if ! cat "$full_local_path" | docker exec -i "$container" bash -c "
-        cat > ${remote_path}.new &&
-        chmod +x ${remote_path}.new &&
-        mv ${remote_path}.new ${remote_path}
-    " 2>/dev/null; then
+    # 使用 docker cp 复制文件到容器（模拟 Dockerfile COPY）
+    if ! docker cp "$full_local_path" "${container}:${remote_path}" 2>/dev/null; then
         print_error "部署失败: $description"
         return 1
     fi
+
+    # 确保脚本可执行
+    docker exec "$container" chmod +x "$remote_path" 2>/dev/null
 
     print_success "部署成功: $description"
     return 0
