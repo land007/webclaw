@@ -226,14 +226,100 @@
     }
   }
 
-  async function handleRfbClipboardText(e) {
+  function hideImagePreview() {
+    const preview = document.querySelector('.clipboard-image-preview');
+    if (preview) {
+      preview.style.display = 'none';
+    }
+  }
+
+  function clearTextarea() {
+    const textarea = document.getElementById('noVNC_clipboard_text');
+    if (textarea) {
+      textarea.value = '';
+    }
+  }
+
+  function injectImagePreview() {
+    const panel = document.getElementById('noVNC_clipboard');
+    if (!panel) return false;
+    if (panel.querySelector('.clipboard-image-preview')) return true;
+
+    const textarea = document.getElementById('noVNC_clipboard_text');
+    if (!textarea) return false;
+
+    const preview = document.createElement('div');
+    preview.className = 'clipboard-image-preview';
+    preview.style.cssText = `
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background: #f5f5f5;
+      display: none;
+    `;
+
+    const img = document.createElement('img');
+    img.id = 'noVNC_clipboard_image_preview';
+    img.style.cssText = `
+      max-width: 100%;
+      max-height: 200px;
+      display: block;
+      margin: 0 auto;
+      border-radius: 4px;
+    `;
+
+    preview.appendChild(img);
+    textarea.parentNode.insertBefore(preview, textarea);
+    return true;
+  }
+
+  let lastImagePreviewUrl = null;
+
+  async function updateImagePreview() {
+    try {
+      const resp = await fetch(getClipboardApiUrl(), { method: 'GET' });
+      if (resp.ok) {
+        const blob = await resp.blob();
+        if (blob && blob.size > 0) {
+          const img = document.getElementById('noVNC_clipboard_image_preview');
+          if (img) {
+            if (lastImagePreviewUrl) {
+              URL.revokeObjectURL(lastImagePreviewUrl);
+            }
+            lastImagePreviewUrl = URL.createObjectURL(blob);
+            img.src = lastImagePreviewUrl;
+            img.parentNode.style.display = 'block';
+            console.log('[clipboard] 图片预览已更新');
+            return true;
+          }
+        }
+      }
+      return false;
+    } catch (err) {
+      console.warn('[clipboard] 图片预览更新失败:', err && err.message);
+      return false;
+    }
+  }
+
+  async function handleRfbClipboardOrImage(e) {
+    // 1. 处理文字
     const text = e && e.detail && typeof e.detail.text === 'string' ? e.detail.text : '';
-    if (!text || text === lastTextSentToContainer || text === lastTextCopiedToMac) {
-      return;
+    if (text && text !== lastTextSentToContainer && text !== lastTextCopiedToMac) {
+      lastTextSeenFromContainer = text;
+
+      // 文字出现：隐藏图片预览
+      hideImagePreview();
+
+      await syncTextFromContainerToMac(text);
     }
 
-    lastTextSeenFromContainer = text;
-    await syncTextFromContainerToMac(text);
+    // 2. 检测图片
+    const hasImage = await updateImagePreview();
+    if (hasImage) {
+      // 图片出现：清空文字输入框
+      clearTextarea();
+    }
   }
 
   async function syncTextFromContainerToMac(text) {
@@ -359,9 +445,9 @@
       const rfb = getRfb();
       if (rfb && typeof rfb.addEventListener === 'function') {
         if (!rfb.__webclawTextClipboardBridge) {
-          rfb.addEventListener('clipboard', handleRfbClipboardText);
+          rfb.addEventListener('clipboard', handleRfbClipboardOrImage);
           rfb.__webclawTextClipboardBridge = true;
-          console.log('[clipboard] 文本剪贴板桥已启用');
+          console.log('[clipboard] 剪贴板监听已启用（文字+图片）');
         }
         clearInterval(timer);
       } else if (++tries >= 50) {
@@ -440,9 +526,8 @@
 
   // 按钮 B：容器 → 本地
   async function handleContainerToMac() {
-    // 1. 先尝试读取图片
+    // 1. 优先：检查容器剪贴板是否有图片
     try {
-      showLoading(T.reading_from_container);
       const resp = await fetch(getClipboardApiUrl(), { method: 'GET' });
       if (resp.ok) {
         const blob = await resp.blob();
@@ -454,10 +539,10 @@
         }
       }
     } catch (err) {
-      console.warn('[clipboard] Image read from container failed:', err && err.message);
+      console.warn('[clipboard] 检查容器图片失败:', err && err.message);
     }
 
-    // 2. 没有图片，尝试读取文字
+    // 2. 次优先：检查容器剪贴板是否有文字
     try {
       const textResp = await fetch(getClipboardTextApiUrl(), { method: 'GET' });
       if (textResp.ok) {
@@ -471,10 +556,23 @@
         }
       }
     } catch (err) {
-      console.warn('[clipboard] Text read from container failed:', err && err.message);
+      console.warn('[clipboard] 检查容器文字失败:', err && err.message);
     }
 
-    // 3. 既没有图片也没有文字
+    // 3. fallback：容器剪贴板为空，检查输入框是否有文字
+    const textarea = document.getElementById('noVNC_clipboard_text');
+    if (textarea && textarea.value && textarea.value.trim()) {
+      try {
+        await navigator.clipboard.writeText(textarea.value);
+        showLoading(T.text_copied_to_mac, 'success');
+        hideLoading();
+        return;
+      } catch (err) {
+        console.warn('[clipboard] 拷贝输入框文字失败:', err && err.message);
+      }
+    }
+
+    // 4. 都没有内容
     showLoading(T.no_content_container, 'error');
     hideLoading();
   }
@@ -571,8 +669,17 @@
     }
 
     console.log('[clipboard] ✓ 剪贴板 API 可用');
+
+    // 1. 注入图片预览区
+    injectImagePreview();
+
+    // 2. 初始化剪贴板监听（包含 clipboard 事件监听）
     initTextClipboardBridge();
 
+    // 3. 初始检查一次图片预览
+    await updateImagePreview();
+
+    // 4. 注入按钮
     // noVNC 的 #noVNC_clipboard 是 vnc.html 静态 DOM，DOMContentLoaded 后即可拿到。
     // 但脚本以 defer/end-of-body 形式加载，部分时序下 panel 可能晚到，做一次小重试。
     if (injectButtons()) {
