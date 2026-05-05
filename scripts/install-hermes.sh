@@ -78,7 +78,14 @@ install_step_3_setup() {
     echo "[50%] 运行安装脚本（这需要几分钟）..."
     # 运行 Hermes 安装脚本（删除旧的 venv，用 ubuntu 用户运行）
     rm -rf venv
-    sudo -u ubuntu bash -c './setup-hermes.sh'
+    sudo -u ubuntu bash -c './setup-hermes.sh' || true
+
+    # 检查核心功能是否成功安装（允许 setup-hermes.sh 因缺少可选组件返回非零）
+    if [ ! -f "venv/bin/hermes" ] || [ ! -x "venv/bin/hermes" ]; then
+        echo "❌ Hermes 核心组件安装失败"
+        return 1
+    fi
+    echo "✅ Hermes 核心组件安装成功"
 }
 
 install_step_4_config() {
