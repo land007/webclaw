@@ -1,0 +1,394 @@
+#!/usr/bin/env bash
+# 一键热部署脚本 - 将本地脚本快速部署到运行中的容器
+#
+# 用法:
+#   ./hot-deploy.sh [容器ID/名称] [选项]
+#
+# 选项:
+#   --all               部署所有脚本（默认）
+#   --hermes            仅部署 Hermes 相关脚本
+#   --app-launcher      仅部署 webclaw-app-launcher
+#   --startup           仅部署 startup.sh
+#   --clean             清理安装状态
+#   --verify            部署后验证
+#   -h, --help          显示帮助信息
+#
+# 示例:
+#   ./hot-deploy.sh webclaw-inst-xxx --all --clean --verify
+#   ./hot-deploy.sh --hermes  # 使用默认容器
+#   ./hot-deploy.sh webclaw-inst-xxx --app-launcher
+
+set -euo pipefail
+
+# 颜色定义
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# 打印带颜色的消息
+print_info() {
+    echo -e "${BLUE}ℹ${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}✅${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}⚠${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}❌${NC} $1"
+}
+
+print_header() {
+    echo ""
+    echo -e "${BLUE}╔══════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${BLUE}║${NC} $1"
+    echo -e "${BLUE}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+}
+
+# 显示帮助信息
+show_help() {
+    cat << EOF
+一键热部署脚本 - 将本地脚本快速部署到运行中的容器
+
+用法:
+    $0 [容器ID/名称] [选项]
+
+参数:
+    容器ID/名称        可选，默认自动查找 webclaw-inst- 开头的容器
+
+选项:
+    --all               部署所有脚本（默认）
+    --hermes            仅部署 Hermes 相关脚本
+    --app-launcher      仅部署 webclaw-app-launcher
+    --startup           仅部署 startup.sh
+    --clean             清理安装状态
+    --verify            部署后验证
+    -h, --help          显示帮助信息
+
+示例:
+    $0 webclaw-inst-xxx --all --clean --verify
+    $0 --hermes                                    # 使用默认容器
+    $0 webclaw-inst-xxx --app-launcher             # 仅部署 app-launcher
+
+EOF
+}
+
+# 查找默认容器
+find_default_container() {
+    local container
+    container=$(docker ps --filter "name=webclaw-inst-" --format "{{.Names}}" | head -1)
+    if [ -z "$container" ]; then
+        print_error "未找到运行中的 webclaw-inst- 容器"
+        print_info "请手动指定容器 ID 或名称"
+        exit 1
+    fi
+    echo "$container"
+}
+
+# 验证容器是否运行
+verify_container() {
+    local container="$1"
+    if ! docker inspect "$container" &>/dev/null; then
+        print_error "容器不存在: $container"
+        exit 1
+    fi
+
+    local status
+    status=$(docker inspect -f '{{.State.Status}}' "$container")
+    if [ "$status" != "running" ]; then
+        print_error "容器未运行: $container (状态: $status)"
+        exit 1
+    fi
+
+    print_success "容器验证通过: $container"
+}
+
+# 部署单个脚本
+deploy_script() {
+    local container="$1"
+    local local_path="$2"
+    local remote_path="$3"
+    local description="$4"
+
+    print_info "部署 $description..."
+
+    # 构建完整的本地路径
+    local full_local_path="${PROJECT_ROOT}/${local_path}"
+
+    if [ ! -f "$full_local_path" ]; then
+        print_error "本地文件不存在: $full_local_path"
+        return 1
+    fi
+
+    if ! cat "$full_local_path" | docker exec -i "$container" bash -c "
+        cat > ${remote_path}.new &&
+        chmod +x ${remote_path}.new &&
+        mv ${remote_path}.new ${remote_path}
+    " 2>/dev/null; then
+        print_error "部署失败: $description"
+        return 1
+    fi
+
+    print_success "部署成功: $description"
+    return 0
+}
+
+# 清理 Hermes 安装状态
+clean_hermes_state() {
+    local container="$1"
+
+    print_header "清理 Hermes 安装状态"
+
+    print_info "终止卡住的安装进程..."
+    docker exec "$container" bash -c '
+        pkill -9 -f "install-hermes.sh" 2>/dev/null || true
+        pkill -9 -f "setup-hermes.sh" 2>/dev/null || true
+        pkill -9 zenity 2>/dev/null || true
+    ' >/dev/null 2>&1 || true
+
+    print_info "清理安装状态文件..."
+    docker exec "$container" bash -c '
+        rm -f /opt/hermes-agent/.install_done 2>/dev/null || true
+        rm -f /tmp/hermes-install-progress 2>/dev/null || true
+        > /tmp/hermes-install.log
+        > /tmp/webclaw-ondemand-hermes.log
+    ' >/dev/null 2>&1 || true
+
+    print_info "重置桌面图标..."
+    docker exec "$container" bash -c '
+        cat > /home/ubuntu/Desktop/hermes.desktop << "EOF"
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Hermes Agent
+Name[zh_CN]=Hermes 智能体
+Comment=自进化 AI 代理
+Comment[zh_CN]=具有学习能力的自进化 AI 代理
+Exec=bash -c "WEBCLAW_APP_LAUNCHER=1 /usr/local/bin/webclaw-app-launcher install hermes"
+Icon=/opt/desktop-icons/hermes.png
+Terminal=false
+Categories=Application;Network;
+EOF
+        chmod +x /home/ubuntu/Desktop/hermes.desktop
+        chown ubuntu:ubuntu /home/ubuntu/Desktop/hermes.desktop
+    ' >/dev/null 2>&1 || true
+
+    print_success "清理完成"
+}
+
+# 验证部署结果
+verify_deployment() {
+    local container="$1"
+
+    print_header "验证部署结果"
+
+    local all_ok=true
+
+    # 检查 install-hermes.sh
+    echo "1️⃣  检查 install-hermes.sh:"
+    if docker exec "$container" bash -c '[ -x /opt/install-hermes.sh ]'; then
+        print_success "可执行"
+        if docker exec "$container" bash -c 'grep -q "WEBCLAW_APP_LAUNCHER" /opt/install-hermes.sh'; then
+            print_success "包含环境变量检测"
+        else
+            print_warning "缺少环境变量检测"
+            all_ok=false
+        fi
+    else
+        print_error "不存在或不可执行"
+        all_ok=false
+    fi
+
+    # 检查 webclaw-app-launcher
+    echo ""
+    echo "2️⃣  检查 webclaw-app-launcher:"
+    if docker exec "$container" bash -c '[ -x /usr/local/bin/webclaw-app-launcher ]'; then
+        print_success "可执行"
+        if docker exec "$container" bash -c 'grep -q "DISABLE_ZENITY=1" /usr/local/bin/webclaw-app-launcher'; then
+            print_success "包含进度反馈改进"
+        else
+            print_warning "缺少进度反馈改进"
+            all_ok=false
+        fi
+    else
+        print_error "不存在或不可执行"
+        all_ok=false
+    fi
+
+    # 检查 hermes.json
+    echo ""
+    echo "3️⃣  检查 hermes.json:"
+    if docker exec "$container" bash -c '[ -f /opt/on-demand-apps/hermes.json ]'; then
+        print_success "存在"
+    else
+        print_error "不存在"
+        all_ok=false
+    fi
+
+    # 检查桌面图标
+    echo ""
+    echo "4️⃣  检查桌面图标:"
+    if docker exec "$container" bash -c '[ -f /home/ubuntu/Desktop/hermes.desktop ]'; then
+        print_success "存在"
+    else
+        print_error "不存在"
+        all_ok=false
+    fi
+
+    echo ""
+    if [ "$all_ok" = true ]; then
+        print_success "所有验证通过！"
+        return 0
+    else
+        print_warning "部分验证未通过，请检查"
+        return 1
+    fi
+}
+
+# 主函数
+main() {
+    local container=""
+    local deploy_all=true
+    local deploy_hermes=false
+    local deploy_app_launcher=false
+    local deploy_startup=false
+    local clean_state=false
+    local verify_after=false
+
+    # 解析参数
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            -h|--help)
+                show_help
+                exit 0
+                ;;
+            --all)
+                deploy_all=true
+                shift
+                ;;
+            --hermes)
+                deploy_all=false
+                deploy_hermes=true
+                shift
+                ;;
+            --app-launcher)
+                deploy_all=false
+                deploy_app_launcher=true
+                shift
+                ;;
+            --startup)
+                deploy_all=false
+                deploy_startup=true
+                shift
+                ;;
+            --clean)
+                clean_state=true
+                shift
+                ;;
+            --verify)
+                verify_after=true
+                shift
+                ;;
+            -*)
+                print_error "未知选项: $1"
+                show_help
+                exit 1
+                ;;
+            *)
+                container="$1"
+                shift
+                ;;
+        esac
+    done
+
+    # 查找容器
+    if [ -z "$container" ]; then
+        container=$(find_default_container)
+        print_info "使用默认容器: $container"
+    fi
+
+    # 验证容器
+    verify_container "$container"
+
+    # 部署脚本
+    print_header "开始热部署"
+
+    local deploy_count=0
+    local deploy_failed=0
+
+    # 确保在项目根目录执行
+    cd "$PROJECT_ROOT"
+
+    if [ "$deploy_all" = true ] || [ "$deploy_hermes" = true ]; then
+        if deploy_script "$container" \
+            "scripts/install-hermes.sh" \
+            "/opt/install-hermes.sh" \
+            "install-hermes.sh"; then
+            ((deploy_count++))
+        else
+            ((deploy_failed++))
+        fi
+    fi
+
+    if [ "$deploy_all" = true ] || [ "$deploy_app_launcher" = true ]; then
+        if deploy_script "$container" \
+            "scripts/webclaw-app-launcher.sh" \
+            "/usr/local/bin/webclaw-app-launcher" \
+            "webclaw-app-launcher.sh"; then
+            ((deploy_count++))
+        else
+            ((deploy_failed++))
+        fi
+    fi
+
+    if [ "$deploy_all" = true ] || [ "$deploy_startup" = true ]; then
+        if deploy_script "$container" \
+            "scripts/startup.sh" \
+            "/opt/startup.sh" \
+            "startup.sh"; then
+            ((deploy_count++))
+        else
+            ((deploy_failed++))
+        fi
+    fi
+
+    # 清理安装状态
+    if [ "$clean_state" = true ]; then
+        clean_hermes_state "$container"
+    fi
+
+    # 验证部署
+    if [ "$verify_after" = true ]; then
+        verify_deployment "$container"
+    fi
+
+    # 显示总结
+    print_header "部署总结"
+    echo "✅ 成功部署: $deploy_count 个脚本"
+    if [ $deploy_failed -gt 0 ]; then
+        echo "❌ 部署失败: $deploy_failed 个脚本"
+    fi
+    echo "📦 容器: $container"
+
+    if [ $deploy_failed -eq 0 ]; then
+        print_success "热部署完成！"
+        exit 0
+    else
+        print_error "部分部署失败"
+        exit 1
+    fi
+}
+
+# 获取脚本所在目录的父目录（项目根目录）
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+# 运行主函数
+main "$@"
