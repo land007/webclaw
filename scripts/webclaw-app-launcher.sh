@@ -1095,7 +1095,50 @@ EOF
             # 同时禁用其内置 zenity，避免重复进度条
             echo "30"
             echo "# 准备安装环境..."
-            if ! sudo "/opt/hermes-install-wrapper.sh" >>"$LOG" 2>&1; then
+
+            # 创建进度文件用于实时更新
+            PROGRESS_FILE="/tmp/${APP_ID}_progress"
+            : > "$PROGRESS_FILE"
+
+            # 后台运行安装脚本
+            sudo "/opt/hermes-install-wrapper.sh" >>"$LOG" 2>&1 &
+            INSTALL_PID=$!
+
+            # 监控进度文件并实时更新 zenity
+            (
+                while kill -0 $INSTALL_PID 2>/dev/null; do
+                    if [ -f "$PROGRESS_FILE" ]; then
+                        PROGRESS=$(cat "$PROGRESS_FILE" 2>/dev/null || echo "30")
+                        echo "${PROGRESS}"
+                        # 尝试读取进度描述（可选）
+                        if [ -f "$PROGRESS_FILE.desc" ]; then
+                            DESC=$(cat "$PROGRESS_FILE.desc" 2>/dev/null || echo "安装中...")
+                        else
+                            # 如果没有描述文件，使用固定描述
+                            case "$PROGRESS" in
+                                10|20) DESC="安装依赖..." ;;
+                                30|40) DESC="克隆仓库..." ;;
+                                50|60) DESC="运行脚本..." ;;
+                                70|80) DESC="配置..." ;;
+                                90) DESC="启动服务..." ;;
+                                *) DESC="安装中..." ;;
+                            esac
+                        fi
+                        echo "# $DESC"
+                    fi
+                    sleep 2
+                done
+                # 安装完成
+                echo "100"
+                echo "# 完成"
+                rm -f "$PROGRESS_FILE" "$PROGRESS_FILE.desc" 2>/dev/null || true
+            ) &
+
+            # 等待安装完成
+            wait $INSTALL_PID
+            INSTALL_STATUS=$?
+
+            if [ $INSTALL_STATUS -ne 0 ]; then
                 echo "安装脚本执行失败" >> "$LOG"
                 echo "100"; exit 1
             fi

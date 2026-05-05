@@ -47,6 +47,7 @@ sleep 0.5
 # 安装步骤函数
 install_step_1_dependencies() {
     echo "[10%] 安装 Python 依赖..."
+    echo "10" > /tmp/hermes_progress 2>/dev/null || true
     # 检查并安装必要的包
     sudo apt-get update
 
@@ -61,6 +62,7 @@ install_step_1_dependencies() {
 
 install_step_2_clone() {
     echo "[30%] 克隆 Hermes 仓库..."
+    echo "30" > /tmp/hermes_progress 2>/dev/null || true
     # 克隆 Hermes 仓库到用户目录，然后移动到 /opt
     if [ ! -d "/opt/hermes-agent" ]; then
         cd /tmp
@@ -76,6 +78,7 @@ install_step_2_clone() {
 
 install_step_3_setup() {
     echo "[50%] 运行安装脚本（这需要几分钟）..."
+    echo "50" > /tmp/hermes_progress 2>/dev/null || true
     # 运行 Hermes 安装脚本（删除旧的 venv，用 ubuntu 用户运行）
     rm -rf venv
     sudo -u ubuntu bash -c './setup-hermes.sh' || true
@@ -86,10 +89,12 @@ install_step_3_setup() {
         return 1
     fi
     echo "✅ Hermes 核心组件安装成功"
+    echo "60" > /tmp/hermes_progress 2>/dev/null || true
 }
 
 install_step_4_config() {
     echo "[70%] 创建启动脚本和配置..."
+    echo "70" > /tmp/hermes_progress 2>/dev/null || true
     # 创建浏览器启动脚本
     cat > /opt/hermes-browser.sh << 'HERMES_EOF'
 #!/usr/bin/env bash
@@ -134,6 +139,7 @@ exec hermes dashboard --host 0.0.0.0 --port 10011 --insecure --no-open
 HERMES_EOF
 
     chmod +x /opt/start-hermes-dashboard.sh
+    echo "75" > /tmp/hermes_progress 2>/dev/null || true
 
     # 创建 Supervisor 配置
     cat > /etc/supervisor/conf.d/supervisor-hermes.conf << 'HERMES_EOF'
@@ -173,10 +179,12 @@ HERMES_EOF
     # 更新 Supervisor 配置
     supervisorctl reread
     supervisorctl update
+    echo "80" > /tmp/hermes_progress 2>/dev/null || true
 }
 
 install_step_5_start() {
     echo "[90%] 启动 Hermes 服务..."
+    echo "90" > /tmp/hermes_progress 2>/dev/null || true
     # 创建配置目录
     mkdir -p /home/ubuntu/.hermes
     chown -R ubuntu:ubuntu /home/ubuntu/.hermes /opt/hermes-agent
@@ -195,6 +203,7 @@ install_step_5_start() {
     sleep 5
 
     echo "[100%] 安装完成！"
+    echo "100" > /tmp/hermes_progress 2>/dev/null || true
 }
 
 # 安装进度函数
