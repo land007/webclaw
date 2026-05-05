@@ -371,6 +371,8 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
     && printf '\n# Theme switch aliases\nalias light-mode="/usr/local/bin/theme-switch light"\nalias dark-mode="/usr/local/bin/theme-switch dark"\n' >> /home/ubuntu/.bashrc \
     && printf '\n# Language switch aliases\nalias chinese="/usr/local/bin/lang-switch zh"\nalias english="/usr/local/bin/lang-switch en"\n' >> /home/ubuntu/.bashrc \
     && chmod +x /opt/start-dashboard.sh /opt/start-webtty.sh /opt/start-openclaw.sh /opt/install-hermes.sh /opt/uninstall-hermes.sh /usr/local/bin/hermes-launcher /opt/start-hermes-dashboard.sh /opt/hermes-browser.sh \
+    && chown root:root /opt/install-hermes.sh /opt/uninstall-hermes.sh /opt/start-hermes-dashboard.sh /opt/hermes-browser.sh \
+    && chmod 755 /opt/install-hermes.sh /opt/uninstall-hermes.sh /opt/start-hermes-dashboard.sh /opt/hermes-browser.sh \
     && cp /opt/desktop-shortcuts/hermes-uninstall.desktop /usr/share/applications/ \
     && rm -rf /tmp/supervisor-audio.conf /tmp/audio-player.html /tmp/audio-bar.js \
            /tmp/touch-handler.js /tmp/key-remap.js /tmp/xsession /tmp/desktop-shortcuts/ /tmp/desktop-icons/ \
