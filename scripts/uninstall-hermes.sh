@@ -46,7 +46,10 @@ zenity --question \
     rm -f /opt/hermes-browser.sh
 
     # 清理 Python 缓存（uv 缓存的 hermes_agent 包）
-    rm -rf /home/ubuntu/.cache/uv/*hermes* 2>/dev/null || true
+    rm -rf /home/ubuntu/.cache/uv/sdks/*hermes* 2>/dev/null || true
+    rm -rf /home/ubuntu/.cache/uv/sdists-v9/editable/* 2>/dev/null || true
+    rm -rf /home/ubuntu/.cache/uv/v0-cache/*hermes* 2>/dev/null || true
+    find /home/ubuntu/.cache/uv -name "*hermes*" -delete 2>/dev/null || true
     rm -rf /home/ubuntu/.local/lib/python*/site-packages/hermes* 2>/dev/null || true
 
     echo "50"
