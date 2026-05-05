@@ -333,6 +333,8 @@ COPY scripts/code-server-browser.sh /usr/local/bin/code-server-browser
 COPY scripts/install-hermes.sh /opt/install-hermes.sh
 COPY scripts/uninstall-hermes.sh /opt/uninstall-hermes.sh
 COPY scripts/hermes-launcher.sh /usr/local/bin/hermes-launcher
+COPY scripts/start-hermes-dashboard.sh /opt/start-hermes-dashboard.sh
+COPY scripts/hermes-browser.sh /opt/hermes-browser.sh
 COPY configs/on-demand-apps/hermes.json /opt/on-demand-apps/
 COPY configs/desktop-shortcuts/ /tmp/desktop-shortcuts/
 COPY configs/desktop-icons/ /tmp/desktop-icons/
@@ -368,7 +370,7 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
     && visudo -c -f /etc/sudoers.d/webclaw-lang-switch \
     && printf '\n# Theme switch aliases\nalias light-mode="/usr/local/bin/theme-switch light"\nalias dark-mode="/usr/local/bin/theme-switch dark"\n' >> /home/ubuntu/.bashrc \
     && printf '\n# Language switch aliases\nalias chinese="/usr/local/bin/lang-switch zh"\nalias english="/usr/local/bin/lang-switch en"\n' >> /home/ubuntu/.bashrc \
-    && chmod +x /opt/start-dashboard.sh /opt/start-webtty.sh /opt/start-openclaw.sh /opt/install-hermes.sh /opt/uninstall-hermes.sh /usr/local/bin/hermes-launcher \
+    && chmod +x /opt/start-dashboard.sh /opt/start-webtty.sh /opt/start-openclaw.sh /opt/install-hermes.sh /opt/uninstall-hermes.sh /usr/local/bin/hermes-launcher /opt/start-hermes-dashboard.sh /opt/hermes-browser.sh \
     && cp /opt/desktop-shortcuts/hermes-uninstall.desktop /usr/share/applications/ \
     && rm -rf /tmp/supervisor-audio.conf /tmp/audio-player.html /tmp/audio-bar.js \
            /tmp/touch-handler.js /tmp/key-remap.js /tmp/xsession /tmp/desktop-shortcuts/ /tmp/desktop-icons/ \
