@@ -22,7 +22,7 @@ is_installed() {
     local pkg=$(jq -r '.package' "$manifest")
     local bin=$(jq -r '.binary' "$manifest")
 
-    if [ "$install_method" = "appimage" ] || [ "$install_method" = "r2_download" ] || [ "$install_method" = "direct_download" ] || [ "$install_method" = "cursor_api" ] || [ "$install_method" = "hermes_custom" ]; then
+    if [ "$install_method" = "appimage" ] || [ "$install_method" = "r2_download" ] || [ "$install_method" = "direct_download" ] || [ "$install_method" = "cursor_api" ] || [ "$install_method" = "custom_script" ]; then
         [ -x "$bin" ]
     else
         dpkg -s "$pkg" 2>/dev/null | grep -q "Status: install ok installed" && [ -x "$bin" ]
@@ -145,7 +145,8 @@ for desktop in "$DESKTOP_DIR"/*.desktop; do
     esac
 
     # 检查是否是按需安装的应用
-    if ! grep -q "webclaw-app-launcher\|hermes-launcher" "$desktop"; then
+    # Hermes 的桌面图标使用 /opt/hermes-browser.sh 启动
+    if ! grep -q "webclaw-app-launcher\|hermes-launcher\|/opt/hermes-browser.sh" "$desktop"; then
         continue
     fi
 
