@@ -156,8 +156,18 @@ stderr_logfile_maxbytes=10MB
 HERMES_EOF
 
 	# 添加到 Supervisor 主配置文件的 include 列表
-	if [ -f "/etc/supervisor/supervisord.conf" ] && ! grep -q "supervisor-hermes.conf" /etc/supervisor/supervisord.conf; then
-		sed -i "s|/etc/supervisor/conf.d/supervisor-clipboard.conf|/etc/supervisor/conf.d/supervisor-clipboard.conf /etc/supervisor/conf.d/supervisor-hermes.conf|" /etc/supervisor/supervisord.conf
+	if [ -f "/etc/supervisor/supervisord.conf" ]; then
+		# 检查是否已经在 include 列表中
+		if ! grep -q "supervisor-hermes.conf" /etc/supervisor/supervisord.conf; then
+			# 获取 include 行的 files 部分
+			if grep -q "^files " /etc/supervisor/supervisord.conf; then
+				# 在 files 行末尾添加（确保没有重复）
+				sed -i "s|^files \\(.*\\)|files \\1 /etc/supervisor/conf.d/supervisor-hermes.conf|" /etc/supervisor/supervisord.conf
+			else
+				# 如果没有 files 行，在 [include] 部分添加
+				sed -i '/\\[include\\]/a files = /etc/supervisor/conf.d/supervisor-hermes.conf' /etc/supervisor/supervisord.conf
+			fi
+		fi
 	fi
 
     # 更新 Supervisor 配置
