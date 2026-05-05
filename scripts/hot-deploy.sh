@@ -369,6 +369,16 @@ main() {
         else
             deploy_failed=$((deploy_failed + 1))
         fi
+
+        # 同时部署 update-desktop-icons.sh
+        if deploy_script "$container" \
+            "scripts/update-desktop-icons.sh" \
+            "/usr/local/bin/update-desktop-icons" \
+            "update-desktop-icons.sh"; then
+            deploy_count=$((deploy_count + 1))
+        else
+            deploy_failed=$((deploy_failed + 1))
+        fi
     fi
 
     if [ "$deploy_all" = true ] || [ "$deploy_startup" = true ]; then
