@@ -335,6 +335,29 @@ main() {
         else
             deploy_failed=$((deploy_failed + 1))
         fi
+
+        # 部署 Hermes 配置文件
+        print_info "部署 Hermes 配置文件..."
+        if [ -f "${PROJECT_ROOT}/configs/on-demand-apps/hermes.json" ]; then
+            docker cp "${PROJECT_ROOT}/configs/on-demand-apps/hermes.json" \
+                "${container}:/opt/on-demand-apps/hermes.json" 2>/dev/null || true
+            docker exec "$container" bash -c "chown ubuntu:ubuntu /opt/on-demand-apps/hermes.json" 2>/dev/null || true
+            print_success "配置文件已部署"
+        else
+            print_warning "本地配置文件不存在"
+        fi
+
+        # 部署 Hermes 图标文件
+        print_info "部署 Hermes 图标文件..."
+        if [ -f "${PROJECT_ROOT}/configs/desktop-icons/hermes.png" ]; then
+            docker cp "${PROJECT_ROOT}/configs/desktop-icons/hermes.png" \
+                "${container}:/opt/desktop-icons/hermes.png" 2>/dev/null || true
+            docker cp "${PROJECT_ROOT}/configs/desktop-icons/hermes.png" \
+                "${container}:/opt/on-demand-icons/hermes.png" 2>/dev/null || true
+            print_success "图标文件已部署"
+        else
+            print_warning "本地图标文件不存在"
+        fi
     fi
 
     if [ "$deploy_all" = true ] || [ "$deploy_app_launcher" = true ]; then
