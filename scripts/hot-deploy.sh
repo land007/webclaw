@@ -171,8 +171,8 @@ Name=Hermes Agent
 Name[zh_CN]=Hermes 智能体
 Comment=自进化 AI 代理
 Comment[zh_CN]=具有学习能力的自进化 AI 代理
-Exec=bash -c "WEBCLAW_APP_LAUNCHER=1 /usr/local/bin/webclaw-app-launcher hermes"
-Icon=/opt/desktop-icons/hermes.png
+Exec=/usr/local/bin/webclaw-app-launcher hermes
+Icon=/opt/on-demand-icons/hermes.png
 Terminal=false
 Categories=Application;Network;
 EOF
@@ -490,6 +490,13 @@ main() {
     # 验证部署
     if [ "$verify_after" = true ]; then
         verify_deployment "$container"
+    fi
+
+    # 更新桌面图标状态（添加下载箭头等）
+    print_info "更新桌面图标状态..."
+    if docker exec "$container" bash -c "[ -x /usr/local/bin/update-desktop-icons ]"; then
+        docker exec "$container" /usr/local/bin/update-desktop-icons >/dev/null 2>&1 || true
+        print_success "桌面图标已更新"
     fi
 
     # 显示总结
