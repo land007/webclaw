@@ -1090,14 +1090,17 @@ EOF
             echo "10"
             echo "# 正在安装 $NAME..."
 
-            # 执行自定义安装脚本
+            # 执行自定义安装脚本（不使用其内置进度条，我们自己控制）
             # 设置环境变量告诉脚本这是由 webclaw-app-launcher 调用的
-            if ! WEBCLAW_APP_LAUNCHER=1 sudo "$INSTALL_SCRIPT" >>"$LOG" 2>&1; then
+            # 同时禁用其内置 zenity，避免重复进度条
+            echo "30"
+            echo "# 准备安装环境..."
+            if ! WEBCLAW_APP_LAUNCHER=1 DISABLE_ZENITY=1 sudo "$INSTALL_SCRIPT" >>"$LOG" 2>&1; then
                 echo "安装脚本执行失败" >> "$LOG"
                 echo "100"; exit 1
             fi
 
-            echo "90"
+            echo "70"
             echo "# 正在配置..."
 
             # 添加到 Supervisor 配置（如果需要）
@@ -1109,12 +1112,19 @@ EOF
                 fi
             fi
 
+            echo "90"
+            echo "# 启动服务..."
+
+            # 等待服务启动
+            sleep 3
+
             echo "100"
             echo "# 完成"
         } | zenity --progress \
             --title="安装 $NAME" \
             --text="准备中..." \
-            --percentage=0 --auto-close --no-cancel --width=420
+            --percentage=0 --auto-close --no-cancel --width=420 \
+            --window-icon=/opt/on-demand-icons/hermes.png
         ;;
 
     *)
