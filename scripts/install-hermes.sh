@@ -81,7 +81,7 @@ install_step_3_setup() {
     echo "50" > /tmp/hermes_progress 2>/dev/null || true
     # 运行 Hermes 安装脚本（删除旧的 venv，用 ubuntu 用户运行）
     rm -rf venv
-    sudo -u ubuntu bash -c './setup-hermes.sh' || true
+    sudo -u ubuntu bash -c './setup-hermes.sh 2>&1 | tee /tmp/hermes-setup.log' || true
 
     # 检查核心功能是否成功安装（允许 setup-hermes.sh 因缺少可选组件返回非零）
     if [ ! -f "venv/bin/hermes" ] || [ ! -x "venv/bin/hermes" ]; then
@@ -177,8 +177,8 @@ HERMES_EOF
 	fi
 
     # 更新 Supervisor 配置
-    supervisorctl reread
-    supervisorctl update
+    supervisorctl reread >> /tmp/hermes-install.log 2>&1 || echo "Warning: supervisorctl reread failed"
+    supervisorctl update >> /tmp/hermes-install.log 2>&1 || echo "Warning: supervisorctl update failed"
     echo "80" > /tmp/hermes_progress 2>/dev/null || true
 }
 
@@ -197,10 +197,24 @@ install_step_5_start() {
     fi
 
     # 启动 Hermes 服务
-    supervisorctl start hermes
+    supervisorctl start hermes >> /tmp/hermes-install.log 2>&1 || echo "Warning: failed to start hermes"
 
-    # 等待服务启动
-    sleep 5
+    # 等待服务启动，最多30秒
+    TIMEOUT=30
+    ELAPSED=0
+    while [ $ELAPSED -lt $TIMEOUT ]; do
+        if supervisorctl status hermes 2>/dev/null | grep -q "RUNNING"; then
+            echo "✅ Hermes 服务已启动"
+            break
+        fi
+        sleep 2
+        ELAPSED=$((ELAPSED + 2))
+    done
+
+    if [ $ELAPSED -ge $TIMEOUT ]; then
+        echo "⚠️ 警告：Hermes 服务启动超时（30秒）"
+        supervisorctl status hermes >> /tmp/hermes-install.log 2>&1 || true
+    fi
 
     echo "[100%] 安装完成！"
     echo "100" > /tmp/hermes_progress 2>/dev/null || true
