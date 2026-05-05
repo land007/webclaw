@@ -29,17 +29,17 @@ else
       --no-wrap || exit 0
 fi
 
-# 更新桌面图标显示为"安装中..."
-cat > /home/ubuntu/Desktop/hermes.desktop << 'EOF'
-[Desktop Entry]
-Name=Hermes Agent (安装中...)
-Name[zh_CN]=Hermes 智能代理 (安装中...)
-Exec=/usr/bin/true
-Icon=/opt/desktop-icons/hermes.png
-Terminal=false
-Type=Application
-StartupNotify=false
-EOF
+# # 更新桌面图标显示为"安装中..."
+# cat > /home/ubuntu/Desktop/hermes.desktop << 'EOF'
+# [Desktop Entry]
+# Name=Hermes Agent (安装中...)
+# Name[zh_CN]=Hermes 智能代理 (安装中...)
+# Exec=/usr/bin/true
+# Icon=/opt/desktop-icons/hermes.png
+# Terminal=false
+# Type=Application
+# StartupNotify=false
+# EOF
 
 # 短暂延迟确保 zenity 对话框显示
 sleep 0.5
