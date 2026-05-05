@@ -1103,10 +1103,18 @@ EOF
             echo "70"
             echo "# 正在配置..."
 
-            # 添加到 Supervisor 配置（如果需要）
-            if [ -f "/etc/supervisor/conf.d/supervisor-hermes.conf" ] && [ -f "/etc/supervisor/supervisord.conf" ]; then
+            # 添加到 Supervisor 配置（通用方法）
+            if [ -f "/etc/supervisor/supervisord.conf" ]; then
+                # 检查是否已经在 include 列表中
                 if ! grep -q "supervisor-hermes.conf" /etc/supervisor/supervisord.conf; then
-                    sed -i "s|/etc/supervisor/conf.d/supervisor-clipboard.conf|/etc/supervisor/conf.d/supervisor-clipboard.conf /etc/supervisor/conf.d/supervisor-hermes.conf|" /etc/supervisor/supervisord.conf
+                    # 获取 include 行的 files 部分
+                    if grep -q "^files " /etc/supervisor/supervisord.conf; then
+                        # 在 files 行末尾添加（确保没有重复）
+                        sed -i "s|^files \\(.*\\)|files \\1 /etc/supervisor/conf.d/supervisor-hermes.conf|" /etc/supervisor/supervisord.conf
+                    else
+                        # 如果没有 files 行，在 [include] 部分添加
+                        sed -i '/\\[include\\]/a files = /etc/supervisor/conf.d/supervisor-hermes.conf' /etc/supervisor/supervisord.conf
+                    fi
                     supervisorctl reread > /dev/null 2>&1
                     supervisorctl update > /dev/null 2>&1
                 fi
