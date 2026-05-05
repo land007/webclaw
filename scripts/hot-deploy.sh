@@ -155,10 +155,17 @@ clean_hermes_state() {
 
     print_info "清理安装状态文件..."
     docker exec "$container" bash -c '
+        # 删除所有安装相关的目录和文件
+        rm -rf /opt/hermes-agent 2>/dev/null || true
+        rm -rf /tmp/hermes-agent 2>/dev/null || true
+        rm -f /opt/hermes-browser.sh 2>/dev/null || true
+        rm -f /opt/start-hermes-dashboard.sh 2>/dev/null || true
+        rm -f /etc/supervisor/conf.d/supervisor-hermes.conf 2>/dev/null || true
         rm -f /opt/hermes-agent/.install_done 2>/dev/null || true
         rm -f /tmp/hermes-install-progress 2>/dev/null || true
         > /tmp/hermes-install.log
         > /tmp/webclaw-ondemand-hermes.log
+        > /tmp/webclaw-ondemand-hermes-ubuntu.log
     ' >/dev/null 2>&1 || true
 
     print_info "重置桌面图标..."
