@@ -155,6 +155,11 @@ stdout_logfile_maxbytes=10MB
 stderr_logfile_maxbytes=10MB
 HERMES_EOF
 
+	# 添加到 Supervisor 主配置文件的 include 列表
+	if [ -f "/etc/supervisor/supervisord.conf" ] && ! grep -q "supervisor-hermes.conf" /etc/supervisor/supervisord.conf; then
+		sed -i "s|/etc/supervisor/conf.d/supervisor-clipboard.conf|/etc/supervisor/conf.d/supervisor-clipboard.conf /etc/supervisor/conf.d/supervisor-hermes.conf|" /etc/supervisor/supervisord.conf
+	fi
+
     # 更新 Supervisor 配置
     supervisorctl reread
     supervisorctl update
