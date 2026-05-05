@@ -7,10 +7,18 @@ export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1000}"
 mkdir -p "$XDG_RUNTIME_DIR"
 chmod 700 "$XDG_RUNTIME_DIR" || true
 
+# 检查是否在 Docker 构建环境中
+if [ -f "/.dockerenv" ] || [ "${HERMES_DOCKER_BUILD:-}" = "1" ]; then
+    export HERMES_DOCKER_BUILD=1
+fi
+
 # 检查是否已安装
 if [ -d "/opt/hermes-agent" ] && [ -f "/opt/hermes-agent/venv/bin/hermes" ] && [ -f "/opt/hermes-browser.sh" ]; then
-    # 已安装，直接启动 Dashboard
-    /opt/hermes-browser.sh
+    # 已安装
+    if [ "${HERMES_DOCKER_BUILD:-}" != "1" ]; then
+        # 非 Docker 构建环境，直接启动 Dashboard
+        /opt/hermes-browser.sh
+    fi
     exit 0
 fi
 
@@ -327,8 +335,10 @@ EOF
           --no-wrap
     fi
 
-    # 自动打开 Dashboard
-    /opt/hermes-browser.sh
+    # 自动打开 Dashboard（仅在非 Docker 构建环境）
+    if [ "${HERMES_DOCKER_BUILD:-}" != "1" ]; then
+        /opt/hermes-browser.sh
+    fi
 else
     # 显示失败消息
     if [ "${DISABLE_ZENITY:-}" != "1" ]; then
