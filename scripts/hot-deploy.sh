@@ -347,6 +347,46 @@ main() {
             print_warning "本地配置文件不存在"
         fi
 
+        # 部署 Hermes sudoers 配置
+        print_info "部署 Hermes sudoers 配置..."
+        if [ -f "${PROJECT_ROOT}/configs/sudoers/webclaw-app-launcher" ]; then
+            docker cp "${PROJECT_ROOT}/configs/sudoers/webclaw-app-launcher" \
+                "${container}:/etc/sudoers.d/webclaw-app-launcher" 2>/dev/null || true
+            docker exec "$container" bash -c "chmod 0440 /etc/sudoers.d/webclaw-app-launcher" 2>/dev/null || true
+            print_success "sudoers 配置已部署"
+        else
+            print_warning "本地 sudoers 配置不存在"
+        fi
+
+        # 部署 Hermes 卸载脚本
+        print_info "部署 Hermes 卸载脚本..."
+        if [ -f "${PROJECT_ROOT}/scripts/uninstall-hermes.sh" ]; then
+            docker cp "${PROJECT_ROOT}/scripts/uninstall-hermes.sh" \
+                "${container}:/opt/uninstall-hermes.sh" 2>/dev/null || true
+            docker exec "$container" chmod +x /opt/uninstall-hermes.sh 2>/dev/null || true
+            print_success "卸载脚本已部署"
+        fi
+
+        # 部署桌面公共文件（desktop-shortcuts 和 desktop-icons）
+        print_info "部署桌面公共文件..."
+
+        # desktop-icons
+        if [ -d "${PROJECT_ROOT}/configs/desktop-icons" ]; then
+            docker exec "$container" mkdir -p /opt/desktop-icons 2>/dev/null || true
+            docker cp "${PROJECT_ROOT}/configs/desktop-icons/"*.png \
+                "${container}:/opt/desktop-icons/" 2>/dev/null || true
+        fi
+
+        # desktop-shortcuts
+        if [ -d "${PROJECT_ROOT}/configs/desktop-shortcuts" ]; then
+            docker exec "$container" mkdir -p /opt/desktop-shortcuts 2>/dev/null || true
+            docker cp "${PROJECT_ROOT}/configs/desktop-shortcuts/"*.desktop \
+                "${container}:/opt/desktop-shortcuts/" 2>/dev/null || true
+            docker exec "$container" chmod +x /opt/desktop-shortcuts/*.desktop 2>/dev/null || true
+        fi
+
+        print_success "桌面公共文件已部署"
+
         # 部署 Hermes 图标文件
         print_info "部署 Hermes 图标文件..."
         if [ -f "${PROJECT_ROOT}/configs/desktop-icons/hermes.png" ]; then
