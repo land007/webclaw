@@ -1095,7 +1095,7 @@ EOF
             # 同时禁用其内置 zenity，避免重复进度条
             echo "30"
             echo "# 准备安装环境..."
-            if ! WEBCLAW_APP_LAUNCHER=1 DISABLE_ZENITY=1 sudo "$INSTALL_SCRIPT" >>"$LOG" 2>&1; then
+            if ! WEBCLAW_APP_LAUNCHER=1 DISABLE_ZENITY=1 sudo -E "$INSTALL_SCRIPT" >>"$LOG" 2>&1; then
                 echo "安装脚本执行失败" >> "$LOG"
                 echo "100"; exit 1
             fi
