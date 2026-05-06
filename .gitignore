@@ -3,3 +3,4 @@ dist/
 docker_ubuntu-unity-novnc/
 .claude
 backups/
+CLAUDE.md
