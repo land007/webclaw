@@ -231,6 +231,12 @@ export ENABLE_OPENCLAW="${ENABLE_OPENCLAW:-true}"
 export ENABLE_CLAUDECODEUI="${ENABLE_CLAUDECODEUI:-$WEBCODE_HAS_CLAUDECODEUI}"
 export ENABLE_FUSE="${ENABLE_FUSE:-false}"
 
+# ─── Desktop icons behavior ────────────────────────────────────────────
+# CLEAN_DESKTOP: 控制桌面图标显示行为
+#   - true（默认）: 未安装应用仅在 Applications 菜单中显示，不在桌面显示
+#   - false: 保持传统行为，所有应用（包括未安装）都在桌面显示
+export CLEAN_DESKTOP="${CLEAN_DESKTOP:-true}"
+
 # ─── Ubuntu user password setup ────────────────────────────────────
 # 设置 ubuntu 用户密码（如果提供了 PASSWORD 环境变量）
 if [ -n "$PASSWORD" ]; then

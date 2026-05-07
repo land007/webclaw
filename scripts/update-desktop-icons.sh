@@ -10,6 +10,9 @@ UNINSTALL_APP_DIR="/home/ubuntu/.local/share/applications/webclaw-uninstall"
 UNINSTALL_MENU_DIR="/home/ubuntu/.local/share/desktop-directories"
 UNINSTALL_MENU_FILE="/home/ubuntu/.config/menus/applications-merged/webclaw-uninstall.menu"
 UNINSTALL_CATEGORY="WebClawUninstall"
+INSTALL_MENU_DIR="/home/ubuntu/.local/share/desktop-directories"
+INSTALL_MENU_FILE="/home/ubuntu/.config/menus/applications-merged/webclaw-install.menu"
+INSTALL_CATEGORY="WebClawInstall"
 
 cleanup_desktop_temp_files() {
     find "$DESKTOP_DIR" -maxdepth 1 -type f \( -name 'sed*' -o -name '*.tmp' \) -delete 2>/dev/null || true
@@ -90,6 +93,35 @@ EOF
     chown -R ubuntu:ubuntu "$UNINSTALL_APP_DIR" "$UNINSTALL_MENU_DIR" "$(dirname "$UNINSTALL_MENU_FILE")" 2>/dev/null || true
 }
 
+write_install_menu() {
+    mkdir -p "$INSTALL_MENU_DIR" "$(dirname "$INSTALL_MENU_FILE")"
+
+    cat > "$INSTALL_MENU_DIR/webclaw-install.directory" <<'EOF'
+[Desktop Entry]
+Name=Install Apps
+Name[zh_CN]=安装应用
+Icon=package-install
+Type=Directory
+EOF
+
+    cat > "$INSTALL_MENU_FILE" <<'EOF'
+<!DOCTYPE Menu PUBLIC "-//freedesktop//DTD Menu 1.0//EN"
+ "http://www.freedesktop.org/standards/menu-spec/1.0/menu.dtd">
+<Menu>
+  <Name>Applications</Name>
+  <Menu>
+    <Name>webclaw-install</Name>
+    <Directory>webclaw-install.directory</Directory>
+    <Include>
+      <Category>WebClawInstall</Category>
+    </Include>
+  </Menu>
+</Menu>
+EOF
+
+    chown -R ubuntu:ubuntu "$INSTALL_MENU_DIR" "$(dirname "$INSTALL_MENU_FILE")" 2>/dev/null || true
+}
+
 ensure_uninstall_menu_entry() {
     local app_id="$1"
     local name="$2"
@@ -134,8 +166,118 @@ remove_uninstall_menu_entry() {
     rm -f "$UNINSTALL_APP_DIR/webclaw-uninstall-${app_id}.desktop"
 }
 
+ensure_install_menu_entry() {
+    local app_id="$1"
+    local name="$2"
+    local manifest="$3"
+    local icon
+    local entry="/home/ubuntu/.local/share/applications/webclaw-install-${app_id}.desktop"
+
+    icon="/opt/on-demand-icons/${app_id}.png"
+    if [ ! -e "$icon" ]; then
+        icon=$(jq -r '.icon // empty' "$manifest")
+    fi
+    [ -n "$icon" ] && [ "$icon" != "null" ] || icon="$app_id"
+
+    # Hermes 使用自定义启动器
+    if [ "$app_id" = "hermes" ]; then
+        exec_cmd="/opt/hermes-browser.sh"
+    else
+        exec_cmd="/usr/local/bin/webclaw-app-launcher $app_id"
+    fi
+
+    cat > "$entry" <<EOF
+[Desktop Entry]
+Name=$name
+Name[zh_CN]=$name
+Comment=Click to install $name
+Comment[zh_CN]=点击安装 $name
+Exec=$exec_cmd
+Icon=$icon
+Type=Application
+Categories=${INSTALL_CATEGORY};
+NoDisplay=false
+StartupNotify=true
+EOF
+
+    chown ubuntu:ubuntu "$entry" 2>/dev/null || true
+    chmod 644 "$entry" 2>/dev/null || true
+}
+
+remove_install_menu_entry() {
+    local app_id="$1"
+    rm -f "/home/ubuntu/.local/share/applications/webclaw-install-${app_id}.desktop"
+}
+
+create_desktop_icon() {
+    local app_id="$1"
+    local manifest="$2"
+    local desktop="$DESKTOP_DIR/${app_id}.desktop"
+    local name=$(jq -r '.name' "$manifest")
+    local icon
+    local exec_cmd
+
+    # 如果已存在，跳过
+    [ -f "$desktop" ] && return 0
+
+    icon="/opt/on-demand-icons/${app_id}.png"
+    if [ ! -e "$icon" ]; then
+        icon=$(jq -r '.icon // empty' "$manifest")
+    fi
+    [ -n "$icon" ] && [ "$icon" != "null" ] || icon="$app_id"
+
+    # Hermes 使用自定义启动器
+    if [ "$app_id" = "hermes" ]; then
+        exec_cmd="/opt/hermes-browser.sh"
+    else
+        exec_cmd="/usr/local/bin/webclaw-app-launcher $app_id"
+    fi
+
+    cat > "$desktop" <<EOF
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=$name
+Name[zh_CN]=$name
+Comment=Click to install or launch $name
+Comment[zh_CN]=点击安装或启动 $name
+Exec=$exec_cmd
+Icon=$icon
+Terminal=false
+StartupNotify=true
+EOF
+
+    chown ubuntu:ubuntu "$desktop" 2>/dev/null || true
+    chmod +x "$desktop" 2>/dev/null || true
+}
+
+restore_missing_desktop_icons() {
+    # 恢复缺失的桌面图标
+    for manifest in "$MANIFEST_DIR"/*.json; do
+        [ -f "$manifest" ] || continue
+        app_id=$(basename "$manifest" .json)
+        desktop="$DESKTOP_DIR/${app_id}.desktop"
+
+        # 如果桌面图标不存在，重新创建
+        if [ ! -f "$desktop" ]; then
+            create_desktop_icon "$app_id" "$manifest"
+        fi
+    done
+}
+
 cleanup_desktop_temp_files
 write_uninstall_menu
+
+# 恢复缺失的桌面图标（支持模式切换）
+restore_missing_desktop_icons
+
+# 读取环境变量
+CLEAN_DESKTOP="${CLEAN_DESKTOP:-true}"
+
+# 根据环境变量决定是否创建"安装应用"菜单
+if [ "$CLEAN_DESKTOP" = "true" ]; then
+    write_install_menu
+fi
 
 # 处理每个桌面图标
 for desktop in "$DESKTOP_DIR"/*.desktop; do
@@ -164,12 +306,33 @@ for desktop in "$DESKTOP_DIR"/*.desktop; do
     name=$(jq -r '.name' "$manifest")
 
     if is_installed "$manifest"; then
-        # 已安装 - 移除"未安装"标记
+        # === 已安装应用 ===
+        # 移除"未安装"标记，显示正常名称
         normalize_desktop_file "$desktop" "$name"
         ensure_uninstall_menu_entry "$app_id" "$name" "$manifest"
+
+        # 如果启用简洁桌面模式，从"安装应用"菜单移除
+        if [ "$CLEAN_DESKTOP" = "true" ]; then
+            remove_install_menu_entry "$app_id"
+        fi
     else
-        # 未安装 - 添加"待安装"标记
-        normalize_desktop_file "$desktop" "⬇ $name"
+        # === 未安装应用 ===
+        if [ "$CLEAN_DESKTOP" = "true" ]; then
+            # 简洁桌面模式：隐藏桌面图标，添加到"安装应用"菜单
+            normalize_desktop_file "$desktop" "⬇ $name"
+            # 设置 NoDisplay=true 隐藏桌面图标
+            if ! grep -q "^NoDisplay=true" "$desktop"; then
+                sed -i '/^Type=Application/a NoDisplay=true' "$desktop"
+            fi
+            ensure_install_menu_entry "$app_id" "$name" "$manifest"
+        else
+            # 传统模式：在桌面显示，添加"待安装"标记
+            normalize_desktop_file "$desktop" "⬇ $name"
+            # 确保移除 NoDisplay，让图标显示在桌面
+            sed -i '/^NoDisplay=true/d' "$desktop"
+        fi
+
+        # 未安装应用不需要卸载菜单项
         remove_uninstall_menu_entry "$app_id"
     fi
 done

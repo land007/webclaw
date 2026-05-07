@@ -39,6 +39,7 @@ services:
       - ENABLE_OPENCLAW=${ENABLE_OPENCLAW:-true}
       - ENABLE_CLAUDECODEUI=${ENABLE_CLAUDECODEUI:-false}
       - HOST_API_TOKEN=${HOST_API_TOKEN:-webclaw-host-token-change-me}
+      - CLEAN_DESKTOP=${CLEAN_DESKTOP:-true}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     shm_size: "512m"
