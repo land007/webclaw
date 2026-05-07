@@ -170,6 +170,8 @@ if [ -f /usr/share/applications/launchpad.desktop ]; then
     cp /usr/share/applications/launchpad.desktop /home/ubuntu/Desktop/ 2>/dev/null || true
     chown ubuntu:ubuntu /home/ubuntu/Desktop/launchpad.desktop 2>/dev/null || true
     chmod +x /home/ubuntu/Desktop/launchpad.desktop 2>/dev/null || true
+    # Keep the Launchpad trigger in a predictable lower-left spot near the desktop icons.
+    gio set -t string /home/ubuntu/Desktop/launchpad.desktop metadata::nautilus-icon-position "86,626" 2>/dev/null || true
 fi
 
 # Keep session alive

@@ -384,7 +384,7 @@ COPY scripts/browser.sh /usr/local/bin/browser
 RUN chmod +x /usr/local/bin/browser
 
 # ─── Launchpad (全屏应用启动台) ────────────────────────────────────────────
-# 类似 macOS Launchpad 的全屏应用网格，支持分类、搜索、收藏
+# 类似 macOS Launchpad 的全屏分页应用网格，复用桌面快捷方式图标
 COPY scripts/launchpad.sh /usr/local/bin/launchpad
 COPY configs/desktop-shortcuts/launchpad.desktop /usr/share/applications/launchpad.desktop
 RUN chmod +x /usr/local/bin/launchpad && \
