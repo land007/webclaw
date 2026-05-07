@@ -440,6 +440,7 @@ LABEL org.opencontainers.image.title="webclaw" \
 ENV MODE=desktop
 ENV PASSWORD=
 ENV VNC_RESOLUTION=1920x1080
+ENV CLEAN_DESKTOP=true
 
 ENTRYPOINT ["/opt/startup.sh"]
 
