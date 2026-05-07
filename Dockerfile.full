@@ -68,7 +68,7 @@ RUN chmod +x /opt/enable-claudecodeui-platform-mode.sh && \
 # 这些应用运行时仍可通过桌面图标按需安装。
 COPY scripts/preinstall-on-demand.sh /opt/preinstall-on-demand.sh
 RUN chmod +x /opt/preinstall-on-demand.sh && \
-    PREINSTALL_SKIP=android-studio,intellij,pycharm,blender,eclipse,trae /opt/preinstall-on-demand.sh
+    PREINSTALL_SKIP=android-studio,intellij,pycharm,blender,eclipse,trae,antigravity /opt/preinstall-on-demand.sh
 
 # ─── 5g. 预装 Hermes Agent ─────────────────────────────────────────────────
 # 自进化的 AI 代理，需要 Python 3.11、git、supervisor
