@@ -189,8 +189,8 @@ ensure_install_menu_entry() {
 
     cat > "$entry" <<EOF
 [Desktop Entry]
-Name=$name
-Name[zh_CN]=$name
+Name=⬇ $name
+Name[zh_CN]=⬇ $name
 Comment=Click to install $name
 Comment[zh_CN]=点击安装 $name
 Exec=$exec_cmd
