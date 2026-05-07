@@ -429,13 +429,27 @@ FCITX_PROFILE_EOF
     chmod +x /home/ubuntu/.xsession
     chown ubuntu:ubuntu /home/ubuntu/.xsession
 
-    # Desktop shortcuts
+    # Desktop shortcuts: keep only the baseline desktop clean on first run.
+    # After this marker exists, users can freely add/remove desktop icons.
+    DESKTOP_DEFAULTS_MARKER="/home/ubuntu/.config/webclaw/desktop-defaults-v2"
+    mkdir -p /home/ubuntu/Desktop /home/ubuntu/.local/share/desktop-icons/hidden /home/ubuntu/.config/webclaw
+    if [ ! -f "$DESKTOP_DEFAULTS_MARKER" ]; then
+        find /home/ubuntu/Desktop -maxdepth 1 -type f -name '*.desktop' \
+            ! -name 'chrome.desktop' \
+            ! -name 'appearance.desktop' \
+            ! -name 'language.desktop' \
+            ! -name 'launchpad.desktop' \
+            -exec mv -f {} /home/ubuntu/.local/share/desktop-icons/hidden/ \; 2>/dev/null || true
+        for shortcut in chrome appearance language; do
+            cp "/opt/desktop-shortcuts/${shortcut}.desktop" /home/ubuntu/Desktop/ 2>/dev/null || true
+        done
+        cp /usr/share/applications/launchpad.desktop /home/ubuntu/Desktop/launchpad.desktop 2>/dev/null || true
+        touch "$DESKTOP_DEFAULTS_MARKER"
+    fi
     rm -f /home/ubuntu/Desktop/lang-chinese.desktop /home/ubuntu/Desktop/lang-english.desktop
-    cp /opt/desktop-shortcuts/*.desktop /home/ubuntu/Desktop/ 2>/dev/null || true
-    # 删除卸载图标（应该只在应用菜单中，不在桌面上）
     rm -f /home/ubuntu/Desktop/*uninstall.desktop
     chmod +x /home/ubuntu/Desktop/*.desktop 2>/dev/null || true
-    chown -R ubuntu:ubuntu /home/ubuntu/Desktop
+    chown -R ubuntu:ubuntu /home/ubuntu/Desktop /home/ubuntu/.local/share/desktop-icons /home/ubuntu/.config/webclaw
 
     # 更新桌面图标状态（未安装应用显示下载标记）
     # 必须以 ubuntu 身份跑：xsession 起来时 gnome-flashback 的 inotify 监听属于 ubuntu，

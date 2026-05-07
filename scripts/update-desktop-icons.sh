@@ -252,25 +252,8 @@ EOF
     chmod +x "$desktop" 2>/dev/null || true
 }
 
-restore_missing_desktop_icons() {
-    # 恢复缺失的桌面图标
-    for manifest in "$MANIFEST_DIR"/*.json; do
-        [ -f "$manifest" ] || continue
-        app_id=$(basename "$manifest" .json)
-        desktop="$DESKTOP_DIR/${app_id}.desktop"
-
-        # 如果桌面图标不存在，重新创建
-        if [ ! -f "$desktop" ]; then
-            create_desktop_icon "$app_id" "$manifest"
-        fi
-    done
-}
-
 cleanup_desktop_temp_files
 write_uninstall_menu
-
-# 恢复缺失的桌面图标（支持模式切换）
-restore_missing_desktop_icons
 
 # 读取环境变量
 CLEAN_DESKTOP="${CLEAN_DESKTOP:-true}"
@@ -280,70 +263,26 @@ if [ "$CLEAN_DESKTOP" = "true" ]; then
     write_install_menu
 fi
 
-# 处理每个桌面图标
-for desktop in "$DESKTOP_DIR"/*.desktop; do
-    [ -f "$desktop" ] || continue
-    case "$(basename "$desktop")" in
-        uninstall-*.desktop) continue ;;
-    esac
-
-    # 检查是否是按需安装的应用
-    # Hermes 的桌面图标使用 /opt/hermes-browser.sh 启动
-    if ! grep -q "webclaw-app-launcher\|hermes-launcher\|/opt/hermes-browser.sh" "$desktop"; then
-        continue
-    fi
-
-    # 获取 app-id
-    if grep -q "hermes-launcher" "$desktop"; then
-        app_id="hermes"
-    else
-        app_id=$(grep -m1 "^Exec=/usr/local/bin/webclaw-app-launcher " "$desktop" | sed 's/.*webclaw-app-launcher //' | sed 's/ .*//')
-    fi
-    [ -n "$app_id" ] || continue
-
-    manifest="$MANIFEST_DIR/${app_id}.json"
+# The desktop is user-controlled now. Keep application menu entries in sync,
+# but do not recreate, remove, or move desktop icons behind the user's back.
+for manifest in "$MANIFEST_DIR"/*.json; do
     [ -f "$manifest" ] || continue
-
+    app_id=$(basename "$manifest" .json)
+    manifest="$MANIFEST_DIR/${app_id}.json"
     name=$(jq -r '.name' "$manifest")
+    desktop="$DESKTOP_DIR/${app_id}.desktop"
 
     if is_installed "$manifest"; then
-        # === 已安装应用 ===
-        # 移除"未安装"标记，显示正常名称
-        normalize_desktop_file "$desktop" "$name"
         ensure_uninstall_menu_entry "$app_id" "$name" "$manifest"
-
-        # 如果启用简洁桌面模式，从"安装应用"菜单移除，并确保图标在桌面
-        if [ "$CLEAN_DESKTOP" = "true" ]; then
-            remove_install_menu_entry "$app_id"
-            # 如果图标在隐藏目录，移回桌面
-            if [ -f "$DESKTOP_HIDDEN_DIR/$(basename "$desktop")" ]; then
-                mv -f "$DESKTOP_HIDDEN_DIR/$(basename "$desktop")" "$desktop"
-            fi
-        fi
+        remove_install_menu_entry "$app_id"
+        [ -f "$desktop" ] && normalize_desktop_file "$desktop" "$name"
     else
-        # === 未安装应用 ===
         if [ "$CLEAN_DESKTOP" = "true" ]; then
-            # 简洁桌面模式：移动桌面图标到隐藏目录，添加到"安装应用"菜单
-            mkdir -p "$DESKTOP_HIDDEN_DIR"
-            if [ -f "$desktop" ]; then
-                # 移动到隐藏目录
-                mv -f "$desktop" "$DESKTOP_HIDDEN_DIR/"
-            fi
             ensure_install_menu_entry "$app_id" "$name" "$manifest"
-        else
-            # 传统模式：确保图标在桌面显示，添加"待安装"标记
-            # 如果图标在隐藏目录，先移回桌面
-            if [ -f "$DESKTOP_HIDDEN_DIR/$(basename "$desktop")" ]; then
-                mv -f "$DESKTOP_HIDDEN_DIR/$(basename "$desktop")" "$desktop"
-            fi
-            # 如果图标不存在，重新创建
-            if [ ! -f "$desktop" ]; then
-                create_desktop_icon "$app_id" "$manifest"
-            fi
-            normalize_desktop_file "$desktop" "⬇ $name"
         fi
-
-        # 未安装应用不需要卸载菜单项
         remove_uninstall_menu_entry "$app_id"
+        [ -f "$desktop" ] && normalize_desktop_file "$desktop" "⬇ $name"
     fi
 done
+
+exit 0

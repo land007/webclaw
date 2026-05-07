@@ -4,24 +4,26 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, GdkPixbuf, GLib, Pango
 
 import glob
+import json
 import os
 import re
 import subprocess
 
 
 class App:
-    def __init__(self, app_id, name, exec_cmd, icon, file_path):
+    def __init__(self, app_id, name, exec_cmd, icon, file_path, installed=True):
         self.app_id = app_id
         self.name = name
         self.exec_cmd = exec_cmd
         self.icon = icon
         self.file_path = file_path
+        self.installed = installed
 
 
 class LaunchpadWindow(Gtk.Window):
     ICON_SIZE = 96
-    CELL_WIDTH = 148
-    CELL_HEIGHT = 156
+    CELL_WIDTH = 136
+    CELL_HEIGHT = 146
     MIN_SWIPE = 55
 
     def __init__(self):
@@ -30,7 +32,6 @@ class LaunchpadWindow(Gtk.Window):
         self.fullscreen()
         self.set_keep_above(True)
         self.set_app_paintable(True)
-        self.set_opacity(0.0)
 
         self.all_apps = self.load_applications()
         self.filtered_apps = self.all_apps
@@ -42,6 +43,7 @@ class LaunchpadWindow(Gtk.Window):
         self.drag_start_y = None
         self.animating_close = False
         self.background_pixbuf = self.capture_blurred_desktop()
+        self.fade_alpha = 0.0
 
         self.connect('key-press-event', self.on_key_press)
         self.connect('button-press-event', self.on_background_press)
@@ -95,6 +97,16 @@ class LaunchpadWindow(Gtk.Window):
             color: rgba(255,255,255,0.95);
             font-size: 22px;
         }
+        #download-badge {
+            color: white;
+            background: rgba(0, 122, 255, 0.95);
+            border-radius: 12px;
+            min-width: 24px;
+            min-height: 24px;
+            font-size: 13pt;
+            font-weight: bold;
+            padding: 0;
+        }
         """
         provider = Gtk.CssProvider()
         provider.load_from_data(css)
@@ -125,7 +137,9 @@ class LaunchpadWindow(Gtk.Window):
         background.connect('draw', self.draw_background)
         overlay.add(background)
 
-        main = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        self.main = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        self.main.set_opacity(0.0)
+        main = self.main
         main.set_margin_top(16)
         main.set_margin_bottom(24)
         overlay.add_overlay(main)
@@ -193,24 +207,26 @@ class LaunchpadWindow(Gtk.Window):
             cr.set_source_rgb(0.05, 0.055, 0.07)
             cr.paint()
 
-        cr.set_source_rgba(0.02, 0.025, 0.035, 0.48)
+        overlay_alpha = 0.34 + (0.16 * self.fade_alpha)
+        cr.set_source_rgba(0.02, 0.025, 0.035, overlay_alpha)
         cr.paint()
         return False
 
     def fade_in(self):
-        opacity = self.get_opacity() + 0.08
-        if opacity >= 1.0:
-            self.set_opacity(1.0)
+        self.fade_alpha = min(1.0, self.fade_alpha + 0.055)
+        self.main.set_opacity(self.fade_alpha)
+        self.queue_draw()
+        if self.fade_alpha >= 1.0:
             return False
-        self.set_opacity(opacity)
         return True
 
     def fade_out(self):
-        opacity = self.get_opacity() - 0.09
-        if opacity <= 0:
+        self.fade_alpha = max(0.0, self.fade_alpha - 0.065)
+        self.main.set_opacity(self.fade_alpha)
+        self.queue_draw()
+        if self.fade_alpha <= 0:
             self.destroy()
             return False
-        self.set_opacity(opacity)
         return True
 
     def close_with_animation(self):
@@ -269,9 +285,41 @@ class LaunchpadWindow(Gtk.Window):
                 return None
 
             icon = data.get('Icon') or app_id
-            return App(app_id, name, exec_cmd, icon, file_path)
+            installed = self.is_app_installed(app_id, file_path)
+            return App(app_id, name, exec_cmd, icon, file_path, installed)
         except Exception:
             return None
+
+    def is_app_installed(self, app_id, file_path):
+        if os.path.basename(file_path).startswith('webclaw-install-'):
+            return False
+
+        manifest_path = f'/opt/on-demand-apps/{app_id}.json'
+        if not os.path.exists(manifest_path):
+            return True
+
+        try:
+            with open(manifest_path, 'r', encoding='utf-8') as fh:
+                manifest = json.load(fh)
+
+            binary = manifest.get('binary')
+            install_method = manifest.get('install_method', 'github_release')
+            if install_method in {'appimage', 'r2_download', 'direct_download', 'cursor_api', 'custom_script'}:
+                return bool(binary and os.access(binary, os.X_OK))
+
+            package = manifest.get('package')
+            if package and binary:
+                result = subprocess.run(
+                    ['dpkg', '-s', package],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    check=False,
+                )
+                return result.returncode == 0 and os.access(binary, os.X_OK)
+        except Exception:
+            pass
+
+        return True
 
     def read_desktop_entry(self, file_path):
         data = {}
@@ -320,7 +368,8 @@ class LaunchpadWindow(Gtk.Window):
     def create_page(self, apps):
         wrapper = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         wrapper.set_halign(Gtk.Align.CENTER)
-        wrapper.set_valign(Gtk.Align.CENTER)
+        wrapper.set_valign(Gtk.Align.START)
+        wrapper.set_margin_top(44)
 
         if not apps:
             label = Gtk.Label(label='没有找到应用')
@@ -334,7 +383,7 @@ class LaunchpadWindow(Gtk.Window):
         grid.set_column_spacing(42)
         grid.set_row_spacing(28)
         grid.set_halign(Gtk.Align.CENTER)
-        grid.set_valign(Gtk.Align.CENTER)
+        grid.set_valign(Gtk.Align.START)
         wrapper.pack_start(grid, False, False, 0)
 
         for index, app in enumerate(apps):
@@ -347,6 +396,7 @@ class LaunchpadWindow(Gtk.Window):
     def create_app_tile(self, app):
         event_box = Gtk.EventBox()
         event_box.set_name('app-tile')
+        event_box.set_visible_window(False)
         event_box.set_size_request(self.CELL_WIDTH, self.CELL_HEIGHT)
         event_box.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
         event_box.connect('button-press-event', lambda widget, event: self.on_app_click(app, event))
@@ -354,7 +404,11 @@ class LaunchpadWindow(Gtk.Window):
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         box.set_halign(Gtk.Align.CENTER)
         box.set_valign(Gtk.Align.CENTER)
+        box.set_size_request(self.CELL_WIDTH, self.CELL_HEIGHT)
 
+        icon_overlay = Gtk.Overlay()
+        icon_overlay.set_halign(Gtk.Align.CENTER)
+        icon_overlay.set_valign(Gtk.Align.CENTER)
         icon = Gtk.Image()
         pixbuf = self.load_icon_pixbuf(app.icon)
         if pixbuf:
@@ -362,6 +416,16 @@ class LaunchpadWindow(Gtk.Window):
         else:
             icon.set_from_icon_name(app.icon, Gtk.IconSize.DIALOG)
             icon.set_pixel_size(self.ICON_SIZE)
+        icon_overlay.add(icon)
+
+        if not app.installed:
+            badge = Gtk.Label(label='↓')
+            badge.set_name('download-badge')
+            badge.set_halign(Gtk.Align.END)
+            badge.set_valign(Gtk.Align.END)
+            badge.set_margin_end(4)
+            badge.set_margin_bottom(2)
+            icon_overlay.add_overlay(badge)
 
         label = Gtk.Label(label=app.name)
         label.set_name('app-label')
@@ -371,7 +435,7 @@ class LaunchpadWindow(Gtk.Window):
         label.set_ellipsize(Pango.EllipsizeMode.END)
         label.set_alignment(0.5, 0.5)
 
-        box.pack_start(icon, False, False, 0)
+        box.pack_start(icon_overlay, False, False, 0)
         box.pack_start(label, False, False, 0)
         event_box.add(box)
         return event_box

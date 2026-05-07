@@ -165,11 +165,8 @@ fi
 fcitx5 -d --replace 2>/dev/null &
 
 # ─── Launchpad (全屏应用启动台) ───────────────────────────────────────
-# 添加桌面快捷方式，用户可以点击启动
-if [ -f /usr/share/applications/launchpad.desktop ]; then
-    cp /usr/share/applications/launchpad.desktop /home/ubuntu/Desktop/ 2>/dev/null || true
-    chown ubuntu:ubuntu /home/ubuntu/Desktop/launchpad.desktop 2>/dev/null || true
-    chmod +x /home/ubuntu/Desktop/launchpad.desktop 2>/dev/null || true
+# If the user keeps the Launchpad desktop icon, keep it near the lower-left icons.
+if [ -f /home/ubuntu/Desktop/launchpad.desktop ]; then
     # Keep the Launchpad trigger in a predictable lower-left spot near the desktop icons.
     gio set -t string /home/ubuntu/Desktop/launchpad.desktop metadata::nautilus-icon-position "86,626" 2>/dev/null || true
 fi
