@@ -5,6 +5,7 @@
 set -u
 
 DESKTOP_DIR="/home/ubuntu/Desktop"
+DESKTOP_HIDDEN_DIR="/home/ubuntu/.local/share/desktop-icons/hidden"
 MANIFEST_DIR="/opt/on-demand-apps"
 UNINSTALL_APP_DIR="/home/ubuntu/.local/share/applications/webclaw-uninstall"
 UNINSTALL_MENU_DIR="/home/ubuntu/.local/share/desktop-directories"
@@ -311,25 +312,35 @@ for desktop in "$DESKTOP_DIR"/*.desktop; do
         normalize_desktop_file "$desktop" "$name"
         ensure_uninstall_menu_entry "$app_id" "$name" "$manifest"
 
-        # 如果启用简洁桌面模式，从"安装应用"菜单移除
+        # 如果启用简洁桌面模式，从"安装应用"菜单移除，并确保图标在桌面
         if [ "$CLEAN_DESKTOP" = "true" ]; then
             remove_install_menu_entry "$app_id"
+            # 如果图标在隐藏目录，移回桌面
+            if [ -f "$DESKTOP_HIDDEN_DIR/$(basename "$desktop")" ]; then
+                mv -f "$DESKTOP_HIDDEN_DIR/$(basename "$desktop")" "$desktop"
+            fi
         fi
     else
         # === 未安装应用 ===
         if [ "$CLEAN_DESKTOP" = "true" ]; then
-            # 简洁桌面模式：隐藏桌面图标，添加到"安装应用"菜单
-            normalize_desktop_file "$desktop" "⬇ $name"
-            # 设置 NoDisplay=true 隐藏桌面图标
-            if ! grep -q "^NoDisplay=true" "$desktop"; then
-                sed -i '/^Type=Application/a NoDisplay=true' "$desktop"
+            # 简洁桌面模式：移动桌面图标到隐藏目录，添加到"安装应用"菜单
+            mkdir -p "$DESKTOP_HIDDEN_DIR"
+            if [ -f "$desktop" ]; then
+                # 移动到隐藏目录
+                mv -f "$desktop" "$DESKTOP_HIDDEN_DIR/"
             fi
             ensure_install_menu_entry "$app_id" "$name" "$manifest"
         else
-            # 传统模式：在桌面显示，添加"待安装"标记
+            # 传统模式：确保图标在桌面显示，添加"待安装"标记
+            # 如果图标在隐藏目录，先移回桌面
+            if [ -f "$DESKTOP_HIDDEN_DIR/$(basename "$desktop")" ]; then
+                mv -f "$DESKTOP_HIDDEN_DIR/$(basename "$desktop")" "$desktop"
+            fi
+            # 如果图标不存在，重新创建
+            if [ ! -f "$desktop" ]; then
+                create_desktop_icon "$app_id" "$manifest"
+            fi
             normalize_desktop_file "$desktop" "⬇ $name"
-            # 确保移除 NoDisplay，让图标显示在桌面
-            sed -i '/^NoDisplay=true/d' "$desktop"
         fi
 
         # 未安装应用不需要卸载菜单项
