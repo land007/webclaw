@@ -164,5 +164,13 @@ fi
 # ─── fcitx5 input method (start after panel so tray icon appears) ───
 fcitx5 -d --replace 2>/dev/null &
 
+# ─── Launchpad (全屏应用启动台) ───────────────────────────────────────
+# 添加桌面快捷方式，用户可以点击启动
+if [ -f /usr/share/applications/launchpad.desktop ]; then
+    cp /usr/share/applications/launchpad.desktop /home/ubuntu/Desktop/ 2>/dev/null || true
+    chown ubuntu:ubuntu /home/ubuntu/Desktop/launchpad.desktop 2>/dev/null || true
+    chmod +x /home/ubuntu/Desktop/launchpad.desktop 2>/dev/null || true
+fi
+
 # Keep session alive
 wait

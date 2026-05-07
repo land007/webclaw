@@ -383,6 +383,13 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
 COPY scripts/browser.sh /usr/local/bin/browser
 RUN chmod +x /usr/local/bin/browser
 
+# ─── Launchpad (全屏应用启动台) ────────────────────────────────────────────
+# 类似 macOS Launchpad 的全屏应用网格，支持分类、搜索、收藏
+COPY scripts/launchpad.sh /usr/local/bin/launchpad
+COPY configs/desktop-shortcuts/launchpad.desktop /usr/share/applications/launchpad.desktop
+RUN chmod +x /usr/local/bin/launchpad && \
+    update-desktop-database /usr/share/applications 2>/dev/null || true
+
 # ─── 按需安装框架: 调度脚本 + 应用清单 + 占位图标 + 专用 sudoers ────────
 # 桌面图标 .desktop 的 Exec 指向 webclaw-app-launcher,首次点击触发 zenity 询问 → 下载 .deb → apt-get install
 COPY scripts/webclaw-app-launcher.sh /usr/local/bin/webclaw-app-launcher
