@@ -31,6 +31,8 @@ class LaunchpadWindow(Gtk.Window):
         self.set_decorated(False)
         self.fullscreen()
         self.set_keep_above(True)
+        self.set_skip_taskbar_hint(True)
+        self.set_skip_pager_hint(True)
         self.set_app_paintable(True)
 
         self.installed_packages = self.load_installed_packages()

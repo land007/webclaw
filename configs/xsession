@@ -173,7 +173,7 @@ toplevel-id='top-panel'
 [objects/launchpad-launcher]
 applet-id='custom-launcher'
 module-id='org.gnome.gnome-panel.launcher'
-pack-index=0
+pack-index=1
 toplevel-id='bottom-panel'
 
 [objects/launchpad-launcher/instance-config]
@@ -195,7 +195,7 @@ toplevel-id='top-panel'
 [objects/show-desktop]
 applet-id='show-desktop'
 module-id='org.gnome.gnome-panel.wncklet'
-pack-index=1
+pack-index=0
 toplevel-id='bottom-panel'
 
 [objects/user-menu]
