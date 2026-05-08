@@ -33,6 +33,7 @@ class LaunchpadWindow(Gtk.Window):
         self.set_keep_above(True)
         self.set_app_paintable(True)
 
+        self.installed_packages = self.load_installed_packages()
         self.all_apps = self.load_applications()
         self.filtered_apps = self.all_apps
         self.pages = []
@@ -309,6 +310,22 @@ class LaunchpadWindow(Gtk.Window):
 
         return sorted(apps_by_id.values(), key=lambda app: app.name.casefold())
 
+    def load_installed_packages(self):
+        try:
+            result = subprocess.run(
+                ['dpkg-query', '-W', '-f=${binary:Package}\n'],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True,
+                check=False,
+                timeout=0.8,
+            )
+            if result.returncode == 0:
+                return set(result.stdout.splitlines())
+        except Exception:
+            pass
+        return set()
+
     def parse_desktop_file(self, file_path):
         try:
             data = self.read_desktop_entry(file_path)
@@ -352,15 +369,9 @@ class LaunchpadWindow(Gtk.Window):
             if install_method in {'appimage', 'r2_download', 'direct_download', 'cursor_api', 'custom_script'}:
                 return bool(binary and os.access(binary, os.X_OK))
 
-            package = manifest.get('package')
+            package = manifest.get('apt_package') or manifest.get('package')
             if package and binary:
-                result = subprocess.run(
-                    ['dpkg', '-s', package],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    check=False,
-                )
-                return result.returncode == 0 and os.access(binary, os.X_OK)
+                return package in self.installed_packages and os.access(binary, os.X_OK)
         except Exception:
             pass
 

@@ -142,6 +142,17 @@ if [ -x /usr/local/bin/update-desktop-icons ]; then
     ( sleep 2 && /usr/local/bin/update-desktop-icons ) >/dev/null 2>&1 &
 fi
 
+# ─── Launchpad (全屏应用启动台) ───────────────────────────────────────
+# Keep the canonical launcher stable before gnome-panel reads it.
+if [ -f /opt/desktop-shortcuts/launchpad.desktop ]; then
+    cp /opt/desktop-shortcuts/launchpad.desktop /usr/share/applications/launchpad.desktop
+    chmod +x /usr/share/applications/launchpad.desktop
+    if [ -f /home/ubuntu/Desktop/launchpad.desktop ]; then
+        cp /usr/share/applications/launchpad.desktop /home/ubuntu/Desktop/launchpad.desktop
+        chmod +x /home/ubuntu/Desktop/launchpad.desktop
+    fi
+fi
+
 # ─── Desktop panel (taskbar, system tray, clock) ────────────────────
 export XDG_MENU_PREFIX=gnome-flashback-
 
@@ -249,13 +260,6 @@ sleep 1
 # colour matches the saved preference after every container start.
 if [ -f "$THEME_FILE" ]; then
     /usr/local/bin/theme-switch "$INITIAL_THEME" >/dev/null 2>&1 &
-fi
-
-# ─── Launchpad (全屏应用启动台) ───────────────────────────────────────
-# 确保 launchpad.desktop 在系统应用目录中，以便面板可以加载它
-if [ -f /home/ubuntu/Desktop/launchpad.desktop ]; then
-    cp /home/ubuntu/Desktop/launchpad.desktop /usr/share/applications/launchpad.desktop
-    chmod +x /usr/share/applications/launchpad.desktop
 fi
 
 # ─── fcitx5 input method (start after panel so tray icon appears) ───
