@@ -144,6 +144,99 @@ fi
 
 # ─── Desktop panel (taskbar, system tray, clock) ────────────────────
 export XDG_MENU_PREFIX=gnome-flashback-
+
+# ─── Configure panel layout with dconf ───────────────────────────────
+# 设置面板对象列表，添加 launchpad-launcher 到任务栏
+dconf write /org/gnome/gnome-panel/layout/object-id-list \
+    "['menu-bar', 'clock', 'notification-area', 'show-desktop', 'launchpad-launcher', 'user-menu', 'window-list', 'workspace-switcher']" 2>/dev/null || true
+
+# Top panel objects
+dconf write /org/gnome.gnome-panel/layout/objects/menu-bar/module-id \
+    "'org.gnome.gnome-panel.menu'" 2>/dev/null || true
+dconf write /org/gnome.gnome-panel/layout/objects/menu-bar/applet-id \
+    "'menu-bar'" 2>/dev/null || true
+dconf write /org/gnome.gnome-panel/layout/objects/menu-bar/toplevel-id \
+    "'top-panel'" 2>/dev/null || true
+dconf write /org/gnome.gnome-panel/layout/objects/menu-bar/pack-index \
+    "0" 2>/dev/null || true
+
+dconf write /org/gnome.gnome-panel/layout/objects/clock/module-id \
+    "'org.gnome.gnome-panel.clock'" 2>/dev/null || true
+dconf write /org.gnome.gnome-panel/layout/objects/clock/applet-id \
+    "'clock'" 2>/dev/null || true
+dconf write /org.gnome.gnome-panel/layout/objects/clock/toplevel-id \
+    "'top-panel'" 2>/dev/null || true
+dconf write /org/gnome.gnome-panel/layout/objects/clock/pack-type \
+    "'end'" 2>/dev/null || true
+dconf write /org/gnome.gnome-panel/layout/objects/clock/pack-index \
+    "1" 2>/dev/null || true
+
+dconf write /org/gnome.gnome-panel/layout/objects/notification-area/module-id \
+    "'org.gnome.gnome-panel.notification-area'" 2>/dev/null || true
+dconf write /org/gnome.gnome-panel/layout/objects/notification-area/applet-id \
+    "'notification-area'" 2>/dev/null || true
+dconf write /org/gnome.gnome-panel/layout/objects/notification-area/toplevel-id \
+    "'top-panel'" 2>/dev/null || true
+dconf write /org/gnome.gnome-panel/layout/objects/notification-area/pack-type \
+    "'end'" 2>/dev/null || true
+dconf write /org/gnome.gnome-panel/layout/objects/notification-area/pack-index \
+    "2" 2>/dev/null || true
+
+dconf write /org/gnome.gnome-panel/layout/objects/user-menu/module-id \
+    "'org.gnome.gnome-panel.menu'" 2>/dev/null || true
+dconf write /org.gnome.gnome-panel/layout/objects/user-menu/applet-id \
+    "'user-menu'" 2>/dev/null || true
+dconf write /org/gnome.gnome-panel/layout/objects/user-menu/toplevel-id \
+    "'top-panel'" 2>/dev/null || true
+dconf write /org/gnome.gnome-panel/layout/objects/user-menu/pack-type \
+    "'end'" 2>/dev/null || true
+dconf write /org/gnome.gnome-panel/layout/objects/user-menu/pack-index \
+    "0" 2>/dev/null || true
+
+# Bottom panel objects
+# Launchpad launcher (最左侧，pack-index=0)
+# 使用正确的 dconf load 格式配置启动器
+dconf load /org/gnome.gnome-panel/layout/objects/launchpad-launcher/ << 'LAUNCHPAD_EOF' 2>/dev/null || true
+[instance-config]
+location='/usr/share/applications/launchpad.desktop'
+
+[/]
+object-iid='PanelInternalFactory::Launcher'
+pack-index=0
+toplevel-id='bottom-panel'
+LAUNCHPAD_EOF
+# Show desktop button (pack-index=1，在 launchpad 右侧)
+dconf write /org/gnome.gnome-panel/layout/objects/show-desktop/module-id \
+    "'org.gnome.gnome-panel.wncklet'" 2>/dev/null || true
+dconf write /org.gnome.gnome-panel/layout/objects/show-desktop/applet-id \
+    "'show-desktop'" 2>/dev/null || true
+dconf write /org/gnome.gnome-panel/layout/objects/show-desktop/toplevel-id \
+    "'bottom-panel'" 2>/dev/null || true
+dconf write /org/gnome.gnome-panel/layout/objects/show-desktop/pack-index \
+    "1" 2>/dev/null || true
+
+# Window list (pack-index=2)
+dconf write /org/gnome.gnome-panel/layout/objects/window-list/module-id \
+    "'org.gnome.gnome-panel.wncklet'" 2>/dev/null || true
+dconf write /org/gnome.gnome-panel/layout/objects/window-list/applet-id \
+    "'window-list'" 2>/dev/null || true
+dconf write /org/gnome.gnome-panel/layout/objects/window-list/toplevel-id \
+    "'bottom-panel'" 2>/dev/null || true
+dconf write /org.gnome.gnome-panel/layout/objects/window-list/pack-index \
+    "2" 2>/dev/null || true
+
+# Workspace switcher (最右侧)
+dconf write /org/gnome.gnome-panel/layout/objects/workspace-switcher/module-id \
+    "'org.gnome.gnome-panel.wncklet'" 2>/dev/null || true
+dconf write /org/gnome.gnome-panel/layout/objects/workspace-switcher/applet-id \
+    "'workspace-switcher'" 2>/dev/null || true
+dconf write /org/gnome.gnome-panel/layout/objects/workspace-switcher/toplevel-id \
+    "'bottom-panel'" 2>/dev/null || true
+dconf write /org/gnome.gnome-panel/layout/objects/workspace-switcher/pack-type \
+    "'end'" 2>/dev/null || true
+dconf write /org/gnome.gnome-panel/layout/objects/workspace-switcher/pack-index \
+    "0" 2>/dev/null || true
+
 # GTK_THEME must be passed inline: gsd-xsettings broadcasts dconf theme via
 # XSETTINGS after connecting, which can override the exported env var.
 if [ "$INITIAL_THEME" = "light" ]; then
@@ -161,10 +254,16 @@ if [ -f "$THEME_FILE" ]; then
     /usr/local/bin/theme-switch "$INITIAL_THEME" >/dev/null 2>&1 &
 fi
 
+# ─── Launchpad (全屏应用启动台) ───────────────────────────────────────
+# 确保 launchpad.desktop 在系统应用目录中，以便面板可以加载它
+if [ -f /home/ubuntu/Desktop/launchpad.desktop ]; then
+    cp /home/ubuntu/Desktop/launchpad.desktop /usr/share/applications/launchpad.desktop
+    chmod +x /usr/share/applications/launchpad.desktop
+fi
+
 # ─── fcitx5 input method (start after panel so tray icon appears) ───
 fcitx5 -d --replace 2>/dev/null &
 
-# ─── Launchpad (全屏应用启动台) ───────────────────────────────────────
 # If the user keeps the Launchpad desktop icon, keep it near the lower-left icons.
 if [ -f /home/ubuntu/Desktop/launchpad.desktop ]; then
     # Keep the Launchpad trigger in a predictable lower-left spot near the desktop icons.
