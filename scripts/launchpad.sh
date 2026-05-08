@@ -176,11 +176,12 @@ class LaunchpadWindow(Gtk.Window):
         self.page_clip.add(self.page_viewport)
         main.pack_start(self.page_clip, True, True, 0)
 
-        search_wrap = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        search_wrap.set_halign(Gtk.Align.CENTER)
-        search_wrap.set_valign(Gtk.Align.START)
-        search_wrap.set_margin_top(16)
-        overlay.add_overlay(search_wrap)
+        self.search_wrap = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.search_wrap.set_opacity(0.0)
+        self.search_wrap.set_halign(Gtk.Align.CENTER)
+        self.search_wrap.set_valign(Gtk.Align.START)
+        self.search_wrap.set_margin_top(16)
+        overlay.add_overlay(self.search_wrap)
 
         self.search_entry = Gtk.Entry()
         self.search_entry.set_name('search-entry')
@@ -189,9 +190,10 @@ class LaunchpadWindow(Gtk.Window):
         self.search_entry.set_icon_from_icon_name(Gtk.EntryIconPosition.PRIMARY, 'edit-find-symbolic')
         self.search_entry.connect('changed', self.on_search_changed)
         self.search_entry.connect('button-press-event', self.stop_event)
-        search_wrap.pack_start(self.search_entry, False, False, 0)
+        self.search_wrap.pack_start(self.search_entry, False, False, 0)
 
         self.dot_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        self.dot_box.set_opacity(0.0)
         self.dot_box.set_halign(Gtk.Align.CENTER)
         self.dot_box.set_valign(Gtk.Align.END)
         self.dot_box.set_margin_bottom(24)
@@ -244,6 +246,8 @@ class LaunchpadWindow(Gtk.Window):
     def fade_in(self):
         self.fade_alpha = min(1.0, self.fade_alpha + 0.055)
         self.main.set_opacity(self.fade_alpha)
+        self.search_wrap.set_opacity(self.fade_alpha)
+        self.dot_box.set_opacity(self.fade_alpha)
         self.queue_draw()
         if self.fade_alpha >= 1.0:
             return False
@@ -252,6 +256,8 @@ class LaunchpadWindow(Gtk.Window):
     def fade_out(self):
         self.fade_alpha = max(0.0, self.fade_alpha - 0.065)
         self.main.set_opacity(self.fade_alpha)
+        self.search_wrap.set_opacity(self.fade_alpha)
+        self.dot_box.set_opacity(self.fade_alpha)
         self.queue_draw()
         if self.fade_alpha <= 0:
             self.destroy()
