@@ -22,8 +22,8 @@ class App:
 
 class LaunchpadWindow(Gtk.Window):
     ICON_SIZE = 96
-    CELL_WIDTH = 136
-    CELL_HEIGHT = 146
+    CELL_WIDTH = 150
+    CELL_HEIGHT = 154
     MIN_SWIPE = 55
 
     def __init__(self):
@@ -39,8 +39,20 @@ class LaunchpadWindow(Gtk.Window):
         self.current_page = 0
         self.cols = 7
         self.rows = 5
+        self.apply_layout_for_size(
+            Gdk.Screen.get_default().get_width(),
+            Gdk.Screen.get_default().get_height(),
+        )
         self.drag_start_x = None
         self.drag_start_y = None
+        self.drag_dx = 0
+        self.dragging = False
+        self.active_app = None
+        self.page_width = 1
+        self.page_animation_id = None
+        self.page_animation_start = 0
+        self.page_animation_target = 0
+        self.page_animation_step = 0
         self.animating_close = False
         self.background_pixbuf = self.capture_blurred_desktop()
         self.fade_alpha = 0.0
@@ -126,6 +138,7 @@ class LaunchpadWindow(Gtk.Window):
             Gdk.EventMask.SMOOTH_SCROLL_MASK
         )
         self.root.connect('button-press-event', self.on_background_press)
+        self.root.connect('motion-notify-event', self.on_motion)
         self.root.connect('button-release-event', self.on_background_release)
         self.root.connect('scroll-event', self.on_scroll)
         self.add(self.root)
@@ -140,13 +153,34 @@ class LaunchpadWindow(Gtk.Window):
         self.main = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         self.main.set_opacity(0.0)
         main = self.main
-        main.set_margin_top(16)
-        main.set_margin_bottom(24)
+        main.set_hexpand(True)
+        main.set_vexpand(True)
+        main.set_halign(Gtk.Align.FILL)
+        main.set_valign(Gtk.Align.FILL)
         overlay.add_overlay(main)
+
+        self.page_clip = Gtk.ScrolledWindow()
+        self.page_clip.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.NEVER)
+        self.page_clip.set_shadow_type(Gtk.ShadowType.NONE)
+        self.page_clip.set_overlay_scrolling(False)
+        self.page_clip.set_hexpand(True)
+        self.page_clip.set_vexpand(True)
+        self.page_clip.set_halign(Gtk.Align.FILL)
+        self.page_clip.set_valign(Gtk.Align.FILL)
+        self.page_clip.set_margin_top(44)
+        self.page_clip.set_margin_bottom(48)
+
+        self.page_viewport = Gtk.Fixed()
+        self.page_viewport.set_hexpand(True)
+        self.page_viewport.set_vexpand(True)
+        self.page_clip.add(self.page_viewport)
+        main.pack_start(self.page_clip, True, True, 0)
 
         search_wrap = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         search_wrap.set_halign(Gtk.Align.CENTER)
-        main.pack_start(search_wrap, False, False, 0)
+        search_wrap.set_valign(Gtk.Align.START)
+        search_wrap.set_margin_top(16)
+        overlay.add_overlay(search_wrap)
 
         self.search_entry = Gtk.Entry()
         self.search_entry.set_name('search-entry')
@@ -157,17 +191,12 @@ class LaunchpadWindow(Gtk.Window):
         self.search_entry.connect('button-press-event', self.stop_event)
         search_wrap.pack_start(self.search_entry, False, False, 0)
 
-        self.stack = Gtk.Stack()
-        self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
-        self.stack.set_transition_duration(260)
-        self.stack.set_hhomogeneous(False)
-        self.stack.set_vhomogeneous(False)
-        main.pack_start(self.stack, True, True, 0)
-
         self.dot_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         self.dot_box.set_halign(Gtk.Align.CENTER)
+        self.dot_box.set_valign(Gtk.Align.END)
+        self.dot_box.set_margin_bottom(24)
         self.dot_box.set_size_request(-1, 28)
-        main.pack_start(self.dot_box, False, False, 0)
+        overlay.add_overlay(self.dot_box)
 
         self.rebuild_pages()
 
@@ -236,12 +265,22 @@ class LaunchpadWindow(Gtk.Window):
         GLib.timeout_add(12, self.fade_out)
 
     def on_size_allocate(self, widget, allocation):
-        cols = max(4, min(7, (allocation.width - 240) // 178))
-        rows = max(3, min(5, (allocation.height - 190) // 166))
+        if allocation.width != self.page_width:
+            self.page_width = max(1, allocation.width)
+            self.position_pages()
+        cols, rows = self.layout_for_size(allocation.width, allocation.height)
         if cols != self.cols or rows != self.rows:
             self.cols = cols
             self.rows = rows
             self.rebuild_pages()
+
+    def layout_for_size(self, width, height):
+        cols = max(4, min(12, (width - 136) // 194))
+        rows = max(1, min(5, (height - 190) // 166))
+        return cols, rows
+
+    def apply_layout_for_size(self, width, height):
+        self.cols, self.rows = self.layout_for_size(width, height)
 
     def load_applications(self):
         apps_by_id = {}
@@ -344,8 +383,12 @@ class LaunchpadWindow(Gtk.Window):
         return re.sub(r'\s+', ' ', exec_cmd).strip()
 
     def rebuild_pages(self):
-        for child in self.stack.get_children():
-            self.stack.remove(child)
+        if self.page_animation_id:
+            GLib.source_remove(self.page_animation_id)
+            self.page_animation_id = None
+
+        for child in self.page_viewport.get_children():
+            self.page_viewport.remove(child)
         for child in self.dot_box.get_children():
             self.dot_box.remove(child)
 
@@ -359,9 +402,11 @@ class LaunchpadWindow(Gtk.Window):
 
         for index, apps in enumerate(self.pages):
             page = self.create_page(apps)
-            self.stack.add_named(page, f'page-{index}')
+            page.set_size_request(self.page_width, -1)
+            self.page_viewport.put(page, index * self.page_width, 0)
 
-        self.update_visible_page()
+        self.drag_dx = 0
+        self.position_pages()
         self.update_dots()
         self.show_all()
 
@@ -380,8 +425,8 @@ class LaunchpadWindow(Gtk.Window):
         grid = Gtk.Grid()
         grid.set_column_homogeneous(True)
         grid.set_row_homogeneous(True)
-        grid.set_column_spacing(42)
-        grid.set_row_spacing(28)
+        grid.set_column_spacing(44)
+        grid.set_row_spacing(30)
         grid.set_halign(Gtk.Align.CENTER)
         grid.set_valign(Gtk.Align.START)
         wrapper.pack_start(grid, False, False, 0)
@@ -394,17 +439,26 @@ class LaunchpadWindow(Gtk.Window):
         return wrapper
 
     def create_app_tile(self, app):
+        cell = Gtk.Box()
+        cell.set_size_request(self.CELL_WIDTH, self.CELL_HEIGHT)
+        cell.set_halign(Gtk.Align.CENTER)
+        cell.set_valign(Gtk.Align.CENTER)
+
         event_box = Gtk.EventBox()
         event_box.set_name('app-tile')
-        event_box.set_visible_window(False)
-        event_box.set_size_request(self.CELL_WIDTH, self.CELL_HEIGHT)
-        event_box.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
-        event_box.connect('button-press-event', lambda widget, event: self.on_app_click(app, event))
+        event_box.set_size_request(128, 142)
+        event_box.add_events(
+            Gdk.EventMask.BUTTON_PRESS_MASK |
+            Gdk.EventMask.BUTTON_RELEASE_MASK |
+            Gdk.EventMask.POINTER_MOTION_MASK
+        )
+        event_box.connect('button-press-event', lambda widget, event: self.on_app_press(app, event))
+        event_box.connect('motion-notify-event', self.on_motion)
+        event_box.connect('button-release-event', lambda widget, event: self.on_app_release(app, event))
 
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         box.set_halign(Gtk.Align.CENTER)
         box.set_valign(Gtk.Align.CENTER)
-        box.set_size_request(self.CELL_WIDTH, self.CELL_HEIGHT)
 
         icon_overlay = Gtk.Overlay()
         icon_overlay.set_halign(Gtk.Align.CENTER)
@@ -438,7 +492,8 @@ class LaunchpadWindow(Gtk.Window):
         box.pack_start(icon_overlay, False, False, 0)
         box.pack_start(label, False, False, 0)
         event_box.add(box)
-        return event_box
+        cell.pack_start(event_box, True, False, 0)
+        return cell
 
     def load_icon_pixbuf(self, icon_name):
         icon_paths = []
@@ -470,11 +525,11 @@ class LaunchpadWindow(Gtk.Window):
         except Exception:
             return None
 
-    def update_visible_page(self):
-        page_name = f'page-{self.current_page}'
-        child = self.stack.get_child_by_name(page_name)
-        if child:
-            self.stack.set_visible_child_name(page_name)
+    def position_pages(self):
+        for index, child in enumerate(self.page_viewport.get_children()):
+            x = int((index - self.current_page) * self.page_width + self.drag_dx)
+            self.page_viewport.move(child, x, 0)
+            child.set_size_request(self.page_width, -1)
 
     def update_dots(self):
         for child in self.dot_box.get_children():
@@ -495,12 +550,57 @@ class LaunchpadWindow(Gtk.Window):
         if index == self.current_page:
             return
         self.current_page = index
-        self.update_visible_page()
+        self.drag_dx = 0
+        self.position_pages()
         self.update_dots()
 
-    def on_app_click(self, app, event):
+    def animate_to_page(self, target_page):
+        target_page = max(0, min(target_page, len(self.pages) - 1))
+        current_offset = -self.current_page * self.page_width + self.drag_dx
+        target_offset = -target_page * self.page_width
+        self.page_animation_start = current_offset
+        self.page_animation_target = target_offset
+        self.page_animation_step = 0
+
+        if self.page_animation_id:
+            GLib.source_remove(self.page_animation_id)
+        self.page_animation_id = GLib.timeout_add(12, self.animate_page_step, target_page)
+
+    def animate_page_step(self, target_page):
+        self.page_animation_step += 1
+        progress = min(1.0, self.page_animation_step / 22.0)
+        eased = 1 - pow(1 - progress, 3)
+        offset = self.page_animation_start + (self.page_animation_target - self.page_animation_start) * eased
+
+        self.current_page = target_page
+        self.drag_dx = offset + (self.current_page * self.page_width)
+        self.position_pages()
+
+        if progress >= 1.0:
+            self.drag_dx = 0
+            self.position_pages()
+            self.update_dots()
+            self.page_animation_id = None
+            return False
+        return True
+
+    def on_app_press(self, app, event):
         if event.button != 1:
             return True
+        self.active_app = app
+        return self.on_background_press(self.root, event)
+
+    def on_app_release(self, app, event):
+        if event.button != 1:
+            return True
+        was_dragging = self.dragging
+        if was_dragging:
+            self.on_background_release(self.root, event)
+            self.active_app = None
+            return True
+        self.drag_start_x = None
+        self.drag_start_y = None
+        self.active_app = None
         self.launch_app(app)
         return True
 
@@ -530,8 +630,29 @@ class LaunchpadWindow(Gtk.Window):
         self.rebuild_pages()
 
     def on_background_press(self, widget, event):
+        if self.page_animation_id:
+            GLib.source_remove(self.page_animation_id)
+            self.page_animation_id = None
         self.drag_start_x = event.x_root
         self.drag_start_y = event.y_root
+        self.drag_dx = 0
+        self.dragging = False
+        return False
+
+    def on_motion(self, widget, event):
+        if self.drag_start_x is None:
+            return False
+        dx = event.x_root - self.drag_start_x
+        dy = event.y_root - self.drag_start_y
+        if abs(dx) < 4 and abs(dy) < 4:
+            return False
+        if abs(dx) > abs(dy) * 1.15:
+            self.dragging = True
+            if (self.current_page == 0 and dx > 0) or (self.current_page == len(self.pages) - 1 and dx < 0):
+                dx *= 0.28
+            self.drag_dx = dx
+            self.position_pages()
+            return True
         return False
 
     def on_background_release(self, widget, event):
@@ -543,11 +664,17 @@ class LaunchpadWindow(Gtk.Window):
         self.drag_start_x = None
         self.drag_start_y = None
 
-        if abs(dx) > self.MIN_SWIPE and abs(dx) > abs(dy) * 1.35:
-            if dx < 0:
-                self.set_page(self.current_page + 1)
+        if self.dragging or (abs(dx) > self.MIN_SWIPE and abs(dx) > abs(dy) * 1.35):
+            page_threshold = self.CELL_WIDTH
+            exposed_next = dx < -page_threshold and self.current_page < len(self.pages) - 1
+            exposed_prev = dx > page_threshold and self.current_page > 0
+            if exposed_next:
+                self.animate_to_page(self.current_page + 1)
+            elif exposed_prev:
+                self.animate_to_page(self.current_page - 1)
             else:
-                self.set_page(self.current_page - 1)
+                self.animate_to_page(self.current_page)
+            self.dragging = False
             return True
 
         if abs(dx) < 8 and abs(dy) < 8:

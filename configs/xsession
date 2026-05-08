@@ -168,7 +168,14 @@ fcitx5 -d --replace 2>/dev/null &
 # If the user keeps the Launchpad desktop icon, keep it near the lower-left icons.
 if [ -f /home/ubuntu/Desktop/launchpad.desktop ]; then
     # Keep the Launchpad trigger in a predictable lower-left spot near the desktop icons.
-    gio set -t string /home/ubuntu/Desktop/launchpad.desktop metadata::nautilus-icon-position "86,626" 2>/dev/null || true
+    SCREEN_HEIGHT="$(xdpyinfo 2>/dev/null | awk '/dimensions:/ { split($2, a, "x"); print a[2]; exit }')"
+    if [ -n "$SCREEN_HEIGHT" ]; then
+        LAUNCHPAD_Y=$((SCREEN_HEIGHT - 175))
+        [ "$LAUNCHPAD_Y" -lt 560 ] && LAUNCHPAD_Y=560
+        gio set -t string /home/ubuntu/Desktop/launchpad.desktop metadata::nautilus-icon-position "84,${LAUNCHPAD_Y}" 2>/dev/null || true
+    else
+        gio set -t string /home/ubuntu/Desktop/launchpad.desktop metadata::nautilus-icon-position "84,720" 2>/dev/null || true
+    fi
 fi
 
 # Keep session alive
