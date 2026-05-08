@@ -288,6 +288,9 @@ else
     mkdir -p /run/user/1000
     chown ubuntu:ubuntu /run/user/1000
     chmod 700 /run/user/1000
+    mkdir -p /run/user/1000/dconf
+    chown -R ubuntu:ubuntu /run/user/1000/dconf
+    chmod 700 /run/user/1000/dconf
 
     # PulseAudio socket directory
     mkdir -p /run/user/1000/pulse
