@@ -434,7 +434,10 @@ FCITX_PROFILE_EOF
 
     # Desktop shortcuts: keep only the baseline desktop clean on first run.
     # After this marker exists, users can freely add/remove desktop icons.
-    DESKTOP_DEFAULTS_MARKER="/home/ubuntu/.config/webclaw/desktop-defaults-v2"
+    # Use /run/ for runtime state (cleared on container restart, not persisted across hosts)
+    mkdir -p /run/webclaw
+    chmod 755 /run/webclaw
+    DESKTOP_DEFAULTS_MARKER="/run/webclaw/desktop-defaults-v2"
     mkdir -p /home/ubuntu/Desktop /home/ubuntu/.local/share/desktop-icons/hidden /home/ubuntu/.config/webclaw
     if [ ! -f "$DESKTOP_DEFAULTS_MARKER" ]; then
         find /home/ubuntu/Desktop -maxdepth 1 -type f -name '*.desktop' \
