@@ -255,17 +255,31 @@ RUN groupadd -f docker && usermod -aG docker ubuntu \
     && chown -R ubuntu:ubuntu /home/ubuntu
 
 # ─── 11b. v2rayN (GUI proxy client) ─────────────────────────────────
+# Latest Linux releases do not always publish .deb artifacts. Use the portable
+# zip bundle so the image can continue tracking the newest stable v2rayN release.
 RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         ARCH=$(dpkg --print-architecture) \
         && case "$ARCH" in \
             amd64) V2RAYN_ARCH=64 ;; \
             arm64) V2RAYN_ARCH=arm64 ;; \
-            *) V2RAYN_ARCH="$ARCH" ;; \
+            *) echo "Unsupported v2rayN architecture: $ARCH" >&2; exit 1 ;; \
         esac \
+        && apt-get update \
+        && apt-get install -y --no-install-recommends unzip \
         && V2RAYN_VER=$(curl -fsSL https://api.github.com/repos/2dust/v2rayN/releases/latest | grep '"tag_name"' | cut -d'"' -f4) \
-        && curl -fsSL "https://github.com/2dust/v2rayN/releases/download/${V2RAYN_VER}/v2rayN-linux-${V2RAYN_ARCH}.deb" -o /tmp/v2rayn.deb \
-        && apt-get install -y /tmp/v2rayn.deb \
-        && rm /tmp/v2rayn.deb \
+        && test -n "$V2RAYN_VER" \
+        && curl -fsSL "https://github.com/2dust/v2rayN/releases/download/${V2RAYN_VER}/v2rayN-linux-${V2RAYN_ARCH}.zip" -o /tmp/v2rayn.zip \
+        && rm -rf /opt/v2rayN /tmp/v2rayn-unpack \
+        && mkdir -p /tmp/v2rayn-unpack \
+        && unzip -q /tmp/v2rayn.zip -d /tmp/v2rayn-unpack \
+        && mv "/tmp/v2rayn-unpack/v2rayN-linux-${V2RAYN_ARCH}" /opt/v2rayN \
+        && chmod +x \
+            /opt/v2rayN/v2rayN \
+            /opt/v2rayN/AmazTool \
+            /opt/v2rayN/bin/xray/xray \
+            /opt/v2rayN/bin/sing_box/sing-box \
+            /opt/v2rayN/bin/mihomo/mihomo \
+        && rm -rf /tmp/v2rayn.zip /tmp/v2rayn-unpack \
         && apt-get clean && rm -rf /var/lib/apt/lists/*; \
     fi
 
