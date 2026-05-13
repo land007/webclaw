@@ -158,8 +158,8 @@ user=ubuntu
 environment=HOME="/home/ubuntu",DISPLAY=":1",XDG_RUNTIME_DIR="/run/user/1000",PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/hermes-agent"
 priority=210
 autostart=true
-autorestart=true
-startretries=3
+autorestart=false
+startretries=5
 startsecs=10
 stopasgroup=true
 killasgroup=true
