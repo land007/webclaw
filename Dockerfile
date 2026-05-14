@@ -266,9 +266,22 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         esac \
         && apt-get update \
         && apt-get install -y --no-install-recommends unzip \
-        && V2RAYN_VER=$(curl -fsSL https://api.github.com/repos/2dust/v2rayN/releases/latest | grep '"tag_name"' | cut -d'"' -f4) \
+        && V2RAYN_ASSET="v2rayN-linux-${V2RAYN_ARCH}.zip" \
+        && V2RAYN_RELEASE_JSON=/tmp/v2rayn-release.json \
+        && curl -fsSL --retry 5 --retry-all-errors --retry-delay 3 \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'User-Agent: webclaw-docker-build' \
+            https://api.github.com/repos/2dust/v2rayN/releases/latest \
+            -o "$V2RAYN_RELEASE_JSON" \
+        && V2RAYN_VER=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["tag_name"])' "$V2RAYN_RELEASE_JSON") \
+        && V2RAYN_URL=$(python3 -c 'import json,sys; data=json.load(open(sys.argv[1])); name=sys.argv[2]; matches=[a["browser_download_url"] for a in data.get("assets", []) if a.get("name") == name]; print(matches[0] if matches else "")' "$V2RAYN_RELEASE_JSON" "$V2RAYN_ASSET") \
         && test -n "$V2RAYN_VER" \
-        && curl -fsSL "https://github.com/2dust/v2rayN/releases/download/${V2RAYN_VER}/v2rayN-linux-${V2RAYN_ARCH}.zip" -o /tmp/v2rayn.zip \
+        && test -n "$V2RAYN_URL" \
+        && echo "Installing v2rayN ${V2RAYN_VER} from ${V2RAYN_ASSET}" \
+        && curl -fL --retry 5 --retry-all-errors --retry-delay 3 \
+            -H 'User-Agent: webclaw-docker-build' \
+            "$V2RAYN_URL" \
+            -o /tmp/v2rayn.zip \
         && rm -rf /opt/v2rayN /tmp/v2rayn-unpack \
         && mkdir -p /tmp/v2rayn-unpack \
         && unzip -q /tmp/v2rayn.zip -d /tmp/v2rayn-unpack \
@@ -279,7 +292,7 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
             /opt/v2rayN/bin/xray/xray \
             /opt/v2rayN/bin/sing_box/sing-box \
             /opt/v2rayN/bin/mihomo/mihomo \
-        && rm -rf /tmp/v2rayn.zip /tmp/v2rayn-unpack \
+        && rm -rf /tmp/v2rayn.zip /tmp/v2rayn-unpack "$V2RAYN_RELEASE_JSON" \
         && apt-get clean && rm -rf /var/lib/apt/lists/*; \
     fi
 
