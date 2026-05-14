@@ -367,6 +367,9 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         && chmod +x /opt/xsession \
         && cp -r /tmp/desktop-shortcuts/ /opt/ \
         && cp -r /tmp/desktop-icons/ /opt/ \
+        && cp /opt/desktop-shortcuts/v2rayN.desktop /usr/share/applications/v2rayN.desktop \
+        && chmod +x /usr/share/applications/v2rayN.desktop \
+        && (update-desktop-database /usr/share/applications 2>/dev/null || true) \
         && cp /tmp/audio-ws-server.py /opt/ \
         && cp /tmp/audio-ws-wrapper.sh /opt/ \
         && chmod +x /opt/audio-ws-server.py /opt/audio-ws-wrapper.sh \

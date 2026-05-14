@@ -444,9 +444,10 @@ FCITX_PROFILE_EOF
             ! -name 'chrome.desktop' \
             ! -name 'appearance.desktop' \
             ! -name 'language.desktop' \
+            ! -name 'v2rayN.desktop' \
             ! -name 'launchpad.desktop' \
             -exec mv -f {} /home/ubuntu/.local/share/desktop-icons/hidden/ \; 2>/dev/null || true
-        for shortcut in chrome appearance language; do
+        for shortcut in chrome appearance language v2rayN; do
             cp "/opt/desktop-shortcuts/${shortcut}.desktop" /home/ubuntu/Desktop/ 2>/dev/null || true
         done
         cp /usr/share/applications/launchpad.desktop /home/ubuntu/Desktop/launchpad.desktop 2>/dev/null || true
