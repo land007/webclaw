@@ -2,7 +2,7 @@
 Name=WebClaw
 Comment=WebClaw desktop icon overrides
 Inherits=Adwaita,hicolor
-Directories=scalable/places
+Directories=scalable/places,scalable/actions
 
 [scalable/places]
 Size=128
@@ -10,3 +10,10 @@ Type=Scalable
 MinSize=16
 MaxSize=512
 Context=Places
+
+[scalable/actions]
+Size=128
+Type=Scalable
+MinSize=16
+MaxSize=512
+Context=Actions
