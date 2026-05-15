@@ -4,3 +4,8 @@ docker_ubuntu-unity-novnc/
 .claude
 backups/
 CLAUDE.md
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
