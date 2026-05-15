@@ -56,6 +56,7 @@ export DBUS_SESSION_BUS_ADDRESS
 # Make Ctrl+V paste work for the noVNC clipboard bridge and Mac-style paste.
 # (Ctrl+Shift+C copy is already the default, no need to set it)
 gsettings set org.gnome.Terminal.Legacy.Keybindings:/org/gnome/terminal/legacy/keybindings/ paste '<Control>v' 2>/dev/null || true
+gsettings set org.gnome.desktop.interface icon-theme 'WebClaw' 2>/dev/null || true
 
 # ─── GNOME Keyring (empty password for Chrome) ────────────────────────
 # Auto-unlock keyring with empty password so Chrome doesn't prompt
@@ -156,8 +157,27 @@ fi
 # ─── Desktop panel (taskbar, system tray, clock) ────────────────────
 export XDG_MENU_PREFIX=gnome-flashback-
 
+# ─── Short localized top-menu label ───────────────────────────────────
+# GNOME panel reads freedesktop directory entries for the Applications menu.
+# Keep the menu functional while replacing the dated long label with a shorter,
+# locale-aware one from the user's XDG data dir.
+mkdir -p "$HOME/.local/share/desktop-directories"
+cat > "$HOME/.local/share/desktop-directories/X-GNOME-Menu-Applications.directory" <<'EOF'
+[Desktop Entry]
+Name=Apps
+Name[zh_CN]=应用
+Name[ja_JP]=アプリ
+Name[es_ES]=Apps
+Name[pt_BR]=Apps
+Name[ko_KR]=앱
+Name[de_DE]=Apps
+Comment=Apps
+Icon=applications-other
+Type=Directory
+EOF
+
 # ─── Configure panel layout with dconf ───────────────────────────────
-# Keep Launchpad pinned on the bottom-left panel after container restarts.
+# Keep Launchpad pinned while preserving the top menu as a functional entry.
 dconf load /org/gnome/gnome-panel/layout/ << 'PANEL_LAYOUT_EOF' 2>/dev/null || true
 [/]
 object-id-list=['menu-bar', 'clock', 'notification-area', 'show-desktop', 'launchpad-launcher', 'user-menu', 'window-list', 'workspace-switcher']

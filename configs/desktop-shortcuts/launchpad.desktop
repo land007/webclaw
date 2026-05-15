@@ -1,6 +1,18 @@
 [Desktop Entry]
-Name=应用启动台
-Comment=全屏应用启动器
+Name=Apps
+Name[zh_CN]=应用
+Name[ja_JP]=アプリ
+Name[es_ES]=Apps
+Name[pt_BR]=Apps
+Name[ko_KR]=앱
+Name[de_DE]=Apps
+Comment=Open the app launcher
+Comment[zh_CN]=打开应用启动器
+Comment[ja_JP]=アプリランチャーを開く
+Comment[es_ES]=Abrir el lanzador de apps
+Comment[pt_BR]=Abrir o lançador de apps
+Comment[ko_KR]=앱 런처 열기
+Comment[de_DE]=App-Starter öffnen
 GenericName=Launcher
 Categories=GNOME;GTK;Utility;
 TryExec=/usr/local/bin/launchpad

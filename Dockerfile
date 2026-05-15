@@ -348,6 +348,7 @@ COPY configs/key-remap.js /tmp/
 COPY configs/xsession /tmp/
 COPY scripts/audio-ws-server.py /tmp/
 COPY scripts/audio-ws-wrapper.sh /tmp/
+COPY scripts/install-gnome-panel-labels.py /tmp/
 COPY scripts/theme-switch.sh /usr/local/bin/theme-switch
 COPY scripts/lang-switch.sh /usr/local/bin/lang-switch
 COPY scripts/desktop-language-picker.sh /usr/local/bin/desktop-language-picker
@@ -365,6 +366,7 @@ COPY scripts/hermes-browser.sh /opt/hermes-browser.sh
 COPY configs/on-demand-apps/hermes.json /opt/on-demand-apps/
 COPY configs/desktop-shortcuts/ /tmp/desktop-shortcuts/
 COPY configs/desktop-icons/ /tmp/desktop-icons/
+COPY configs/icon-theme/WebClaw/ /usr/share/icons/WebClaw/
 COPY scripts/patch-novnc.sh /tmp/patch-novnc.sh
 COPY configs/clipboard-server.js /tmp/clipboard-server.js
 COPY configs/custom-clipboard-image.js /tmp/custom-clipboard-image.js
@@ -376,6 +378,8 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         && cp /tmp/key-remap.js /opt/noVNC/key-remap.js \
         && chmod +x /tmp/patch-novnc.sh \
         && /tmp/patch-novnc.sh \
+        && python3 /tmp/install-gnome-panel-labels.py \
+        && (gtk-update-icon-cache -f -t /usr/share/icons/WebClaw 2>/dev/null || true) \
         && cp /tmp/xsession /opt/xsession \
         && chmod +x /opt/xsession \
         && cp -r /tmp/desktop-shortcuts/ /opt/ \
@@ -406,7 +410,7 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
     && chmod 755 /opt/install-hermes.sh /opt/uninstall-hermes.sh /opt/start-hermes-dashboard.sh /opt/hermes-browser.sh \
     && rm -rf /tmp/supervisor-audio.conf /tmp/audio-player.html /tmp/audio-bar.js \
            /tmp/touch-handler.js /tmp/key-remap.js /tmp/xsession /tmp/desktop-shortcuts/ /tmp/desktop-icons/ \
-           /tmp/audio-ws-server.py /tmp/audio-ws-wrapper.sh \
+           /tmp/audio-ws-server.py /tmp/audio-ws-wrapper.sh /tmp/install-gnome-panel-labels.py \
            /tmp/patch-novnc.sh /tmp/clipboard-server.js /tmp/custom-clipboard-image.js
 
 # ─── browser launcher: 替代之前 Dockerfile inline 写错的 /usr/local/bin/browser ────

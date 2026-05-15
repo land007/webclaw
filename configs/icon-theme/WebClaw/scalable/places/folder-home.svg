@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bg" x1="50" y1="24" x2="208" y2="230" gradientUnits="userSpaceOnUse"><stop stop-color="#ffe9a3"/><stop offset=".48" stop-color="#ff9f0a"/><stop offset="1" stop-color="#ff453a"/></linearGradient>
+    <linearGradient id="house" x1="75" y1="78" x2="181" y2="198" gradientUnits="userSpaceOnUse"><stop stop-color="#ffffff"/><stop offset="1" stop-color="#eef4ff"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#3b1500" flood-opacity=".28"/><feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity=".18"/></filter>
+  </defs>
+  <rect width="256" height="256" fill="none"/>
+  <g filter="url(#shadow)">
+    <rect x="28" y="24" width="200" height="208" rx="50" fill="url(#bg)"/>
+    <path d="M55 42c31-16 113-17 146-1 16 8 23 21 26 42-13-20-28-30-51-35-34-7-66-7-99 0-23 5-38 15-51 35 3-20 12-33 29-41z" fill="#fff" opacity=".34"/>
+    <path d="M66 124 128 74l62 50" fill="none" stroke="#fff" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M83 123v63c0 8 6 14 14 14h62c8 0 14-6 14-14v-63l-45-36z" fill="url(#house)"/>
+    <rect x="113" y="148" width="30" height="52" rx="9" fill="#2b64d8" opacity=".82"/>
+    <path d="M102 124h52" stroke="#cfe0ff" stroke-width="8" stroke-linecap="round" opacity=".86"/>
+  </g>
+</svg>

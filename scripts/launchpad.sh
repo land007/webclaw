@@ -68,6 +68,44 @@ class LaunchpadWindow(Gtk.Window):
         self.setup_ui()
         GLib.timeout_add(12, self.fade_in)
 
+    def locale_candidates(self):
+        candidates = []
+
+        def add(raw):
+            before = len(candidates)
+            if not raw:
+                return False
+            locale_name = raw.split('.', 1)[0].split('@', 1)[0].replace('-', '_')
+            if not locale_name or locale_name in {'C', 'POSIX'}:
+                return False
+            if locale_name not in candidates:
+                candidates.append(locale_name)
+            language = locale_name.split('_', 1)[0]
+            if language and language not in candidates:
+                candidates.append(language)
+            return len(candidates) > before
+
+        found_env_locale = False
+        for raw in os.environ.get('LANGUAGE', '').split(':'):
+            found_env_locale = add(raw) or found_env_locale
+        for key in ('LC_MESSAGES', 'LC_ALL', 'LANG'):
+            found_env_locale = add(os.environ.get(key)) or found_env_locale
+
+        if not found_env_locale:
+            try:
+                with open('/home/ubuntu/.config/gnome-language', 'r', encoding='utf-8') as fh:
+                    add(fh.read().strip())
+            except Exception:
+                pass
+        return candidates
+
+    def localized_desktop_value(self, data, key):
+        for locale_name in self.locale_candidates():
+            value = data.get(f'{key}[{locale_name}]')
+            if value:
+                return value
+        return data.get(key)
+
     def setup_ui(self):
         css = b"""
         window, #launchpad-root {
@@ -342,7 +380,7 @@ class LaunchpadWindow(Gtk.Window):
             if data.get('Hidden', '').lower() == 'true':
                 return None
 
-            name = data.get('Name[zh_CN]') or data.get('Name') or app_id
+            name = self.localized_desktop_value(data, 'Name') or app_id
             name = name.replace('⬇', '').strip()
             exec_cmd = self.clean_exec(data.get('Exec', ''))
             if not exec_cmd:
