@@ -58,7 +58,8 @@ class LaunchpadWindow(Gtk.Window):
         self.page_animation_step = 0
         self.animating_close = False
         self.background_pixbuf = self.capture_blurred_desktop()
-        self.fade_alpha = 0.0
+        self.cached_background = None
+        self.cached_bg_size = (0, 0)
 
         self.connect('key-press-event', self.on_key_press)
         self.connect('button-press-event', self.on_background_press)
@@ -66,7 +67,10 @@ class LaunchpadWindow(Gtk.Window):
         self.connect('size-allocate', self.on_size_allocate)
 
         self.setup_ui()
-        GLib.timeout_add(12, self.fade_in)
+        self.main.set_opacity(1.0)
+        self.search_wrap.set_opacity(1.0)
+        self.dot_box.set_opacity(1.0)
+        self.show_all()
 
     def locale_candidates(self):
         candidates = []
@@ -267,52 +271,33 @@ class LaunchpadWindow(Gtk.Window):
 
     def draw_background(self, widget, cr):
         allocation = widget.get_allocation()
+        w, h = allocation.width, allocation.height
+
         if self.background_pixbuf:
-            scaled = self.background_pixbuf.scale_simple(
-                allocation.width,
-                allocation.height,
-                GdkPixbuf.InterpType.BILINEAR,
-            )
-            Gdk.cairo_set_source_pixbuf(cr, scaled, 0, 0)
+            if self.cached_background is None or (w, h) != self.cached_bg_size:
+                self.cached_background = self.background_pixbuf.scale_simple(
+                    w, h, GdkPixbuf.InterpType.BILINEAR,
+                )
+                self.cached_bg_size = (w, h)
+            Gdk.cairo_set_source_pixbuf(cr, self.cached_background, 0, 0)
             cr.paint()
         else:
             cr.set_source_rgb(0.05, 0.055, 0.07)
             cr.paint()
 
-        overlay_alpha = 0.34 + (0.16 * self.fade_alpha)
-        cr.set_source_rgba(0.02, 0.025, 0.035, overlay_alpha)
+        cr.set_source_rgba(0.02, 0.025, 0.035, 0.45)
         cr.paint()
         return False
-
-    def fade_in(self):
-        self.fade_alpha = min(1.0, self.fade_alpha + 0.055)
-        self.main.set_opacity(self.fade_alpha)
-        self.search_wrap.set_opacity(self.fade_alpha)
-        self.dot_box.set_opacity(self.fade_alpha)
-        self.queue_draw()
-        if self.fade_alpha >= 1.0:
-            return False
-        return True
-
-    def fade_out(self):
-        self.fade_alpha = max(0.0, self.fade_alpha - 0.065)
-        self.main.set_opacity(self.fade_alpha)
-        self.search_wrap.set_opacity(self.fade_alpha)
-        self.dot_box.set_opacity(self.fade_alpha)
-        self.queue_draw()
-        if self.fade_alpha <= 0:
-            self.destroy()
-            return False
-        return True
 
     def close_with_animation(self):
         if self.animating_close:
             return
         self.animating_close = True
-        GLib.timeout_add(12, self.fade_out)
+        self.destroy()
 
     def on_size_allocate(self, widget, allocation):
         if allocation.width != self.page_width:
+            self.cached_background = None
             self.page_width = max(1, allocation.width)
             self.position_pages()
         cols, rows = self.layout_for_size(allocation.width, allocation.height)
