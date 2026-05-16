@@ -1,0 +1,28 @@
+[Desktop Entry]
+Name=Gemini CLI
+Name[zh_CN]=Gemini CLI
+Name[ja_JP]=Gemini CLI
+Name[es_ES]=Gemini CLI
+Name[pt_BR]=Gemini CLI
+Name[ko_KR]=Gemini CLI
+Name[de_DE]=Gemini CLI
+Comment=Google Gemini AI CLI
+Comment[zh_CN]=Google Gemini AI 命令行界面
+Comment[ja_JP]=Google Gemini AI CLI
+Comment[es_ES]=Google Gemini AI CLI
+Comment[pt_BR]=Google Gemini AI CLI
+Comment[ko_KR]=Google Gemini AI CLI
+Comment[de_DE]=Google Gemini AI CLI
+Exec=gnome-terminal --name="Gemini CLI" -- /usr/local/bin/gemini
+Icon=/opt/on-demand-icons/gemini-cli.svg
+Terminal=false
+Type=Application
+Categories=Development;IDE;Utility;
+StartupNotify=true
+Keywords=ai;gemini;google;coding;assistant;cli;
+Keywords[zh_CN]=AI;助手;编程;代码;
+Keywords[ja_JP]=AI;アシスタント;コーディング;gemini;
+Keywords[es_ES]=ai;asistente;codificación;gemini;
+Keywords[pt_BR]=ai;assistente;codificação;gemini;
+Keywords[ko_KR]=AI;어시스턴트;코딩;gemini;
+Keywords[de_DE]=KI;Assistent;Codierung;gemini;

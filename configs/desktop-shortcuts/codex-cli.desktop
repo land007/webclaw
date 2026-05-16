@@ -1,0 +1,28 @@
+[Desktop Entry]
+Name=Codex CLI
+Name[zh_CN]=Codex CLI
+Name[ja_JP]=Codex CLI
+Name[es_ES]=Codex CLI
+Name[pt_BR]=Codex CLI
+Name[ko_KR]=Codex CLI
+Name[de_DE]=Codex CLI
+Comment=Codex AI Coding Assistant CLI
+Comment[zh_CN]=Codex AI 编程助手命令行界面
+Comment[ja_JP]=Codex AI コーディング アシスタント CLI
+Comment[es_ES]=Asistente de programación AI Codex CLI
+Comment[pt_BR]=Assistente de codificação AI Codex CLI
+Comment[ko_KR]=Codex AI 코딩 어시스턴트 CLI
+Comment[de_DE]=Codex AI-Coding-Assistent-CLI
+Exec=gnome-terminal --name="Codex CLI" -- /usr/local/bin/codex
+Icon=/opt/on-demand-icons/codex.png
+Terminal=false
+Type=Application
+Categories=Development;IDE;Utility;
+StartupNotify=true
+Keywords=ai;codex;coding;assistant;cli;
+Keywords[zh_CN]=AI;助手;编程;代码;
+Keywords[ja_JP]=AI;アシスタント;コーディング;codex;
+Keywords[es_ES]=ai;asistente;codificación;codex;
+Keywords[pt_BR]=ai;assistente;codificação;codex;
+Keywords[ko_KR]=AI;어시스턴트;코딩;codex;
+Keywords[de_DE]=KI;Assistent;Codierung;codex;
