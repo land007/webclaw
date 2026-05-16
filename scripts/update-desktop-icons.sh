@@ -5,7 +5,6 @@
 set -u
 
 DESKTOP_DIR="/home/ubuntu/Desktop"
-DESKTOP_HIDDEN_DIR="/home/ubuntu/.local/share/desktop-icons/hidden"
 MANIFEST_DIR="/opt/on-demand-apps"
 UNINSTALL_APP_DIR="/home/ubuntu/.local/share/applications/webclaw-uninstall"
 UNINSTALL_MENU_DIR="/home/ubuntu/.local/share/desktop-directories"
@@ -210,48 +209,6 @@ remove_install_menu_entry() {
     rm -f "/home/ubuntu/.local/share/applications/webclaw-install-${app_id}.desktop"
 }
 
-create_desktop_icon() {
-    local app_id="$1"
-    local manifest="$2"
-    local desktop="$DESKTOP_DIR/${app_id}.desktop"
-    local name=$(jq -r '.name' "$manifest")
-    local icon
-    local exec_cmd
-
-    # 如果已存在，跳过
-    [ -f "$desktop" ] && return 0
-
-    icon="/opt/on-demand-icons/${app_id}.png"
-    if [ ! -e "$icon" ]; then
-        icon=$(jq -r '.icon // empty' "$manifest")
-    fi
-    [ -n "$icon" ] && [ "$icon" != "null" ] || icon="$app_id"
-
-    # Hermes 使用自定义启动器
-    if [ "$app_id" = "hermes" ]; then
-        exec_cmd="/opt/hermes-browser.sh"
-    else
-        exec_cmd="/usr/local/bin/webclaw-app-launcher $app_id"
-    fi
-
-    cat > "$desktop" <<EOF
-[Desktop Entry]
-Version=1.0
-Type=Application
-Name=$name
-Name[zh_CN]=$name
-Comment=Click to install or launch $name
-Comment[zh_CN]=点击安装或启动 $name
-Exec=$exec_cmd
-Icon=$icon
-Terminal=false
-StartupNotify=true
-EOF
-
-    chown ubuntu:ubuntu "$desktop" 2>/dev/null || true
-    chmod +x "$desktop" 2>/dev/null || true
-}
-
 cleanup_desktop_temp_files
 write_uninstall_menu
 
@@ -273,15 +230,25 @@ for manifest in "$MANIFEST_DIR"/*.json; do
     desktop="$DESKTOP_DIR/${app_id}.desktop"
 
     if is_installed "$manifest"; then
+        # 应用已安装
         ensure_uninstall_menu_entry "$app_id" "$name" "$manifest"
         remove_install_menu_entry "$app_id"
-        [ -f "$desktop" ] && normalize_desktop_file "$desktop" "$name"
+
+        # 如果桌面图标存在，更新名称（去除可能的下载标记）
+        if [ -f "$desktop" ]; then
+            normalize_desktop_file "$desktop" "$name"
+        fi
     else
+        # 应用未安装
         if [ "$CLEAN_DESKTOP" = "true" ]; then
             ensure_install_menu_entry "$app_id" "$name" "$manifest"
         fi
         remove_uninstall_menu_entry "$app_id"
-        [ -f "$desktop" ] && normalize_desktop_file "$desktop" "⬇ $name"
+
+        # 如果桌面图标存在，添加下载标记
+        if [ -f "$desktop" ]; then
+            normalize_desktop_file "$desktop" "⬇ $name"
+        fi
     fi
 done
 
