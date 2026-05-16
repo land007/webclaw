@@ -1,0 +1,28 @@
+[Desktop Entry]
+Name=Claude Code
+Name[zh_CN]=Claude Code
+Name[ja_JP]=Claude Code
+Name[es_ES]=Claude Code
+Name[pt_BR]=Claude Code
+Name[ko_KR]=Claude Code
+Name[de_DE]=Claude Code
+Comment=Claude AI Coding Assistant CLI
+Comment[zh_CN]=Claude AI 编程助手命令行界面
+Comment[ja_JP]=Claude AI コーディング アシスタント CLI
+Comment[es_ES]=Asistente de programación AI Claude CLI
+Comment[pt_BR]=Assistente de codificação AI Claude CLI
+Comment[ko_KR]=Claude AI 코딩 어시스턴트 CLI
+Comment[de_DE]=Claude AI-Coding-Assistent-CLI
+Exec=gnome-terminal --name="Claude Code" -- /usr/local/bin/claude
+Icon=/opt/on-demand-icons/claude-code.svg
+Terminal=false
+Type=Application
+Categories=Development;IDE;Utility;
+StartupNotify=true
+Keywords=ai;claude;coding;assistant;cli;
+Keywords[zh_CN]=AI;助手;编程;代码;
+Keywords[ja_JP]=AI;アシスタント;コーディング;claude;
+Keywords[es_ES]=ai;asistente;codificación;claude;
+Keywords[pt_BR]=ai;assistente;codificação;claude;
+Keywords[ko_KR]=AI;어시스턴트;코딩;claude;
+Keywords[de_DE]=KI;Assistent;Codierung;claude;
