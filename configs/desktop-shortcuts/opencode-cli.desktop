@@ -1,0 +1,28 @@
+[Desktop Entry]
+Name=OpenCode CLI
+Name[zh_CN]=OpenCode CLI
+Name[ja_JP]=OpenCode CLI
+Name[es_ES]=OpenCode CLI
+Name[pt_BR]=OpenCode CLI
+Name[ko_KR]=OpenCode CLI
+Name[de_DE]=OpenCode CLI
+Comment=Open Source AI Coding Agent CLI
+Comment[zh_CN]=开源 AI 编程助手命令行界面
+Comment[ja_JP]=オープンソース AI コーディング エージェント CLI
+Comment[es_ES]=Agente de programación AI de código abierto CLI
+Comment[pt_BR]=Agente de codificação AI de código aberto CLI
+Comment[ko_KR]=오픈 소스 AI 코딩 에이전트 CLI
+Comment[de_DE]=Open-Source-AI-Coding-Agent-CLI
+Exec=gnome-terminal --name="OpenCode CLI" -- /usr/local/bin/opencode
+Icon=/opt/on-demand-icons/opencode.png
+Terminal=false
+Type=Application
+Categories=Development;IDE;Utility;
+StartupNotify=true
+Keywords=ai;opencode;coding;assistant;cli;open source;
+Keywords[zh_CN]=AI;助手;编程;代码;开源;
+Keywords[ja_JP]=AI;アシスタント;コーディング;オープンソース;
+Keywords[es_ES]=ai;asistente;codificación;código abierto;
+Keywords[pt_BR]=ai;assistente;codificação;código aberto;
+Keywords[ko_KR]=AI;어시스턴트;코딩;오픈 소스;
+Keywords[de_DE]=KI;Assistent;Codierung;Open Source;
