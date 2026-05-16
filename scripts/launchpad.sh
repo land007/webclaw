@@ -333,7 +333,7 @@ class LaunchpadWindow(Gtk.Window):
                 if app.app_id not in apps_by_id:
                     apps_by_id[app.app_id] = app
 
-        return sorted(apps_by_id.values(), key=lambda app: app.name.casefold())
+        return sorted([a for a in apps_by_id.values() if a.installed], key=lambda app: app.name.casefold())
 
     def load_installed_packages(self):
         try:
