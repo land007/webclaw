@@ -445,7 +445,6 @@ FCITX_PROFILE_EOF
             ! -name 'appearance.desktop' \
             ! -name 'language.desktop' \
             ! -name 'v2rayN.desktop' \
-            ! -name 'launchpad.desktop' \
             ! -name 'openclaw.desktop' \
             ! -name 'terminal.desktop' \
             ! -name 'claude-code.desktop' \
@@ -453,7 +452,6 @@ FCITX_PROFILE_EOF
         for shortcut in v2rayN openclaw claude-code codex-cli; do
             cp "/opt/desktop-shortcuts/${shortcut}.desktop" /home/ubuntu/Desktop/ 2>/dev/null || true
         done
-        cp /usr/share/applications/launchpad.desktop /home/ubuntu/Desktop/launchpad.desktop 2>/dev/null || true
         touch "$DESKTOP_DEFAULTS_MARKER"
     fi
     rm -f /home/ubuntu/Desktop/lang-chinese.desktop /home/ubuntu/Desktop/lang-english.desktop
