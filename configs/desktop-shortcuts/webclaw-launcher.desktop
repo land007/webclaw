@@ -1,8 +1,18 @@
 [Desktop Entry]
 Name=WebClaw Launcher
 Name[zh_CN]=WebClaw 启动器
+Name[ja_JP]=WebClaw ランチャー
+Name[es_ES]=WebClaw Launcher
+Name[pt_BR]=WebClaw Launcher
+Name[ko_KR]=WebClaw 실행기
+Name[de_DE]=WebClaw Launcher
 Comment=WebClaw Desktop Launcher
 Comment[zh_CN]=WebClaw 桌面启动器
+Comment[ja_JP]=WebClaw デスクトップ ランチャー
+Comment[es_ES]=WebClaw Launcher de escritorio
+Comment[pt_BR]=WebClaw Launcher da área de trabalho
+Comment[ko_KR]=WebClaw 데스크톱 실행기
+Comment[de_DE]=WebClaw Desktop-Launcher
 Exec=/usr/local/bin/webclaw-app-launcher webclaw-launcher
 Icon=/opt/on-demand-icons/webclaw-launcher.png
 Type=Application
