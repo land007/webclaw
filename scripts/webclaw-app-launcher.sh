@@ -1206,8 +1206,33 @@ else
 fi
 
 if [ "$INSTALL_OK" = 1 ]; then
-    # 更新桌面图标状态（移除下载标记）
-    [ -x /usr/local/bin/update-desktop-icons ] && /usr/local/bin/update-desktop-icons
+	    # 在桌面创建图标
+	    DESKTOP_DIR="/home/ubuntu/Desktop"
+	    DESKTOP_ICON="$DESKTOP_DIR/${APP_ID}.desktop"
+	    # 创建桌面图标
+	    if [ ! -f "$DESKTOP_ICON" ]; then
+	        ICON="/opt/on-demand-icons/${APP_ID}.png"
+	        [ ! -e "$ICON" ] && ICON="$APP_ID"
+
+	        cat > "$DESKTOP_ICON" <<EOFICON
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=$NAME
+Name[zh_CN]=$NAME
+Comment=Launch $NAME
+Comment[zh_CN]=启动 $NAME
+Exec=/usr/local/bin/webclaw-app-launcher $APP_ID
+Icon=$ICON
+Terminal=false
+StartupNotify=true
+EOFICON
+	        chown ubuntu:ubuntu "$DESKTOP_ICON" 2>/dev/null || true
+	        chmod +x "$DESKTOP_ICON" 2>/dev/null || true
+	    fi
+
+	    # 更新应用菜单
+	    [ -x /usr/local/bin/update-desktop-icons ] && /usr/local/bin/update-desktop-icons
     zenity --info \
         --title="$NAME" \
         --text="<b>$NAME</b> 安装完成!\n\n再次点击桌面图标即可启动。" \
