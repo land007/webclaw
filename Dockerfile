@@ -444,6 +444,10 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         && (gtk-update-icon-cache -f -t /usr/share/icons/WebClaw 2>/dev/null || true) \
         && cp /tmp/_configs/xsession /opt/xsession \
         && chmod +x /opt/xsession \
+        && cp /tmp/_configs/start-xvnc.sh /opt/start-xvnc.sh \
+        && cp /tmp/_configs/setup-monitors.sh /opt/setup-monitors.sh \
+        && cp /tmp/_configs/compute-total-geometry.py /opt/compute-total-geometry.py \
+        && chmod +x /opt/start-xvnc.sh /opt/setup-monitors.sh /opt/compute-total-geometry.py \
         && cp -r /tmp/_configs/desktop-shortcuts/ /opt/ \
         && cp -r /tmp/_configs/desktop-icons/ /opt/ \
         && cp /opt/desktop-shortcuts/v2rayN.desktop /usr/share/applications/v2rayN.desktop \

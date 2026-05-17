@@ -73,6 +73,14 @@ for i in $(seq 1 20); do
     sleep 0.5
 done
 
+# ─── Multi-monitor layout (Phase 3) ─────────────────────────────────
+# When MONITOR_LAYOUT is provided (e.g. "1920x1080+0+0,1920x1080+1920+0"),
+# split the single TigerVNC framebuffer into logical monitors so window managers
+# treat it as an extended desktop. Falls back to single-monitor when unset.
+if [ -n "${MONITOR_LAYOUT:-}" ] && [ -x /opt/setup-monitors.sh ]; then
+    /opt/setup-monitors.sh "$MONITOR_LAYOUT" 2>&1 | sed 's/^/[xsession] /' || true
+fi
+
 # ─── Theme initialization (read from saved theme preference) ───────────
 THEME_FILE="$HOME/.config/gnome-initial-theme"
 if [ -f "$THEME_FILE" ]; then
