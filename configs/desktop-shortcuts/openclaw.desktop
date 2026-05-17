@@ -1,11 +1,11 @@
 [Desktop Entry]
-Name=OpenClaw
-Name[zh_CN]=OpenClaw
-Name[ja_JP]=OpenClaw
-Name[es_ES]=OpenClaw
-Name[pt_BR]=OpenClaw
-Name[ko_KR]=OpenClaw
-Name[de_DE]=OpenClaw
+Name=OpenClaw Smart Gateway
+Name[zh_CN]=OpenClaw 智能网关
+Name[ja_JP]=OpenClaw スマートゲートウェイ
+Name[es_ES]=OpenClaw Smart Gateway
+Name[pt_BR]=OpenClaw Smart Gateway
+Name[ko_KR]=OpenClaw 스마트 게이트웨이
+Name[de_DE]=OpenClaw Smart Gateway
 Comment=OpenClaw AI Gateway Dashboard
 Comment[zh_CN]=OpenClaw AI 网关管理界面
 Comment[ja_JP]=OpenClaw AI ゲートウェイ ダッシュボード

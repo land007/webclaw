@@ -6,5 +6,5 @@ Comment[zh_CN]=Google AI 原生集成开发环境
 Exec=/usr/local/bin/webclaw-app-launcher antigravity
 Icon=/opt/on-demand-icons/antigravity.png
 Type=Application
-Categories=Development;IDE;
+Categories=AITools;
 StartupNotify=true

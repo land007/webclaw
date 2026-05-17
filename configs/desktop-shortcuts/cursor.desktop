@@ -6,5 +6,5 @@ Comment[zh_CN]=AI 代码编辑器（首次点击触发按需安装）
 Exec=/usr/local/bin/webclaw-app-launcher cursor
 Icon=/opt/on-demand-icons/cursor.png
 Type=Application
-Categories=IDE;Development;
+Categories=AITools;
 StartupNotify=true
