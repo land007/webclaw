@@ -5,7 +5,7 @@ LABEL org.opencontainers.image.title="webclaw-base" \
       org.opencontainers.image.url="https://github.com/land007/webclaw" \
       org.opencontainers.image.source="https://github.com/land007/webclaw" \
       org.opencontainers.image.vendor="land007" \
-      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.licenses="SSPL-1.0" \
       org.opencontainers.image.logo="https://raw.githubusercontent.com/land007/webclaw/main/images/icon-source.png"
 
 ENV DEBIAN_FRONTEND=noninteractive
