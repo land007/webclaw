@@ -1,5 +1,6 @@
 {
   "id": "ghostty",
+  "group": "system",
   "name": "Ghostty",
   "package": "ghostty",
   "binary": "/opt/ondemand-apps/ghostty/AppDir/bin/ghostty",

@@ -1,5 +1,6 @@
 {
   "id": "opentypeless",
+  "group": "audiomedia",
   "name": "OpenTypeless",
   "package": "open-typeless",
   "binary": "/usr/bin/opentypeless",

@@ -1,5 +1,6 @@
 {
   "id": "antigravity",
+  "group": "ai",
   "name": "Google Antigravity",
   "package": "antigravity",
   "binary": "/usr/bin/antigravity",

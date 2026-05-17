@@ -1,5 +1,6 @@
 {
   "id": "hermes",
+  "group": "ai",
   "name": "Hermes Agent",
   "name_zh_CN": "Hermes 智能代理",
   "package": "hermes-agent-custom",

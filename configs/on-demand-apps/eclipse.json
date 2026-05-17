@@ -1,5 +1,6 @@
 {
   "id": "eclipse",
+  "group": "dev",
   "name": "Eclipse IDE",
   "package": "eclipse",
   "binary": "/opt/eclipse/eclipse",

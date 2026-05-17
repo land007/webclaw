@@ -104,7 +104,28 @@ Icon=package-install
 Type=Directory
 EOF
 
-    cat > "$INSTALL_MENU_FILE" <<'EOF'
+    local layout=""
+    local first_group=true
+    for group in ai dev graphics audiomedia network system office utility; do
+        local group_xml=""
+        for manifest in "$MANIFEST_DIR"/*.json; do
+            [ -f "$manifest" ] || continue
+            local app_id
+            app_id=$(basename "$manifest" .json)
+            if [ "$(jq -r '.group // "utility"' "$manifest")" = "$group" ]; then
+                group_xml="${group_xml}      <Filename>webclaw-install-${app_id}.desktop</Filename>
+"
+            fi
+        done
+        if [ -n "$group_xml" ]; then
+            [ "$first_group" = "true" ] || layout="${layout}      <Separator/>
+"
+            layout="${layout}${group_xml}"
+            first_group=false
+        fi
+    done
+
+    cat > "$INSTALL_MENU_FILE" <<EOF
 <!DOCTYPE Menu PUBLIC "-//freedesktop//DTD Menu 1.0//EN"
  "http://www.freedesktop.org/standards/menu-spec/1.0/menu.dtd">
 <Menu>
@@ -115,6 +136,9 @@ EOF
     <Include>
       <Category>WebClawInstall</Category>
     </Include>
+    <Layout>
+${layout}      <Merge type="rest"/>
+    </Layout>
   </Menu>
 </Menu>
 EOF

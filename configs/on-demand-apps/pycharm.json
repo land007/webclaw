@@ -1,5 +1,6 @@
 {
   "id": "pycharm",
+  "group": "dev",
   "name": "PyCharm Community",
   "package": "pycharmcc",
   "binary": "/opt/pycharm/bin/pycharm.sh",

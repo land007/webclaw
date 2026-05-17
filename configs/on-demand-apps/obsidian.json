@@ -1,5 +1,6 @@
 {
   "id": "obsidian",
+  "group": "office",
   "name": "Obsidian",
   "package": "obsidian",
   "binary": "/opt/ondemand-apps/obsidian/obsidian",

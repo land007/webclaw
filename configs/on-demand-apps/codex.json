@@ -1,5 +1,6 @@
 {
   "id": "codex",
+  "group": "ai",
   "name": "Codex",
   "package": "codex",
   "binary": "/opt/codex/codex",

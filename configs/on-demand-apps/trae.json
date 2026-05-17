@@ -1,5 +1,6 @@
 {
   "id": "trae",
+  "group": "ai",
   "name": "Trae",
   "package": "trae",
   "binary": "/usr/share/trae/bin/trae",

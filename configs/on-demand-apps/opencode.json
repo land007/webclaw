@@ -1,5 +1,6 @@
 {
   "id": "opencode",
+  "group": "ai",
   "name": "OpenCode",
   "package": "opencode",
   "binary": "/usr/local/bin/opencode",

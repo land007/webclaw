@@ -1,5 +1,6 @@
 {
   "id": "cursor",
+  "group": "ai",
   "name": "Cursor",
   "package": "cursor",
   "binary": "/opt/cursor/cursor",

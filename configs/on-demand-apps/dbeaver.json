@@ -1,5 +1,6 @@
 {
   "id": "dbeaver",
+  "group": "dev",
   "name": "DBeaver Community",
   "package": "dbeaver-ce",
   "binary": "/usr/bin/dbeaver",

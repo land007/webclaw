@@ -1,5 +1,6 @@
 {
   "id": "dockyard",
+  "group": "utility",
   "name": "Dockyard",
   "package": "dockyard",
   "binary": "/usr/bin/dockyard",

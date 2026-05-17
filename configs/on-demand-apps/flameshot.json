@@ -1,5 +1,6 @@
 {
   "id": "flameshot",
+  "group": "graphics",
   "name": "Flameshot",
   "package": "flameshot",
   "binary": "/usr/bin/flameshot",

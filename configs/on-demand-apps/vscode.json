@@ -1,5 +1,6 @@
 {
   "id": "vscode",
+  "group": "dev",
   "name": "Visual Studio Code",
   "package": "code",
   "binary": "/usr/bin/code",

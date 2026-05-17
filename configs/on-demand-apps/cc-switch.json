@@ -1,5 +1,6 @@
 {
   "id": "cc-switch",
+  "group": "ai",
   "name": "CC Switch",
   "package": "cc-switch",
   "binary": "/usr/bin/cc-switch",

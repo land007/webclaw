@@ -1,5 +1,6 @@
 {
   "id": "wireshark",
+  "group": "network",
   "name": "Wireshark",
   "package": "wireshark",
   "binary": "/usr/bin/wireshark",

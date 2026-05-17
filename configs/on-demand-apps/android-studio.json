@@ -1,5 +1,6 @@
 {
   "id": "android-studio",
+  "group": "dev",
   "name": "Android Studio",
   "package": "android-studio",
   "binary": "/opt/android-studio/bin/studio.sh",

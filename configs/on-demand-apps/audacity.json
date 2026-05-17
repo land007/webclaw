@@ -1,5 +1,6 @@
 {
   "id": "audacity",
+  "group": "audiomedia",
   "name": "Audacity",
   "package": "audacity",
   "binary": "/usr/bin/audacity",

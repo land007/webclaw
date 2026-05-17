@@ -1,5 +1,6 @@
 {
   "id": "blender",
+  "group": "graphics",
   "name": "Blender",
   "package": "blender",
   "binary": "/usr/bin/blender",

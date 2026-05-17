@@ -1,5 +1,6 @@
 {
   "id": "intellij",
+  "group": "dev",
   "name": "IntelliJ IDEA Community",
   "package": "intellijidea-community-edition",
   "binary": "/opt/intellij/bin/idea.sh",

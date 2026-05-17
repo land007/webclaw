@@ -1,5 +1,6 @@
 {
   "id": "webclaw-launcher",
+  "group": "system",
   "name": "WebClaw Launcher",
   "package": "webclaw-launcher",
   "binary": "/opt/webclaw-launcher/AppDir/AppRun",

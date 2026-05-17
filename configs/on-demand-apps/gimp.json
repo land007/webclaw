@@ -1,5 +1,6 @@
 {
   "id": "gimp",
+  "group": "graphics",
   "name": "GIMP",
   "package": "gimp",
   "binary": "/usr/bin/gimp",
