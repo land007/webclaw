@@ -157,20 +157,15 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
 
 # ─── 8c. SSH Server ────────────────────────────────────────────────────────
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    openssh-server \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# 创建 SSH 运行时目录
-RUN mkdir -p /var/run/sshd && \
-    chmod 0755 /var/run/sshd
-
-# SSH 配置优化
-RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config && \
-    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
-    sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config && \
-    echo "AllowTcpForwarding yes" >> /etc/ssh/sshd_config && \
-    echo "GatewayPorts no" >> /etc/ssh/sshd_config && \
-    echo "X11Forwarding no" >> /etc/ssh/sshd_config
+        openssh-server \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /var/run/sshd && chmod 0755 /var/run/sshd \
+    && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config \
+    && sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config \
+    && sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config \
+    && echo "AllowTcpForwarding yes" >> /etc/ssh/sshd_config \
+    && echo "GatewayPorts no" >> /etc/ssh/sshd_config \
+    && echo "X11Forwarding no" >> /etc/ssh/sshd_config
 
 # ─── 9. Docker CLI + daemon (auto-detect arch) ───────────────────────
 # docker-ce and containerd.io are needed for DinD mode; cli is the primary use case.
@@ -341,150 +336,131 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
     fi
 
 # ─── 12. Config files (COPY last — most likely to change) ───────────
-COPY configs/supervisord.conf /etc/supervisor/supervisord.conf
-COPY configs/supervisord-lite.conf /etc/supervisor/conf.d/supervisord-lite.conf
-COPY configs/supervisor-code-server.conf /etc/supervisor/conf.d/supervisor-code-server.conf
-COPY configs/supervisor-openclaw.conf /etc/supervisor/conf.d/supervisor-openclaw.conf
-COPY configs/supervisor-webtty.conf /etc/supervisor/conf.d/supervisor-webtty.conf
-COPY configs/supervisor-cloudflared.conf /etc/supervisor/conf.d/supervisor-cloudflared.conf
-COPY configs/supervisor-analytics.conf /etc/supervisor/conf.d/supervisor-analytics.conf
-COPY configs/supervisor-dind.conf /etc/supervisor/conf.d/supervisor-dind.conf
+COPY configs/ /tmp/_configs/
+COPY scripts/ /tmp/_scripts/
+COPY skills/ /opt/skills/
 
-# Dashboard server (needed for both desktop and lite modes)
-COPY configs/supervisor-dashboard.conf /etc/supervisor/conf.d/supervisor-dashboard.conf
-
-# Clipboard server (enhanced image paste support)
-COPY configs/supervisor-clipboard.conf /etc/supervisor/conf.d/supervisor-clipboard.conf
-COPY configs/supervisor-ssh.conf /etc/supervisor/conf.d/supervisor-ssh.conf
-
-# Desktop-specific configs (audio, noVNC, desktop shortcuts)
-COPY configs/supervisor-audio.conf /tmp/
-COPY configs/audio-player.html /tmp/
-COPY configs/audio-bar.js /tmp/
-COPY configs/touch-handler.js /tmp/
-COPY configs/key-remap.js /tmp/
-COPY configs/xsession /tmp/
-COPY scripts/audio-ws-server.py /tmp/
-COPY scripts/audio-ws-wrapper.sh /tmp/
-COPY scripts/install-gnome-panel-labels.py /tmp/
-COPY scripts/theme-switch.sh /usr/local/bin/theme-switch
-COPY scripts/lang-switch.sh /usr/local/bin/lang-switch
-COPY scripts/desktop-language-picker.sh /usr/local/bin/desktop-language-picker
-COPY scripts/desktop-theme-picker.sh /usr/local/bin/desktop-theme-picker
-COPY scripts/start-dashboard.sh /opt/start-dashboard.sh
-COPY scripts/start-webtty.sh /opt/start-webtty.sh
-COPY scripts/start-openclaw.sh /opt/start-openclaw.sh
-COPY scripts/start-ssh.sh /opt/start-ssh.sh
-RUN chmod +x /opt/start-dashboard.sh /opt/start-webtty.sh /opt/start-openclaw.sh /opt/start-ssh.sh
-COPY scripts/openclaw-browser.sh /usr/local/bin/openclaw-browser
-COPY scripts/code-server-browser.sh /usr/local/bin/code-server-browser
-COPY scripts/install-hermes.sh /opt/install-hermes.sh
-COPY scripts/uninstall-hermes.sh /opt/uninstall-hermes.sh
-COPY scripts/hermes-launcher.sh /usr/local/bin/hermes-launcher
-COPY scripts/start-hermes-dashboard.sh /opt/start-hermes-dashboard.sh
-COPY scripts/hermes-browser.sh /opt/hermes-browser.sh
-COPY configs/on-demand-apps/hermes.json /opt/on-demand-apps/
-COPY configs/desktop-shortcuts/ /tmp/desktop-shortcuts/
-COPY configs/desktop-icons/ /tmp/desktop-icons/
-COPY configs/icon-theme/WebClaw/ /usr/share/icons/WebClaw/
-COPY scripts/patch-novnc.sh /tmp/patch-novnc.sh
-COPY configs/clipboard-server.js /tmp/clipboard-server.js
-COPY configs/custom-clipboard-image.js /tmp/custom-clipboard-image.js
-RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
-        cp /tmp/supervisor-audio.conf /etc/supervisor/conf.d/ \
-        && cp /tmp/audio-player.html /opt/noVNC/audio.html \
-        && cp /tmp/audio-bar.js /opt/noVNC/audio-bar.js \
-        && cp /tmp/touch-handler.js /opt/noVNC/touch-handler.js \
-        && cp /tmp/key-remap.js /opt/noVNC/key-remap.js \
-        && chmod +x /tmp/patch-novnc.sh \
-        && /tmp/patch-novnc.sh \
-        && python3 /tmp/install-gnome-panel-labels.py \
-        && (gtk-update-icon-cache -f -t /usr/share/icons/WebClaw 2>/dev/null || true) \
-        && cp /tmp/xsession /opt/xsession \
-        && chmod +x /opt/xsession \
-        && cp -r /tmp/desktop-shortcuts/ /opt/ \
-        && cp -r /tmp/desktop-icons/ /opt/ \
-        && cp /opt/desktop-shortcuts/v2rayN.desktop /usr/share/applications/v2rayN.desktop \
-        && chmod +x /usr/share/applications/v2rayN.desktop \
-        && (update-desktop-database /usr/share/applications 2>/dev/null || true) \
-        && cp /tmp/audio-ws-server.py /opt/ \
-        && cp /tmp/audio-ws-wrapper.sh /opt/ \
-        && chmod +x /opt/audio-ws-server.py /opt/audio-ws-wrapper.sh \
-        && cp /tmp/clipboard-server.js /opt/clipboard-server.js \
-        && cp /tmp/custom-clipboard-image.js /opt/noVNC/custom-clipboard-image.js \
-        && chmod +x /opt/clipboard-server.js \
-        && sed -i 's|</body>|<script type="module">import UI from "./app/ui.js";window.UI=UI;</script><script src="custom-clipboard-image.js"></script></body>|' /opt/noVNC/vnc.html \
-        && cp /opt/desktop-shortcuts/hermes-uninstall.desktop /usr/share/applications/; \
-    fi \
+RUN cp /tmp/_configs/supervisord.conf /etc/supervisor/supervisord.conf \
+    && cp /tmp/_configs/supervisord-lite.conf /etc/supervisor/conf.d/ \
+    && cp /tmp/_configs/supervisor-code-server.conf /etc/supervisor/conf.d/ \
+    && cp /tmp/_configs/supervisor-openclaw.conf /etc/supervisor/conf.d/ \
+    && cp /tmp/_configs/supervisor-webtty.conf /etc/supervisor/conf.d/ \
+    && cp /tmp/_configs/supervisor-cloudflared.conf /etc/supervisor/conf.d/ \
+    && cp /tmp/_configs/supervisor-analytics.conf /etc/supervisor/conf.d/ \
+    && cp /tmp/_configs/supervisor-dind.conf /etc/supervisor/conf.d/ \
+    && cp /tmp/_configs/supervisor-dashboard.conf /etc/supervisor/conf.d/ \
+    && cp /tmp/_configs/supervisor-clipboard.conf /etc/supervisor/conf.d/ \
+    && cp /tmp/_configs/supervisor-ssh.conf /etc/supervisor/conf.d/ \
+    && cp /tmp/_scripts/theme-switch.sh /usr/local/bin/theme-switch \
+    && cp /tmp/_scripts/lang-switch.sh /usr/local/bin/lang-switch \
+    && cp /tmp/_scripts/desktop-language-picker.sh /usr/local/bin/desktop-language-picker \
+    && cp /tmp/_scripts/desktop-theme-picker.sh /usr/local/bin/desktop-theme-picker \
+    && cp /tmp/_scripts/start-dashboard.sh /opt/start-dashboard.sh \
+    && cp /tmp/_scripts/start-webtty.sh /opt/start-webtty.sh \
+    && cp /tmp/_scripts/start-openclaw.sh /opt/start-openclaw.sh \
+    && cp /tmp/_scripts/start-ssh.sh /opt/start-ssh.sh \
+    && cp /tmp/_scripts/openclaw-browser.sh /usr/local/bin/openclaw-browser \
+    && cp /tmp/_scripts/code-server-browser.sh /usr/local/bin/code-server-browser \
+    && cp /tmp/_scripts/install-hermes.sh /opt/install-hermes.sh \
+    && cp /tmp/_scripts/uninstall-hermes.sh /opt/uninstall-hermes.sh \
+    && cp /tmp/_scripts/hermes-launcher.sh /usr/local/bin/hermes-launcher \
+    && cp /tmp/_scripts/start-hermes-dashboard.sh /opt/start-hermes-dashboard.sh \
+    && cp /tmp/_scripts/hermes-browser.sh /opt/hermes-browser.sh \
+    && cp /tmp/_scripts/browser.sh /usr/local/bin/browser \
+    && cp /tmp/_scripts/launchpad.sh /usr/local/bin/launchpad \
+    && cp /tmp/_scripts/webclaw-app-launcher.sh /usr/local/bin/webclaw-app-launcher \
+    && cp /tmp/_scripts/webclaw-app-uninstaller.sh /usr/local/bin/webclaw-app-uninstaller \
+    && cp /tmp/_scripts/webclaw-app-postinstall.sh /usr/local/bin/webclaw-app-postinstall \
+    && cp /tmp/_scripts/webclaw-log-prepare.sh /usr/local/bin/webclaw-log-prepare \
+    && cp /tmp/_scripts/update-desktop-icons.sh /usr/local/bin/update-desktop-icons \
+    && cp /tmp/_scripts/install-antigravity.sh /usr/local/bin/install-antigravity \
+    && cp /tmp/_scripts/preinstall-on-demand.sh /usr/local/bin/preinstall-on-demand.sh \
+    && cp -r /tmp/_scripts/on-demand-helpers/ /usr/local/bin/on-demand-helpers/ \
+    && cp /tmp/_scripts/startup.sh /opt/startup.sh \
+    && cp /tmp/_scripts/init-skills.sh /opt/init-skills.sh \
+    && cp /tmp/_scripts/run-cloudflared.sh /usr/local/bin/run-cloudflared.sh \
+    && cp /tmp/_scripts/vnc-setpass.py /opt/vnc-setpass.py \
+    && mkdir -p /scripts \
+    && cp /tmp/_scripts/analytics.sh /scripts/analytics.sh \
+    && cp /tmp/_scripts/dockerd-condition.sh /usr/local/bin/dockerd-condition.sh \
+    && cp /tmp/_scripts/backup.sh /opt/backup.sh \
+    && cp /tmp/_scripts/restore.sh /opt/restore.sh \
+    && cp /tmp/_scripts/snapshot.sh /opt/snapshot.sh \
+    && cp /tmp/_scripts/snapshot-restore.sh /opt/snapshot-restore.sh \
+    && cp /tmp/_scripts/snapshot-base.sh /opt/snapshot-base.sh \
+    && mkdir -p /opt/on-demand-apps /opt/on-demand-icons \
+    && cp -r /tmp/_configs/on-demand-apps/. /opt/on-demand-apps/ \
+    && cp -r /tmp/_configs/on-demand-icons/. /opt/on-demand-icons/ \
+    && cp /tmp/_configs/sudoers/webclaw-app-launcher /etc/sudoers.d/webclaw-app-launcher \
+    && mkdir -p /usr/share/icons/WebClaw \
+    && cp -r /tmp/_configs/icon-theme/WebClaw/. /usr/share/icons/WebClaw/ \
+    && chmod +x \
+        /usr/local/bin/theme-switch /usr/local/bin/lang-switch \
+        /usr/local/bin/desktop-language-picker /usr/local/bin/desktop-theme-picker \
+        /opt/start-dashboard.sh /opt/start-webtty.sh /opt/start-openclaw.sh /opt/start-ssh.sh \
+        /usr/local/bin/openclaw-browser /usr/local/bin/code-server-browser \
+        /opt/install-hermes.sh /opt/uninstall-hermes.sh /usr/local/bin/hermes-launcher \
+        /opt/start-hermes-dashboard.sh /opt/hermes-browser.sh \
+        /usr/local/bin/browser /usr/local/bin/launchpad \
+        /usr/local/bin/webclaw-app-launcher /usr/local/bin/webclaw-app-uninstaller \
+        /usr/local/bin/webclaw-app-postinstall /usr/local/bin/webclaw-log-prepare \
+        /usr/local/bin/update-desktop-icons /usr/local/bin/install-antigravity \
+        /usr/local/bin/preinstall-on-demand.sh \
+        /usr/local/bin/on-demand-helpers/*.sh \
+        /opt/startup.sh /opt/init-skills.sh /usr/local/bin/run-cloudflared.sh \
+        /scripts/analytics.sh /usr/local/bin/dockerd-condition.sh \
+        /opt/backup.sh /opt/restore.sh /opt/snapshot.sh /opt/snapshot-restore.sh /opt/snapshot-base.sh \
+    && chmod 0440 /etc/sudoers.d/webclaw-app-launcher \
+    && visudo -c -f /etc/sudoers.d/webclaw-app-launcher \
+    && ln -sf /usr/local/bin/on-demand-helpers/codex-version-api.sh /usr/local/bin/codex-version-api.sh \
+    && ln -sf /usr/local/bin/on-demand-helpers/get-android-studio-version.sh /usr/local/bin/get-android-studio-version \
+    && chown root:root /opt/install-hermes.sh /opt/uninstall-hermes.sh \
+        /opt/start-hermes-dashboard.sh /opt/hermes-browser.sh \
+    && chmod 755 /opt/install-hermes.sh /opt/uninstall-hermes.sh \
+        /opt/start-hermes-dashboard.sh /opt/hermes-browser.sh \
     && mkdir -p /opt/dashboard-override \
     && chown -R ubuntu:ubuntu /opt/dashboard-override \
-    && chmod +x /usr/local/bin/theme-switch /usr/local/bin/lang-switch \
-       /usr/local/bin/desktop-language-picker /usr/local/bin/desktop-theme-picker \
+    && printf '\n# Theme switch aliases\nalias light-mode="/usr/local/bin/theme-switch light"\nalias dark-mode="/usr/local/bin/theme-switch dark"\n' >> /home/ubuntu/.bashrc \
+    && printf '\n# Language switch aliases\nalias chinese="/usr/local/bin/lang-switch zh"\nalias english="/usr/local/bin/lang-switch en"\n' >> /home/ubuntu/.bashrc \
     && printf 'ubuntu ALL=(root) NOPASSWD: /usr/local/bin/lang-switch *\n' > /etc/sudoers.d/webclaw-lang-switch \
     && chmod 0440 /etc/sudoers.d/webclaw-lang-switch \
     && visudo -c -f /etc/sudoers.d/webclaw-lang-switch \
-    && printf '\n# Theme switch aliases\nalias light-mode="/usr/local/bin/theme-switch light"\nalias dark-mode="/usr/local/bin/theme-switch dark"\n' >> /home/ubuntu/.bashrc \
-    && printf '\n# Language switch aliases\nalias chinese="/usr/local/bin/lang-switch zh"\nalias english="/usr/local/bin/lang-switch en"\n' >> /home/ubuntu/.bashrc \
-    && chmod +x /opt/start-dashboard.sh /opt/start-webtty.sh /opt/start-openclaw.sh /opt/install-hermes.sh /opt/uninstall-hermes.sh /usr/local/bin/hermes-launcher /opt/start-hermes-dashboard.sh /opt/hermes-browser.sh \
-    && chown root:root /opt/install-hermes.sh /opt/uninstall-hermes.sh /opt/start-hermes-dashboard.sh /opt/hermes-browser.sh \
-    && chmod 755 /opt/install-hermes.sh /opt/uninstall-hermes.sh /opt/start-hermes-dashboard.sh /opt/hermes-browser.sh \
-    && rm -rf /tmp/supervisor-audio.conf /tmp/audio-player.html /tmp/audio-bar.js \
-           /tmp/touch-handler.js /tmp/key-remap.js /tmp/xsession /tmp/desktop-shortcuts/ /tmp/desktop-icons/ \
-           /tmp/audio-ws-server.py /tmp/audio-ws-wrapper.sh /tmp/install-gnome-panel-labels.py \
-           /tmp/patch-novnc.sh /tmp/clipboard-server.js /tmp/custom-clipboard-image.js
+    && mkdir -p /home/ubuntu/.claude/skills \
+    && cp -r /opt/skills/* /home/ubuntu/.claude/skills/ \
+    && chown -R ubuntu:ubuntu /home/ubuntu/.claude/skills \
+    && echo "land007/webclaw" > /.image_name \
+    && echo $(date "+%Y-%m-%d_%H:%M:%S") > /.image_time
 
-# ─── browser launcher: 替代之前 Dockerfile inline 写错的 /usr/local/bin/browser ────
-COPY scripts/browser.sh /usr/local/bin/browser
-RUN chmod +x /usr/local/bin/browser
-
-# ─── Launchpad (全屏应用启动台) ────────────────────────────────────────────
-# 类似 macOS Launchpad 的全屏分页应用网格，复用桌面快捷方式图标
-COPY scripts/launchpad.sh /usr/local/bin/launchpad
-COPY configs/desktop-shortcuts/launchpad.desktop /usr/share/applications/launchpad.desktop
-RUN chmod +x /usr/local/bin/launchpad && \
-    update-desktop-database /usr/share/applications 2>/dev/null || true
-
-# ─── 按需安装框架: 调度脚本 + 应用清单 + 占位图标 + 专用 sudoers ────────
-# 桌面图标 .desktop 的 Exec 指向 webclaw-app-launcher,首次点击触发 zenity 询问 → 下载 .deb → apt-get install
-COPY scripts/webclaw-app-launcher.sh /usr/local/bin/webclaw-app-launcher
-COPY scripts/webclaw-app-uninstaller.sh /usr/local/bin/webclaw-app-uninstaller
-COPY scripts/webclaw-app-postinstall.sh /usr/local/bin/webclaw-app-postinstall
-COPY scripts/webclaw-log-prepare.sh /usr/local/bin/webclaw-log-prepare
-COPY scripts/update-desktop-icons.sh /usr/local/bin/update-desktop-icons
-COPY scripts/install-antigravity.sh /usr/local/bin/install-antigravity
-COPY scripts/preinstall-on-demand.sh /usr/local/bin/preinstall-on-demand.sh
-COPY scripts/on-demand-helpers/ /usr/local/bin/on-demand-helpers/
-COPY configs/on-demand-apps/ /opt/on-demand-apps/
-COPY configs/on-demand-icons/ /opt/on-demand-icons/
-COPY configs/sudoers/webclaw-app-launcher /etc/sudoers.d/webclaw-app-launcher
-RUN chmod +x /usr/local/bin/webclaw-app-launcher /usr/local/bin/webclaw-app-uninstaller /usr/local/bin/webclaw-app-postinstall /usr/local/bin/webclaw-log-prepare /usr/local/bin/update-desktop-icons /usr/local/bin/install-antigravity /usr/local/bin/preinstall-on-demand.sh \
-    && chmod +x /usr/local/bin/on-demand-helpers/*.sh \
-    && ln -sf /usr/local/bin/on-demand-helpers/codex-version-api.sh /usr/local/bin/codex-version-api.sh \
-    && ln -sf /usr/local/bin/on-demand-helpers/get-android-studio-version.sh /usr/local/bin/get-android-studio-version \
-    && chmod 0440 /etc/sudoers.d/webclaw-app-launcher \
-    && visudo -c -f /etc/sudoers.d/webclaw-app-launcher
-
-COPY scripts/startup.sh /opt/startup.sh
-COPY scripts/init-skills.sh /opt/init-skills.sh
-COPY scripts/run-cloudflared.sh /usr/local/bin/run-cloudflared.sh
-COPY scripts/vnc-setpass.py /opt/vnc-setpass.py
-COPY scripts/analytics.sh /scripts/analytics.sh
-COPY scripts/dockerd-condition.sh /usr/local/bin/dockerd-condition.sh
-COPY scripts/backup.sh /opt/backup.sh
-COPY scripts/restore.sh /opt/restore.sh
-COPY scripts/snapshot.sh /opt/snapshot.sh
-COPY scripts/snapshot-restore.sh /opt/snapshot-restore.sh
-COPY scripts/snapshot-base.sh /opt/snapshot-base.sh
-RUN chmod +x /opt/startup.sh /opt/init-skills.sh /usr/local/bin/run-cloudflared.sh /scripts/analytics.sh /usr/local/bin/dockerd-condition.sh /opt/backup.sh /opt/restore.sh /opt/snapshot.sh /opt/snapshot-restore.sh /opt/snapshot-base.sh
-
-# ─── 13. Skills for Claude Code (host-ops, etc.) ───────────────────────
-COPY skills/ /opt/skills/
-RUN mkdir -p /home/ubuntu/.claude/skills && \
-    cp -r /opt/skills/* /home/ubuntu/.claude/skills/ && \
-    chown -R ubuntu:ubuntu /home/ubuntu/.claude/skills
-
-RUN echo "land007/webclaw" > /.image_name && \
-    echo $(date "+%Y-%m-%d_%H:%M:%S") > /.image_time
+# ─── 13. Desktop-specific file placement ────────────────────────────
+RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
+        cp /tmp/_configs/supervisor-audio.conf /etc/supervisor/conf.d/ \
+        && cp /tmp/_configs/audio-player.html /opt/noVNC/audio.html \
+        && cp /tmp/_configs/audio-bar.js /opt/noVNC/audio-bar.js \
+        && cp /tmp/_configs/touch-handler.js /opt/noVNC/touch-handler.js \
+        && cp /tmp/_configs/key-remap.js /opt/noVNC/key-remap.js \
+        && chmod +x /tmp/_scripts/patch-novnc.sh \
+        && /tmp/_scripts/patch-novnc.sh \
+        && python3 /tmp/_scripts/install-gnome-panel-labels.py \
+        && (gtk-update-icon-cache -f -t /usr/share/icons/WebClaw 2>/dev/null || true) \
+        && cp /tmp/_configs/xsession /opt/xsession \
+        && chmod +x /opt/xsession \
+        && cp -r /tmp/_configs/desktop-shortcuts/ /opt/ \
+        && cp -r /tmp/_configs/desktop-icons/ /opt/ \
+        && cp /opt/desktop-shortcuts/v2rayN.desktop /usr/share/applications/v2rayN.desktop \
+        && chmod +x /usr/share/applications/v2rayN.desktop \
+        && (update-desktop-database /usr/share/applications 2>/dev/null || true) \
+        && cp /tmp/_scripts/audio-ws-server.py /opt/ \
+        && cp /tmp/_scripts/audio-ws-wrapper.sh /opt/ \
+        && chmod +x /opt/audio-ws-server.py /opt/audio-ws-wrapper.sh \
+        && cp /tmp/_configs/clipboard-server.js /opt/clipboard-server.js \
+        && cp /tmp/_configs/custom-clipboard-image.js /opt/noVNC/custom-clipboard-image.js \
+        && chmod +x /opt/clipboard-server.js \
+        && sed -i 's|</body>|<script type="module">import UI from "./app/ui.js";window.UI=UI;</script><script src="custom-clipboard-image.js"></script></body>|' /opt/noVNC/vnc.html \
+        && cp /opt/desktop-shortcuts/hermes-uninstall.desktop /usr/share/applications/ \
+        && cp /tmp/_configs/desktop-shortcuts/launchpad.desktop /usr/share/applications/launchpad.desktop \
+        && (update-desktop-database /usr/share/applications 2>/dev/null || true); \
+    fi \
+    && rm -rf /tmp/_configs /tmp/_scripts
 
 # ─── Metadata ───────────────────────────────────────────────────────
 ARG WEBCODE_VERSION=dev
