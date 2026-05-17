@@ -17,5 +17,5 @@ Exec=/usr/local/bin/desktop-theme-picker
 Icon=/opt/desktop-icons/appearance.svg
 Terminal=false
 Type=Application
-Categories=Utility;Settings;
+Categories=Settings;
 StartupNotify=true
