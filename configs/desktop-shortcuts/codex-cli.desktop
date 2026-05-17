@@ -17,7 +17,7 @@ Exec=gnome-terminal --name="Codex CLI" -- /usr/local/bin/codex
 Icon=/opt/on-demand-icons/codex.png
 Terminal=false
 Type=Application
-Categories=Development;IDE;Utility;
+Categories=AITools;
 StartupNotify=true
 Keywords=ai;codex;coding;assistant;cli;
 Keywords[zh_CN]=AI;助手;编程;代码;

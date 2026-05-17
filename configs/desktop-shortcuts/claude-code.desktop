@@ -17,7 +17,7 @@ Exec=gnome-terminal --name="Claude Code" -- /usr/local/bin/claude
 Icon=/opt/on-demand-icons/claude-code.svg
 Terminal=false
 Type=Application
-Categories=Development;IDE;Utility;
+Categories=AITools;
 StartupNotify=true
 Keywords=ai;claude;coding;assistant;cli;
 Keywords[zh_CN]=AI;助手;编程;代码;

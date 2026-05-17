@@ -17,7 +17,7 @@ Exec=gnome-terminal --name="OpenCode CLI" -- /usr/local/bin/opencode
 Icon=/opt/on-demand-icons/opencode.png
 Terminal=false
 Type=Application
-Categories=Development;IDE;Utility;
+Categories=AITools;
 StartupNotify=true
 Keywords=ai;opencode;coding;assistant;cli;open source;
 Keywords[zh_CN]=AI;助手;编程;代码;开源;

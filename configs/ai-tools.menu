@@ -1,0 +1,27 @@
+<!DOCTYPE Menu PUBLIC "-//freedesktop//DTD Menu 1.0//EN"
+ "http://www.freedesktop.org/standards/menu-spec/1.0/menu.dtd">
+
+<!-- Merge file to add AI Tools submenu -->
+<Menu>
+  <Name>Applications</Name>
+  <MergeFile type="parent">/etc/xdg/menus/gnome-applications.menu</MergeFile>
+
+  <!-- AI Tools submenu -->
+  <Menu>
+    <Name>AI Tools</Name>
+    <Directory>ai-tools.directory</Directory>
+    <Include>
+      <Category>AITools</Category>
+    </Include>
+    <Layout>
+      <Filename>openclaw.desktop</Filename>
+      <Separator/>
+      <Filename>claude-code.desktop</Filename>
+      <Filename>codex-cli.desktop</Filename>
+      <Filename>gemini-cli.desktop</Filename>
+      <Filename>opencode-cli.desktop</Filename>
+      <Separator/>
+      <Merge type="all"/>
+    </Layout>
+  </Menu>
+</Menu>

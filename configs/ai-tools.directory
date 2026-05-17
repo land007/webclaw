@@ -1,0 +1,19 @@
+[Desktop Entry]
+Name=AI Tools
+Name[zh_CN]=AI 工具
+Name[zh_TW]=AI 工具
+Name[ja_JP]=AI ツール
+Name[es_ES]=Herramientas IA
+Name[pt_BR]=Ferramentas IA
+Name[ko_KR]=AI 도구
+Name[de_DE]=KI-Tools
+Comment=AI-Powered Development Tools
+Comment[zh_CN]=AI 驱动的开发工具
+Comment[zh_TW]=AI 驅動的開發工具
+Comment[ja_JP]=AI ベースの開発ツール
+Comment[es_ES]=Herramientas de desarrollo basadas en IA
+Comment[pt_BR]=Ferramentas de desenvolvimento baseadas em IA
+Comment[ko_KR]=AI 기반 개발 도구
+Comment[de_DE]=KI-basierte Entwicklungstools
+Icon=org.gnome.Terminal
+Type=Directory

@@ -17,5 +17,5 @@ Exec=openclaw-browser
 Icon=/opt/desktop-icons/openclaw.png
 Terminal=false
 Type=Application
-Categories=Development;Utility;
+Categories=AITools;
 StartupNotify=true
