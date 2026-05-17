@@ -14,13 +14,22 @@ if [ -n "${PASSWORD:-}" ]; then
 fi
 
 # 设置授权公钥（如果提供）
+# 只在 authorized_keys 文件为空或不存在时写入，避免覆盖用户手动添加的公钥
+AUTHORIZED_KEYS_FILE="/home/ubuntu/.ssh/authorized_keys"
 if [ -n "$SSH_AUTHORIZED_KEYS" ]; then
   mkdir -p /home/ubuntu/.ssh
   chmod 700 /home/ubuntu/.ssh
-  echo "$SSH_AUTHORIZED_KEYS" > /home/ubuntu/.ssh/authorized_keys
-  chmod 600 /home/ubuntu/.ssh/authorized_keys
+
+  # 检查文件是否已存在且有内容
+  if [ -s "$AUTHORIZED_KEYS_FILE" ]; then
+    echo "[ssh-server] Authorized keys file already exists, keeping existing keys"
+  else
+    echo "$SSH_AUTHORIZED_KEYS" > "$AUTHORIZED_KEYS_FILE"
+    echo "[ssh-server] Authorized keys configured from environment"
+  fi
+
+  chmod 600 "$AUTHORIZED_KEYS_FILE"
   chown -R ubuntu:ubuntu /home/ubuntu/.ssh
-  echo "[ssh-server] Authorized keys configured"
 fi
 
 # 禁用 PAM
