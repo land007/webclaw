@@ -155,6 +155,23 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         && pip3 install --no-cache-dir --break-system-packages opuslib; \
     fi
 
+# ─── 8c. SSH Server ────────────────────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssh-server \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# 创建 SSH 运行时目录
+RUN mkdir -p /var/run/sshd && \
+    chmod 0755 /var/run/sshd
+
+# SSH 配置优化
+RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config && \
+    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config && \
+    echo "AllowTcpForwarding yes" >> /etc/ssh/sshd_config && \
+    echo "GatewayPorts no" >> /etc/ssh/sshd_config && \
+    echo "X11Forwarding no" >> /etc/ssh/sshd_config
+
 # ─── 9. Docker CLI + daemon (auto-detect arch) ───────────────────────
 # docker-ce and containerd.io are needed for DinD mode; cli is the primary use case.
 # Packages are installed but daemon is NOT started by default — startup.sh handles DinD.
@@ -338,6 +355,7 @@ COPY configs/supervisor-dashboard.conf /etc/supervisor/conf.d/supervisor-dashboa
 
 # Clipboard server (enhanced image paste support)
 COPY configs/supervisor-clipboard.conf /etc/supervisor/conf.d/supervisor-clipboard.conf
+COPY configs/supervisor-ssh.conf /etc/supervisor/conf.d/supervisor-ssh.conf
 
 # Desktop-specific configs (audio, noVNC, desktop shortcuts)
 COPY configs/supervisor-audio.conf /tmp/
@@ -356,6 +374,8 @@ COPY scripts/desktop-theme-picker.sh /usr/local/bin/desktop-theme-picker
 COPY scripts/start-dashboard.sh /opt/start-dashboard.sh
 COPY scripts/start-webtty.sh /opt/start-webtty.sh
 COPY scripts/start-openclaw.sh /opt/start-openclaw.sh
+COPY scripts/start-ssh.sh /opt/start-ssh.sh
+RUN chmod +x /opt/start-dashboard.sh /opt/start-webtty.sh /opt/start-openclaw.sh /opt/start-ssh.sh
 COPY scripts/openclaw-browser.sh /usr/local/bin/openclaw-browser
 COPY scripts/code-server-browser.sh /usr/local/bin/code-server-browser
 COPY scripts/install-hermes.sh /opt/install-hermes.sh
