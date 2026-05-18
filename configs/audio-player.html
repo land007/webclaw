@@ -48,19 +48,82 @@
 </style>
 </head>
 <body>
-<h1>🖥️ Webcode Desktop Audio</h1>
-<button id="toggle-btn">🔇 开启音频</button>
-<div id="status">点击按钮开始播放容器桌面音频</div>
-<p class="hint">浏览器安全策略要求用户主动点击才能播放音频。<br>音频经由 PulseAudio → Opus 64kbps → WebSocket 实时传输，延迟约 30ms。</p>
+<h1 id="title">🖥️ Webcode Desktop Audio</h1>
+<button id="toggle-btn"></button>
+<div id="status"></div>
+<p class="hint" id="hint"></p>
 
 <script>
 (function () {
   'use strict';
+
+  // ── i18n ───────────────────────────────────────────────
+  var MESSAGES = {
+    'zh-CN': {
+      title: '🖥️ Webcode 桌面音频',
+      btn_start: '🔇 开启音频',
+      btn_stop: '🔊 停止音频',
+      btn_connecting: '⏳ 连接中…',
+      hint: '浏览器安全策略要求用户主动点击才能播放音频。<br>音频经由 PulseAudio → Opus 64kbps → WebSocket 实时传输，延迟约 30ms。',
+      status_idle: '点击按钮开始播放容器桌面音频',
+      status_stopped: '已停止',
+      status_connecting: '正在连接 WebSocket 音频服务…',
+      status_connected: '已连接，等待音频流…',
+      status_closed: '连接已关闭',
+      status_playing: 'Opus {bitrate}kbps @ {sr}Hz — 正在播放…',
+      err_audio_ctx: '错误：无法创建 AudioContext — {msg}',
+      err_ws_create: '错误：WebSocket 连接失败 — {msg}',
+      err_ws_disconnected: '错误：WebSocket 连接断开',
+    },
+    'en-US': {
+      title: '🖥️ Webcode Desktop Audio',
+      btn_start: '🔇 Start Audio',
+      btn_stop: '🔊 Stop Audio',
+      btn_connecting: '⏳ Connecting…',
+      hint: 'Browser security requires a user click before audio can play.<br>Audio is streamed via PulseAudio → Opus 64kbps → WebSocket with ~30ms latency.',
+      status_idle: 'Click the button to start playing container desktop audio',
+      status_stopped: 'Stopped',
+      status_connecting: 'Connecting to WebSocket audio service…',
+      status_connected: 'Connected, waiting for audio stream…',
+      status_closed: 'Connection closed',
+      status_playing: 'Opus {bitrate}kbps @ {sr}Hz — Playing…',
+      err_audio_ctx: 'Error: cannot create AudioContext — {msg}',
+      err_ws_create: 'Error: WebSocket connection failed — {msg}',
+      err_ws_disconnected: 'Error: WebSocket disconnected',
+    },
+  };
+
+  function pickLang() {
+    var nav = (navigator.language || navigator.userLanguage || 'en-US').toLowerCase();
+    if (nav.indexOf('zh') === 0) return 'zh-CN';
+    return 'en-US';
+  }
+
+  var LANG = pickLang();
+  document.documentElement.lang = LANG;
+
+  function t(key, vars) {
+    var s = (MESSAGES[LANG] && MESSAGES[LANG][key]) || MESSAGES['en-US'][key] || key;
+    if (vars) {
+      Object.keys(vars).forEach(function (k) {
+        s = s.replace(new RegExp('\\{' + k + '\\}', 'g'), vars[k]);
+      });
+    }
+    return s;
+  }
+
+  // ── Initial UI ─────────────────────────────────────────
+  document.getElementById('title').textContent = t('title');
+  document.getElementById('hint').innerHTML = t('hint');
+
   var SAMPLE_RATE = 48000;  // Opus native rate
   var CHANNELS = 2;
 
   var btn    = document.getElementById('toggle-btn');
   var status = document.getElementById('status');
+
+  btn.textContent = t('btn_start');
+  status.textContent = t('status_idle');
 
   var audioCtx       = null;
   var ws             = null;
@@ -76,9 +139,9 @@
     active = false;
     codecOpus = false;
     opusTimestamp = 0;
-    btn.textContent = '🔇 开启音频';
+    btn.textContent = t('btn_start');
     btn.className = '';
-    setStatus('已停止');
+    setStatus(t('status_stopped'));
     if (audioDecoder) { try { audioDecoder.close(); } catch (e) {} audioDecoder = null; }
     if (ws)           { ws.close(); ws = null; }
     if (audioCtx)     { audioCtx.close(); audioCtx = null; }
@@ -92,7 +155,7 @@
     }
     var sr = info.sample_rate || 48000;
     var ch = info.channels || 2;
-    setStatus('Opus ' + (info.bitrate / 1000) + 'kbps @ ' + sr + 'Hz — 正在播放…');
+    setStatus(t('status_playing', { bitrate: info.bitrate / 1000, sr: sr }));
 
     if (audioDecoder) { try { audioDecoder.close(); } catch (e) {} }
     opusTimestamp = 0;
@@ -127,14 +190,14 @@
 
   function startAudio() {
     active = true;
-    btn.textContent = '⏳ 连接中…';
+    btn.textContent = t('btn_connecting');
     btn.className = '';
-    setStatus('正在连接 WebSocket 音频服务…');
+    setStatus(t('status_connecting'));
 
     try {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SAMPLE_RATE });
     } catch (e) {
-      setStatus('错误：无法创建 AudioContext — ' + e.message);
+      setStatus(t('err_audio_ctx', { msg: e.message }));
       stopAudio();
       return;
     }
@@ -150,7 +213,7 @@
     try {
       ws = new WebSocket(wsUrl);
     } catch (e) {
-      setStatus('错误：WebSocket 连接失败 — ' + e.message);
+      setStatus(t('err_ws_create', { msg: e.message }));
       stopAudio();
       return;
     }
@@ -158,20 +221,20 @@
     ws.binaryType = 'arraybuffer';
 
     ws.onopen = function () {
-      btn.textContent = '🔊 停止音频';
+      btn.textContent = t('btn_stop');
       btn.className = 'active';
-      setStatus('已连接，等待音频流…');
+      setStatus(t('status_connected'));
     };
 
     ws.onerror = function () {
-      setStatus('错误：WebSocket 连接断开');
+      setStatus(t('err_ws_disconnected'));
       btn.className = 'error';
       setTimeout(stopAudio, 2000);
     };
 
     ws.onclose = function () {
       if (active) {
-        setStatus('连接已关闭');
+        setStatus(t('status_closed'));
         btn.className = 'error';
         setTimeout(stopAudio, 2000);
       }
