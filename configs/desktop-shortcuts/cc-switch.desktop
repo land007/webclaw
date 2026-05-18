@@ -17,6 +17,6 @@ Exec=/usr/local/bin/webclaw-app-launcher cc-switch
 Icon=/opt/on-demand-icons/cc-switch.png
 Terminal=false
 Type=Application
-Categories=Utility;Settings;Development;
+Categories=AITools;
 StartupNotify=true
 StartupWMClass=cc-switch

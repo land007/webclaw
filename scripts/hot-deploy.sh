@@ -455,6 +455,33 @@ main() {
 
         print_success "桌面公共文件已部署"
 
+        # 部署 AI Tools 菜单文件
+        print_info "部署 AI Tools 菜单文件..."
+        if [ -f "${PROJECT_ROOT}/configs/gnome-flashback-ai-tools.menu" ]; then
+            docker exec "$container" mkdir -p /etc/xdg/menus/applications-merged 2>/dev/null || true
+            docker cp "${PROJECT_ROOT}/configs/gnome-flashback-ai-tools.menu" \
+                "${container}:/etc/xdg/menus/applications-merged/gnome-flashback-ai-tools.menu" 2>/dev/null || true
+        fi
+        if [ -f "${PROJECT_ROOT}/configs/ai-tools.directory" ]; then
+            docker exec "$container" mkdir -p /usr/share/desktop-directories 2>/dev/null || true
+            docker cp "${PROJECT_ROOT}/configs/ai-tools.directory" \
+                "${container}:/usr/share/desktop-directories/" 2>/dev/null || true
+        fi
+        print_success "AI Tools 菜单文件已部署"
+
+        # 部署自定义主菜单（移除 Other 菜单）
+        print_info "部署自定义主菜单..."
+        if [ -f "${PROJECT_ROOT}/configs/gnome-flashback-applications.menu" ]; then
+            docker cp "${PROJECT_ROOT}/configs/gnome-flashback-applications.menu" \
+                "${container}:/etc/xdg/menus/gnome-flashback-applications.menu" 2>/dev/null || true
+        fi
+        print_success "自定义主菜单已部署"
+
+        # 复制所有 .desktop 文件到系统路径
+        print_info "部署 .desktop 文件到系统路径..."
+        docker exec "$container" bash -c "cp /opt/desktop-shortcuts/*.desktop /usr/share/applications/ 2>/dev/null && chmod +x /usr/share/applications/*.desktop" 2>/dev/null || true
+        print_success ".desktop 文件已部署"
+
         # 部署 Hermes 图标文件
         print_info "部署 Hermes 图标文件..."
         if [ -f "${PROJECT_ROOT}/configs/desktop-icons/hermes.png" ]; then

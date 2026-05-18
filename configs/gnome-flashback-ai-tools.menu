@@ -4,7 +4,6 @@
 <!-- Merge file to add AI Tools submenu -->
 <Menu>
   <Name>Applications</Name>
-  <MergeFile type="parent">/etc/xdg/menus/gnome-applications.menu</MergeFile>
 
   <!-- AI Tools submenu -->
   <Menu>

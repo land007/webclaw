@@ -450,6 +450,13 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         && chmod +x /opt/start-xvnc.sh /opt/setup-monitors.sh /opt/compute-total-geometry.py \
         && cp -r /tmp/_configs/desktop-shortcuts/ /opt/ \
         && cp -r /tmp/_configs/desktop-icons/ /opt/ \
+        && mkdir -p /etc/xdg/menus/applications-merged \
+        && cp /tmp/_configs/gnome-flashback-ai-tools.menu /etc/xdg/menus/applications-merged/ \
+        && mkdir -p /usr/share/desktop-directories \
+        && cp /tmp/_configs/ai-tools.directory /usr/share/desktop-directories/ \
+        && cp /tmp/_configs/gnome-flashback-applications.menu /etc/xdg/menus/gnome-flashback-applications.menu \
+        && cp /opt/desktop-shortcuts/*.desktop /usr/share/applications/ \
+        && chmod +x /usr/share/applications/*.desktop \
         && cp /opt/desktop-shortcuts/v2rayN.desktop /usr/share/applications/v2rayN.desktop \
         && chmod +x /usr/share/applications/v2rayN.desktop \
         && (update-desktop-database /usr/share/applications 2>/dev/null || true) \
