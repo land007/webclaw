@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE wallpapers SYSTEM "gnome-wp-list.dtd">
+<wallpapers>
+  <wallpaper deleted="false">
+    <name>WebClaw Red Nebula</name>
+    <filename>/usr/share/backgrounds/webclaw/webclaw-red-nebula.jpg</filename>
+    <options>zoom</options>
+    <shade_type>solid</shade_type>
+    <pcolor>#170b12</pcolor>
+    <scolor>#170b12</scolor>
+  </wallpaper>
+  <wallpaper deleted="false">
+    <name>WebClaw Mist Lake</name>
+    <filename>/usr/share/backgrounds/webclaw/webclaw-mist-lake.jpg</filename>
+    <options>zoom</options>
+    <shade_type>solid</shade_type>
+    <pcolor>#d7e8ec</pcolor>
+    <scolor>#d7e8ec</scolor>
+  </wallpaper>
+  <wallpaper deleted="false">
+    <name>WebClaw Midnight City</name>
+    <filename>/usr/share/backgrounds/webclaw/webclaw-midnight-city.jpg</filename>
+    <options>zoom</options>
+    <shade_type>solid</shade_type>
+    <pcolor>#101522</pcolor>
+    <scolor>#101522</scolor>
+  </wallpaper>
+  <wallpaper deleted="false">
+    <name>WebClaw Dark Nebula</name>
+    <filename>/usr/share/backgrounds/webclaw/webclaw-dark-nebula.jpg</filename>
+    <options>zoom</options>
+    <shade_type>solid</shade_type>
+    <pcolor>#090b12</pcolor>
+    <scolor>#090b12</scolor>
+  </wallpaper>
+  <wallpaper deleted="false">
+    <name>WebClaw Tropical Beach</name>
+    <filename>/usr/share/backgrounds/webclaw/webclaw-starry-mountain.jpg</filename>
+    <options>zoom</options>
+    <shade_type>solid</shade_type>
+    <pcolor>#74c9d5</pcolor>
+    <scolor>#74c9d5</scolor>
+  </wallpaper>
+</wallpapers>

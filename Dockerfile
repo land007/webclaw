@@ -442,6 +442,18 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         && /tmp/_scripts/patch-novnc.sh \
         && python3 /tmp/_scripts/install-gnome-panel-labels.py \
         && (gtk-update-icon-cache -f -t /usr/share/icons/WebClaw 2>/dev/null || true) \
+        && mkdir -p /usr/share/backgrounds/webclaw /usr/share/gnome-background-properties \
+        && cp /tmp/_configs/backgrounds/webclaw-backgrounds.xml /usr/share/gnome-background-properties/webclaw-backgrounds.xml \
+        && for background in $(sed -n 's|.*<filename>/usr/share/backgrounds/webclaw/\([^<]*\)</filename>.*|\1|p' /usr/share/gnome-background-properties/webclaw-backgrounds.xml); do \
+            cp "/tmp/_configs/backgrounds/${background}" /usr/share/backgrounds/webclaw/; \
+        done \
+        && python3 /tmp/_scripts/prune-gnome-backgrounds.py \
+            /usr/share/gnome-background-properties \
+            Province_of_the_south_of_france_by_orbitelambda.jpg \
+            Monument_valley_by_orbitelambda.jpg \
+        && rm -f \
+            /usr/share/backgrounds/Province_of_the_south_of_france_by_orbitelambda.jpg \
+            /usr/share/backgrounds/Monument_valley_by_orbitelambda.jpg \
         && cp /tmp/_configs/xsession /opt/xsession \
         && chmod +x /opt/xsession \
         && cp /tmp/_configs/start-xvnc.sh /opt/start-xvnc.sh \

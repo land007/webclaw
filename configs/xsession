@@ -92,16 +92,19 @@ fi
 
 # Apply initial theme settings with a random wallpaper
 LIGHT_WALLPAPERS=(
+    "/usr/share/backgrounds/webclaw/webclaw-mist-lake.jpg"
+    "/usr/share/backgrounds/webclaw/webclaw-starry-mountain.jpg"
     "/usr/share/backgrounds/Fuji_san_by_amaral.png"
     "/usr/share/backgrounds/Fuwafuwa_nanbatto_san_by_amaral-light.png"
     "/usr/share/backgrounds/Numbat_wallpaper_light_3480x2160.png"
     "/usr/share/backgrounds/Clouds_by_Tibor_Mokanszki.jpg"
 )
 DARK_WALLPAPERS=(
+    "/usr/share/backgrounds/webclaw/webclaw-red-nebula.jpg"
+    "/usr/share/backgrounds/webclaw/webclaw-dark-nebula.jpg"
+    "/usr/share/backgrounds/webclaw/webclaw-midnight-city.jpg"
     "/usr/share/backgrounds/Numbat_wallpaper_dimmed_3480x2160.png"
     "/usr/share/backgrounds/Fuwafuwa_nanbatto_san_by_amaral-dark.png"
-    "/usr/share/backgrounds/Province_of_the_south_of_france_by_orbitelambda.jpg"
-    "/usr/share/backgrounds/Monument_valley_by_orbitelambda.jpg"
     "/usr/share/backgrounds/Northan_lights_by_mizuno.webp"
 )
 

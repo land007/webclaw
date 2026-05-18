@@ -2,6 +2,17 @@
 # Theme switch for GNOME Flashback desktop
 export DISPLAY=:1
 export XDG_RUNTIME_DIR=/run/user/1000
+if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+    FLASHBACK_PID=$(pgrep -u "$(id -u)" -x gnome-flashback | head -1 || true)
+    if [ -n "$FLASHBACK_PID" ] && [ -r "/proc/$FLASHBACK_PID/environ" ]; then
+        DBUS_SESSION_BUS_ADDRESS=$(
+            tr '\0' '\n' < "/proc/$FLASHBACK_PID/environ" \
+                | sed -n 's/^DBUS_SESSION_BUS_ADDRESS=//p' \
+                | head -1
+        )
+        export DBUS_SESSION_BUS_ADDRESS
+    fi
+fi
 
 # Save theme preference for next session
 THEME_FILE="/home/ubuntu/.config/gnome-initial-theme"
@@ -9,6 +20,8 @@ mkdir -p "$(dirname "$THEME_FILE")"
 
 # Light mode wallpapers (bright, cheerful scenes)
 LIGHT_WALLPAPERS=(
+    "/usr/share/backgrounds/webclaw/webclaw-mist-lake.jpg"
+    "/usr/share/backgrounds/webclaw/webclaw-starry-mountain.jpg"
     "/usr/share/backgrounds/Fuji_san_by_amaral.png"
     "/usr/share/backgrounds/Fuwafuwa_nanbatto_san_by_amaral-light.png"
     "/usr/share/backgrounds/Numbat_wallpaper_light_3480x2160.png"
@@ -17,10 +30,11 @@ LIGHT_WALLPAPERS=(
 
 # Dark mode wallpapers (dark, atmospheric scenes)
 DARK_WALLPAPERS=(
+    "/usr/share/backgrounds/webclaw/webclaw-red-nebula.jpg"
+    "/usr/share/backgrounds/webclaw/webclaw-dark-nebula.jpg"
+    "/usr/share/backgrounds/webclaw/webclaw-midnight-city.jpg"
     "/usr/share/backgrounds/Numbat_wallpaper_dimmed_3480x2160.png"
     "/usr/share/backgrounds/Fuwafuwa_nanbatto_san_by_amaral-dark.png"
-    "/usr/share/backgrounds/Province_of_the_south_of_france_by_orbitelambda.jpg"
-    "/usr/share/backgrounds/Monument_valley_by_orbitelambda.jpg"
     "/usr/share/backgrounds/Northan_lights_by_mizuno.webp"
 )
 
