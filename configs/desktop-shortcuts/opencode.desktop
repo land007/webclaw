@@ -7,5 +7,5 @@ Exec=/usr/local/bin/webclaw-app-launcher opencode
 Icon=/opt/on-demand-icons/opencode.png
 Type=Application
 Terminal=false
-Categories=Development;Utility;
+Categories=Development;
 StartupNotify=true

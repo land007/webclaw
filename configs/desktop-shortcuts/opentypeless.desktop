@@ -17,6 +17,6 @@ Exec=/usr/local/bin/webclaw-app-launcher opentypeless
 Icon=/opt/on-demand-icons/opentypeless.png
 Terminal=false
 Type=Application
-Categories=Utility;AudioVideo;
+Categories=AudioVideo;
 StartupNotify=true
 StartupWMClass=opentypeless

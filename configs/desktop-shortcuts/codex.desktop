@@ -7,5 +7,5 @@ Exec=/usr/local/bin/webclaw-app-launcher codex
 Icon=/opt/on-demand-icons/codex.png
 Type=Application
 Terminal=false
-Categories=Development;Utility;
+Categories=Development;
 StartupNotify=true
