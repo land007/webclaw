@@ -458,9 +458,11 @@ main() {
         # 部署 AI Tools 菜单文件
         print_info "部署 AI Tools 菜单文件..."
         if [ -f "${PROJECT_ROOT}/configs/gnome-flashback-ai-tools.menu" ]; then
-            docker exec "$container" mkdir -p /etc/xdg/menus/applications-merged 2>/dev/null || true
+            docker exec "$container" mkdir -p /etc/xdg/menus/applications-merged /etc/xdg/menus/gnome-flashback-applications-merged 2>/dev/null || true
             docker cp "${PROJECT_ROOT}/configs/gnome-flashback-ai-tools.menu" \
                 "${container}:/etc/xdg/menus/applications-merged/gnome-flashback-ai-tools.menu" 2>/dev/null || true
+            docker cp "${PROJECT_ROOT}/configs/gnome-flashback-ai-tools.menu" \
+                "${container}:/etc/xdg/menus/gnome-flashback-applications-merged/gnome-flashback-ai-tools.menu" 2>/dev/null || true
         fi
         if [ -f "${PROJECT_ROOT}/configs/ai-tools.directory" ]; then
             docker exec "$container" mkdir -p /usr/share/desktop-directories 2>/dev/null || true

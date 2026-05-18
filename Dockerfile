@@ -450,8 +450,9 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         && chmod +x /opt/start-xvnc.sh /opt/setup-monitors.sh /opt/compute-total-geometry.py \
         && cp -r /tmp/_configs/desktop-shortcuts/ /opt/ \
         && cp -r /tmp/_configs/desktop-icons/ /opt/ \
-        && mkdir -p /etc/xdg/menus/applications-merged \
+        && mkdir -p /etc/xdg/menus/applications-merged /etc/xdg/menus/gnome-flashback-applications-merged \
         && cp /tmp/_configs/gnome-flashback-ai-tools.menu /etc/xdg/menus/applications-merged/ \
+        && cp /tmp/_configs/gnome-flashback-ai-tools.menu /etc/xdg/menus/gnome-flashback-applications-merged/ \
         && mkdir -p /usr/share/desktop-directories \
         && cp /tmp/_configs/ai-tools.directory /usr/share/desktop-directories/ \
         && cp /tmp/_configs/gnome-flashback-applications.menu /etc/xdg/menus/gnome-flashback-applications.menu \
