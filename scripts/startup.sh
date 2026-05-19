@@ -25,9 +25,12 @@ DOCKER_SOCK_MODE="${DOCKER_SOCK_MODE:-host}"
 export DOCKER_SOCK_MODE
 usermod -aG docker ubuntu 2>/dev/null || true
 
-# ─── Create project directory and fix permissions ────────────────────
+# ─── Create project directory and standard user directories ──────────
 mkdir -p /home/ubuntu/projects
-mkdir -p /home/ubuntu/Desktop
+# 标准用户目录直接挂在 /home/ubuntu/ 下（XDG 风格），方便桌面 Home 图标自然看到。
+# 主机端命名透传：macOS 挂 ~/Movies → /home/ubuntu/Movies，Linux/Windows 挂 ~/Videos → /home/ubuntu/Videos。
+# 因此 Movies/Videos 两个目录名都可能出现，由挂载决定；预创建只覆盖 5 个稳定目录。
+install -d -o ubuntu -g ubuntu /home/ubuntu/Desktop /home/ubuntu/Documents /home/ubuntu/Downloads /home/ubuntu/Pictures /home/ubuntu/Music
 mkdir -p /home/ubuntu/.local/share/vibe-kanban
 
 # ─── Initialize common skills directory ───────────────────────────────
@@ -38,12 +41,16 @@ fi
 
 # 后台递归修复 /home/ubuntu 权限，避免大目录阻塞启动。
 # 保留用户本地目录挂载点的原始 owner，避免把宿主机目录重置成 ubuntu。
+# 容器侧不知道当前是 macOS 还是 Linux/Windows 主机连过来，
+# 因此 Movies 与 Videos 两个视频目录名都需要 skip。
 readonly LOCAL_PROJECT_DIRS=(
-    "/home/ubuntu/projects/desktop"
-    "/home/ubuntu/projects/documents"
-    "/home/ubuntu/projects/downloads"
-    "/home/ubuntu/projects/movies"
-    "/home/ubuntu/projects/pictures"
+    "/home/ubuntu/Desktop"
+    "/home/ubuntu/Documents"
+    "/home/ubuntu/Downloads"
+    "/home/ubuntu/Pictures"
+    "/home/ubuntu/Videos"
+    "/home/ubuntu/Movies"
+    "/home/ubuntu/Music"
     "/home/ubuntu/projects/docker"
     "/home/ubuntu/projects/docker_build"
 )

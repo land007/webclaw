@@ -261,7 +261,8 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
 
 # ─── 11. User setup & docker group ──────────────────────────────────
 RUN groupadd -f docker && usermod -aG docker ubuntu \
-    && mkdir -p /home/ubuntu/projects /home/ubuntu/Desktop \
+    && mkdir -p /home/ubuntu/projects /home/ubuntu/Desktop /home/ubuntu/Documents \
+       /home/ubuntu/Downloads /home/ubuntu/Pictures /home/ubuntu/Music \
        /home/ubuntu/.local/share /home/ubuntu/.code-server \
     && touch /home/ubuntu/.hushlogin \
     && chown -R ubuntu:ubuntu /home/ubuntu
