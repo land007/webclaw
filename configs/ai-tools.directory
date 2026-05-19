@@ -15,6 +15,5 @@ Comment[es_ES]=Herramientas de desarrollo basadas en IA
 Comment[pt_BR]=Ferramentas de desenvolvimento baseadas em IA
 Comment[ko_KR]=AI 기반 개발 도구
 Comment[de_DE]=KI-basierte Entwicklungstools
-Icon=/opt/desktop-icons/ai-tools.png
-Icon[light]=/opt/desktop-icons/ai-tools-light.png
+Icon=/opt/desktop-icons/ai-tools-symbolic.svg
 Type=Directory
