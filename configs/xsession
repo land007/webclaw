@@ -74,11 +74,18 @@ for i in $(seq 1 20); do
 done
 
 # ─── Multi-monitor layout (Phase 3) ─────────────────────────────────
-# When MONITOR_LAYOUT is provided (e.g. "1920x1080+0+0,1920x1080+1920+0"),
+# When MONITOR_LAYOUT is provided (e.g. "1920x1080+0+0,1920x1080+1920+0")
+# or persisted by the launcher in ~/.config/webclaw/monitor-layout,
 # split the single TigerVNC framebuffer into logical monitors so window managers
 # treat it as an extended desktop. Falls back to single-monitor when unset.
-if [ -n "${MONITOR_LAYOUT:-}" ] && [ -x /opt/setup-monitors.sh ]; then
-    /opt/setup-monitors.sh "$MONITOR_LAYOUT" 2>&1 | sed 's/^/[xsession] /' || true
+LAYOUT_FILE="${MONITOR_LAYOUT_FILE:-$HOME/.config/webclaw/monitor-layout}"
+if [ -f "$LAYOUT_FILE" ]; then
+    LAYOUT="$(cat "$LAYOUT_FILE" 2>/dev/null || true)"
+else
+    LAYOUT="${MONITOR_LAYOUT:-}"
+fi
+if [ -n "$LAYOUT" ] && [ -x /opt/setup-monitors.sh ]; then
+    /opt/setup-monitors.sh "$LAYOUT" 2>&1 | sed 's/^/[xsession] /' || true
 fi
 
 # ─── Theme initialization (read from saved theme preference) ───────────
