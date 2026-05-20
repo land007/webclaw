@@ -264,11 +264,13 @@ try_extract_appimage() {
     fi
     if command -v unsquashfs >/dev/null 2>&1; then
         local offset
-        # 定位 squashfs 魔数: 'sqsh'(大端) 或 'hsqs'(小端)
-        offset=$(LC_ALL=C grep -obP '\x73\x71\x73\x68|\x68\x73\x71\x73' "$appimage" 2>/dev/null \
+        # 定位 squashfs 魔数: 'sqsh'(大端) 或 'hsqs'(小端)。
+        # GNU grep 默认会把 AppImage 视为二进制文件并只输出
+        # "Binary file ... matches"，必须用 -a 才能拿到可传给 unsquashfs 的 offset。
+        offset=$(LC_ALL=C grep -abo -m1 -e 'sqsh' -e 'hsqs' "$appimage" 2>/dev/null \
                  | head -1 | cut -d: -f1)
         [ -z "$offset" ] && offset=188   # AppImage type 2 默认偏移
-        if unsquashfs -no-progress -offset "$offset" -d "$dest" "$appimage" >/dev/null 2>&1; then
+        if [[ "$offset" =~ ^[0-9]+$ ]] && unsquashfs -no-progress -offset "$offset" -d "$dest" "$appimage" >/dev/null 2>&1; then
             chmod -R a+rX "$dest"
             return 0
         fi
