@@ -242,10 +242,45 @@ preinstall_github_release() {
     rm -f "$deb"
 }
 
+# ── AppImage 解压辅助函数 ─────────────────────────────────────────────────
+# 先尝试 --appimage-extract; 跨架构构建时 (arm64 on amd64 via QEMU) 回退到 unsquashfs。
+# 参数: <appimage_path> <dest_dir>
+# 成功时 dest_dir 包含解压内容; 返回 0。
+try_extract_appimage() {
+    local appimage="$1" dest="$2"
+    rm -rf "$dest" /tmp/squashfs-root /tmp/AppDir
+
+    # 方法1: 标准自解压
+    if ( cd /tmp && "$appimage" --appimage-extract >/dev/null 2>&1 ); then
+        mv -f "$(readlink -f /tmp/squashfs-root)" "$dest"
+        chmod -R a+rX "$dest"
+        rm -rf /tmp/squashfs-root
+        return 0
+    fi
+
+    # 方法2: unsquashfs 直接提取 squashfs（适用于跨架构构建）
+    if ! command -v unsquashfs >/dev/null 2>&1; then
+        apt-get install -y --no-install-recommends squashfs-tools >/dev/null 2>&1 || true
+    fi
+    if command -v unsquashfs >/dev/null 2>&1; then
+        local offset
+        # 定位 squashfs 魔数: 'sqsh'(大端) 或 'hsqs'(小端)
+        offset=$(LC_ALL=C grep -obP '\x73\x71\x73\x68|\x68\x73\x71\x73' "$appimage" 2>/dev/null \
+                 | head -1 | cut -d: -f1)
+        [ -z "$offset" ] && offset=188   # AppImage type 2 默认偏移
+        if unsquashfs -no-progress -offset "$offset" -d "$dest" "$appimage" >/dev/null 2>&1; then
+            chmod -R a+rX "$dest"
+            return 0
+        fi
+    fi
+
+    return 1
+}
+
 # ── appimage 模式 ───────────────────────────────────────────────────
 preinstall_appimage() {
     local id="$1" manifest="$2"
-    local repo pattern arch_var tag version asset url tmp extract_dir extracted unbundle_gl bin
+    local repo pattern arch_var tag version asset url tmp extract_dir unbundle_gl bin
 
     repo=$(jq -r '.github_repo' "$manifest")
     pattern=$(jq -r '.asset_pattern' "$manifest")
@@ -288,22 +323,17 @@ preinstall_appimage() {
     chmod +x "$tmp"
 
     log "$id: 解压 AppImage"
-    rm -rf /tmp/squashfs-root /tmp/AppDir
-    ( cd /tmp && "$tmp" --appimage-extract >/dev/null 2>&1 ) || {
-        warn "$id: --appimage-extract 失败（可能是跨架构构建问题，请确保 Docker buildx QEMU 配置正确）"
+    if ! try_extract_appimage "$tmp" "$extract_dir/AppDir"; then
+        warn "$id: AppImage 解压失败（--appimage-extract 和 unsquashfs 均失败）"
         rm -f "$tmp"
         return 1
-    }
-
-    # pkgforge 系 AppImage: /tmp/squashfs-root 是个软链 → ./AppDir,
-    # 必须解到真实目录,否则 mv 走的是软链本身、留下孤儿 AppDir
-    extracted=$(readlink -f /tmp/squashfs-root)
+    fi
 
     # 可选: 把 AppImage 自带的旧 Mesa GL 库换成系统 Mesa 软链
     # (与 webclaw-app-launcher.sh:227-246 保持一致)
     if [ "$unbundle_gl" = "true" ]; then
         log "$id: 卸绑 AppImage 自带 GL 库"
-        local libd="$extracted/shared/lib"
+        local libd="$extract_dir/AppDir/shared/lib"
         local sysd
         sysd="/usr/lib/$(gcc -print-multiarch 2>/dev/null || dpkg-architecture -qDEB_HOST_MULTIARCH 2>/dev/null || echo aarch64-linux-gnu)"
         if [ -d "$libd" ]; then
@@ -324,16 +354,11 @@ preinstall_appimage() {
         fi
     fi
 
-    log "$id: 移动到 $extract_dir/AppDir"
-    mv -f "$extracted" "$extract_dir/AppDir"
-    chmod -R a+rX "$extract_dir/AppDir"
-
     if [ ! -x "$bin" ] && [ -x "$extract_dir/AppDir/$(basename "$bin")" ]; then
         ln -sfn "$extract_dir/AppDir/$(basename "$bin")" "$bin"
     fi
 
     rm -f "$tmp"
-    rm -rf /tmp/squashfs-root
 }
 
 # ── cursor_api 模式 (Cursor 编辑器) ─────────────────────────────────────
@@ -375,21 +400,12 @@ preinstall_cursor_api() {
     chmod +x "$tmp"
 
     log "$id: 解压 AppImage"
-    rm -rf /tmp/squashfs-root /tmp/AppDir
-    ( cd /tmp && "$tmp" --appimage-extract >/dev/null 2>&1 ) || {
-        warn "$id: --appimage-extract 失败（可能是跨架构构建问题）"
+    app_dir="$install_dir/AppDir"
+    if ! try_extract_appimage "$tmp" "$app_dir"; then
+        warn "$id: AppImage 解压失败（--appimage-extract 和 unsquashfs 均失败）"
         rm -f "$tmp"
         return 1
-    }
-
-    # 处理软链
-    local extracted
-    extracted=$(readlink -f /tmp/squashfs-root)
-
-    log "$id: 移动到 $install_dir"
-    app_dir="$install_dir/AppDir"
-    mv -f "$extracted" "$app_dir"
-    chmod -R a+rX "$app_dir"
+    fi
     if [ -x "$app_dir/cursor" ] && [ ! -x "$app_dir/usr/share/cursor/cursor" ]; then
         mv -f "$app_dir/cursor" "$app_dir/usr/share/cursor/cursor"
         chmod +x "$app_dir/usr/share/cursor/cursor"
@@ -513,21 +529,15 @@ preinstall_direct_download() {
         appimage)
             log "$id: 解压 AppImage"
             chmod +x "${tmp}.${file_type}"
-            rm -rf /tmp/squashfs-root /tmp/AppDir
-            ( cd /tmp && "${tmp}.${file_type}" --appimage-extract >/dev/null 2>&1 ) || {
+            if ! try_extract_appimage "${tmp}.${file_type}" "$install_dir/AppDir"; then
                 warn "$id: AppImage 解压失败"
                 rm -f "${tmp}.${file_type}"
                 return 1
-            }
-            local extracted
-            extracted=$(readlink -f /tmp/squashfs-root)
-            mv -f "$extracted" "$install_dir/AppDir"
-            chmod -R a+rX "$install_dir/AppDir"
-            rm -rf /tmp/squashfs-root /tmp/AppDir
+            fi
             ;;
         zip)
             log "$id: 解压 zip"
-            local extract_tmp appimage_file extracted
+            local extract_tmp appimage_file
             extract_tmp="/tmp/preinstall-${id}-extract"
             rm -rf "$extract_tmp"
             mkdir -p "$extract_tmp"
@@ -541,17 +551,12 @@ preinstall_direct_download() {
             appimage_file=$(find "$extract_tmp" -maxdepth 2 -type f -name "*.AppImage" | head -1)
             if [ -n "$appimage_file" ]; then
                 chmod +x "$appimage_file"
-                rm -rf /tmp/squashfs-root /tmp/AppDir
-                ( cd /tmp && "$appimage_file" --appimage-extract >/dev/null 2>&1 ) || {
+                if ! try_extract_appimage "$appimage_file" "$install_dir/AppDir"; then
                     warn "$id: AppImage 解压失败"
                     rm -f "${tmp}.zip"
                     rm -rf "$extract_tmp"
                     return 1
-                }
-                extracted=$(readlink -f /tmp/squashfs-root)
-                mv -f "$extracted" "$install_dir/AppDir"
-                chmod -R a+rX "$install_dir/AppDir"
-                rm -rf /tmp/squashfs-root /tmp/AppDir
+                fi
             else
                 mv "$extract_tmp"/* "$install_dir/"
             fi
