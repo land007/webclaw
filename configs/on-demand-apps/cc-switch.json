@@ -4,6 +4,7 @@
   "name": "CC Switch",
   "package": "cc-switch",
   "binary": "/usr/bin/cc-switch",
+  "install_method": "github_release",
   "github_repo": "farion1231/cc-switch",
   "asset_pattern": "CC-Switch-v{version_no_v}-Linux-{arch}.deb",
   "arch_map": {

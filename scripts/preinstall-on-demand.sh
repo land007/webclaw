@@ -15,6 +15,8 @@
 # 环境变量:
 #   - PREINSTALL_SKIP: 逗号分隔的应用 ID 列表,这些应用将被跳过不预装
 #                       示例: PREINSTALL_SKIP=android-studio,blender,eclipse
+#   - PREINSTALL_ONLY: 逗号分隔的应用 ID 列表,设置后只预装这些应用
+#   - PREINSTALL_REQUIRED: 逗号分隔的应用 ID 列表,这些应用预装失败时直接让构建失败
 #   - PREINSTALL_MANIFEST_DIR: manifest 目录,默认 /opt/on-demand-apps
 #   - PREINSTALL_POSTINSTALL_BIN: 安装后置钩子,默认 /usr/local/bin/webclaw-app-postinstall
 #   - PREINSTALL_APT_UPDATE: 是否先 apt-get update,默认 true
@@ -33,6 +35,19 @@ warn() { echo "[preinstall] WARN: $*" >&2; }
 # ── 检查应用是否在跳过列表中 ────────────────────────────────────────
 is_skipped() {
     local id="$1"
+    local only_list="${PREINSTALL_ONLY:-}"
+    if [ -n "$only_list" ]; then
+        local only_ids
+        IFS=',' read -ra only_ids <<< "$only_list"
+        for only_id in "${only_ids[@]}"; do
+            only_id=$(echo "$only_id" | xargs)
+            if [ "$id" = "$only_id" ]; then
+                return 1
+            fi
+        done
+        return 0
+    fi
+
     local skip_list="${PREINSTALL_SKIP:-}"
     if [ -z "$skip_list" ]; then
         return 1  # 不跳过
@@ -48,6 +63,23 @@ is_skipped() {
         fi
     done
     return 1  # 不跳过
+}
+
+is_required() {
+    local id="$1"
+    local required_list="${PREINSTALL_REQUIRED:-}"
+    if [ -z "$required_list" ]; then
+        return 1
+    fi
+    local required_ids
+    IFS=',' read -ra required_ids <<< "$required_list"
+    for required_id in "${required_ids[@]}"; do
+        required_id=$(echo "$required_id" | xargs)
+        if [ "$id" = "$required_id" ]; then
+            return 0
+        fi
+    done
+    return 1
 }
 
 # ── curl 包装函数（带超时和重试）──────────────────────────────────────
@@ -675,6 +707,11 @@ for manifest in "$MANIFEST_DIR"/*.json; do
         direct_download) preinstall_direct_download "$id" "$manifest" && installed=true || warn "$id: 预装失败,运行时按需安装可兜底" ;;
         *)               warn "$id: 未知 install_method=$install_method,跳过" ;;
     esac
+
+    if [ "$installed" != "true" ] && is_required "$id"; then
+        echo "[preinstall] ERROR: $id 是必装应用,预装失败,终止构建" >&2
+        exit 1
+    fi
 
     if [ "$installed" = "true" ] && [ -x "$POSTINSTALL_BIN" ]; then
         "$POSTINSTALL_BIN" "$id" || true

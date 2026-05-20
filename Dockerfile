@@ -432,6 +432,14 @@ RUN cp /tmp/_configs/supervisord.conf /etc/supervisor/supervisord.conf \
     && echo "land007/webclaw" > /.image_name \
     && echo $(date "+%Y-%m-%d_%H:%M:%S") > /.image_time
 
+# ─── 12b. Preinstall required lightweight on-demand apps ─────────────
+# cc-switch is part of the base image so the launcher can seed its provider DB
+# before the GUI is opened. This only installs the binary; it does not start it.
+RUN PREINSTALL_REQUIRED=cc-switch \
+    PREINSTALL_ONLY=cc-switch \
+    /usr/local/bin/preinstall-on-demand.sh && \
+    command -v cc-switch >/dev/null
+
 # ─── 13. Desktop-specific file placement ────────────────────────────
 RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
         cp /tmp/_configs/supervisor-audio.conf /etc/supervisor/conf.d/ \
