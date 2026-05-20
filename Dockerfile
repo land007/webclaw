@@ -487,6 +487,35 @@ RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
     fi \
     && rm -rf /tmp/_configs /tmp/_scripts
 
+# ─── webclaw-upgrader (仅桌面版本) ──────────────────────────────────
+# 容器内的软件升级管理 + supervisor 状态板,需要 GUI 桌面
+# 仅 INSTALL_DESKTOP=true 时安装,从 GitHub Release 拉取 .deb
+#
+# 每次构建拿最新版本:
+#   - 默认 ARG=latest,通过 GitHub API 解析 tag_name
+#   - 也可显式锁定: docker build --build-arg WEBCLAW_UPGRADER_VERSION=0.1.2 ...
+# 注: Docker 层缓存会复用,需要刷新时传变化的 ARG 或加 --no-cache
+ARG WEBCLAW_UPGRADER_VERSION=latest
+COPY configs/sudoers/webclaw-upgrader /tmp/sudoers-webclaw-upgrader
+RUN if [ "$INSTALL_DESKTOP" = "true" ]; then \
+        set -eux; \
+        ARCH=$(dpkg --print-architecture); \
+        VER="$WEBCLAW_UPGRADER_VERSION"; \
+        if [ "$VER" = "latest" ]; then \
+            VER=$(curl -fsSL https://api.github.com/repos/land007/webclaw-upgrader/releases/latest \
+                | sed -n 's/.*"tag_name":[[:space:]]*"v\([^"]*\)".*/\1/p' | head -n1); \
+        fi; \
+        echo "Installing webclaw-upgrader v${VER} (${ARCH})"; \
+        curl -fsSL "https://github.com/land007/webclaw-upgrader/releases/download/v${VER}/WebClaw.Upgrader_${VER}_${ARCH}.deb" \
+            -o /tmp/webclaw-upgrader.deb \
+        && (dpkg -i /tmp/webclaw-upgrader.deb || apt-get install -fy) \
+        && rm -f /tmp/webclaw-upgrader.deb \
+        && cp /tmp/sudoers-webclaw-upgrader /etc/sudoers.d/webclaw-upgrader \
+        && chmod 0440 /etc/sudoers.d/webclaw-upgrader \
+        && visudo -c -f /etc/sudoers.d/webclaw-upgrader; \
+    fi \
+    && rm -f /tmp/sudoers-webclaw-upgrader
+
 # ─── Metadata ───────────────────────────────────────────────────────
 ARG WEBCODE_VERSION=dev
 LABEL org.opencontainers.image.title="webclaw" \
